@@ -7,20 +7,18 @@ A simple, interactive user story mapping tool built with vanilla JavaScript.
 ## What is User Story Mapping?
 User story mapping is a technique for organising user stories into a visual map that helps teams understand the big picture of a software project, feature, or product. More importantly, it helps teams agree on what the product should do and how it should be built. It acts as a canonical source of information for the team that can be referenced throughout the project.
 
-It's not a replacement for Jira, Trello, Phabricator, or any other scrum project management tool. Instead, it's to be used alongside them to visualise the big picture of the work being done and keep track of progress. Think of it as a visual way to organise your backlog in a way that makes sense to everyone.
+It's not a replacement for Jira, Trello, Phabricator, or any other project management tool. Instead, it's to be used alongside them to visualise the big picture of the work being done and keep track of progress. Think of it as a visual way to organise your backlog in a way that makes sense to everyone.
 
 ### The Power of the Big Picture
-User story mapping transforms a flat, disconnected backlog into a living visual narrative that ensures your team never loses sight of the user’s journey. While traditional tools are excellent for tracking individual tasks, they often obscure the "why" behind the work.
+User story mapping transforms a flat, disconnected backlog into a living visual narrative that ensures your team never loses sight of the user's journey. While traditional tools are excellent for tracking individual tasks, they often obscure the "why" behind the work.
 
-By mapping out the backbone of the user experience, you can instantly spot functional gaps. For example, if you are building a Travel Booking System, you might realise you’ve planned the "Search" and "Payment" modules but completely forgotten the "Booking Confirmation and Voucher" step. In a standard list, these gaps stay hidden; in a map, the empty space in the user's journey is obvious.
-
-
+By mapping out the backbone of the user experience, you can instantly spot functional gaps. For example, if you're building an online store for a local sign shop that makes custom signs, you might plan the "Browse Designs", "Customise Text", and "Checkout" steps, but completely forget the "Approve Design Proof" step before production. In a flat backlog, this critical approval step stays hidden; in a story map, the empty column in the customer's journey makes the gap obvious.
 
 ### User Story Mapping Structure:
 - **Personas** - Who are the users? e.g. first-time shopper
 - **Activities** - What are they trying to achieve? e.g. find a product
 - **Steps** - The journey they take to achieve their goals from left to right e.g. search -> browse -> compare
-- **User Stories** - Details under each step explaing e.g. (search) keyword search, (browse) filter product list results, (compare) side-by-side view
+- **User Stories** - The work to be done at each step, e.g. "add keyword search", "filter by category", "compare side-by-side"
 - **Slices** - Horizontal groupings for releases (MVP, v1, v2, etc.)
 
 ## App Features
@@ -28,16 +26,16 @@ By mapping out the backbone of the user experience, you can instantly spot funct
 - **Shareable URLs** - Each map gets a unique URL for easy sharing
 - **Personas** - Add context rows showing who does what
 - **Activities & Steps (Backbone)** - Define activities & steps representing the user journey left-to-right
-- **User Stories** - Add user stories under each step to break down the task.
+- **User Stories** - Add user stories under each step to break down the task
 - **Release Slices** - Group stories horizontally into releases or priorities
 - **Status Indicators** - Mark stories as done, in-progress, or planned
-- **Colours & Links** - Customize card colours and add external URLs to your existing task management tools
+- **Colours & Links** - Customise card colours and add external URLs to your existing task management tools
 - **Drag & Drop** - Reorder cards and slices
 - **Undo/Redo** - Ctrl+Z/Ctrl+Y to undo and redo changes
 - **Zoom Controls** - Zoom out to see the full board, zoom in for detail
 - **Print / PDF** - Print your story map or save as PDF
 - **Import/Export** - Save and load story maps as JSON files
-- **Local Storage** - Automatically save your work
+- **Local Storage** - Automatically saves your work
 - **Samples** - Load example story maps to learn the framework
 
 ## Self-Hosting Setup
@@ -59,7 +57,7 @@ Note: Data is always saved to local storage. Real-time collaboration and cloud s
 3. Click **+** to add steps (columns) to the backbone
 4. Click **+** in a column to add user stories
 5. Click **+ Add Slice** to create release groupings
-6. Click the **...** menu on cards to set colors, status, or links
+6. Click the **...** menu on cards to set colours, status, or links
 7. Drag stories to reorder or move between columns
 8. Click **Share** to copy the URL and collaborate with others
 9. Use **Ctrl+Z** / **Ctrl+Y** to undo and redo changes
