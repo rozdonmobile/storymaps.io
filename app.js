@@ -981,13 +981,7 @@ const moveStory = (storyId, fromColumnId, fromSliceId, toColumnId, toSliceId, to
 
     if (!toSlice.stories[toColumnId]) toSlice.stories[toColumnId] = [];
 
-    // Adjust index if moving within same column (removal shifts indices)
-    let adjustedIndex = toIndex;
-    if (fromColumnId === toColumnId && fromSliceId === toSliceId && storyIndex < toIndex) {
-        adjustedIndex = toIndex - 1;
-    }
-
-    toSlice.stories[toColumnId].splice(adjustedIndex, 0, story);
+    toSlice.stories[toColumnId].splice(toIndex, 0, story);
     render();
     saveToStorage();
 };
