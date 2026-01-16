@@ -1038,15 +1038,73 @@ body {
     padding: 8px 14px;
 }
 
+.welcome-learn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+}
+
+.welcome-learn-links {
+    display: flex;
+    justify-content: center;
+    gap: 16px;
+}
+
+.welcome-learn-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    padding: 16px 20px;
+    background: #fff;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    text-decoration: none;
+    color: #333;
+    font-size: 13px;
+    font-weight: 500;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.welcome-learn-card:hover {
+    border-color: var(--color-teal);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.welcome-learn-icon {
+    width: 48px;
+    height: 48px;
+}
+
+.welcome-learn-book {
+    height: 64px;
+    width: auto;
+    border-radius: 2px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
 /* Footer */
 .footer {
     max-width: 1400px;
     margin: 48px auto 0;
     padding: 24px 0;
     border-top: 1px solid #ddd;
-    text-align: center;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    position: relative;
     font-size: 14px;
     color: #666;
+}
+
+.footer-text {
+    text-align: center;
+}
+
+.footer-support {
+    position: absolute;
+    right: 0;
 }
 
 .footer a {
@@ -1229,6 +1287,12 @@ body {
         margin-top: 32px;
         padding: 16px 0;
         font-size: 12px;
+        flex-direction: column;
+        gap: 16px;
+    }
+
+    .footer-support {
+        position: static;
     }
 
     .dropdown-menu {

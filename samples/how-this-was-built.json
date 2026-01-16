@@ -111,9 +111,21 @@
       }, {
         "n": "Sample maps",
         "st": "done"
+      }, {
+        "n": "Welcome screen",
+        "st": "done"
+      }, {
+        "n": "Sample buttons on welcome",
+        "st": "done"
       }],
       [{
         "n": "LocalStorage auto-save",
+        "st": "done"
+      }, {
+        "n": "Navigation confirmations",
+        "st": "done"
+      }, {
+        "n": "Back button support",
         "st": "done"
       }],
       [{
@@ -122,10 +134,16 @@
       }, {
         "n": "Status indicators",
         "st": "done"
+      }, {
+        "n": "Hamburger menu",
+        "st": "done"
+      }, {
+        "n": "Samples submenu",
+        "st": "done"
       }]
     ]
   }, {
-    "n": "Collaboration",
+    "n": "Sharing",
     "t": [
       [],
       [],
@@ -157,33 +175,6 @@
         "st": "done"
       }, {
         "n": "Zoom controls",
-        "st": "done"
-      }]
-    ]
-  }, {
-    "n": "Onboarding",
-    "t": [
-      [],
-      [],
-      [{
-        "n": "Welcome screen",
-        "st": "done"
-      }, {
-        "n": "Sample buttons on welcome",
-        "st": "done"
-      }],
-      [{
-        "n": "Navigation confirmations",
-        "st": "done"
-      }, {
-        "n": "Back button support",
-        "st": "done"
-      }],
-      [{
-        "n": "Hamburger menu",
-        "st": "done"
-      }, {
-        "n": "Samples submenu",
         "st": "done"
       }]
     ]
