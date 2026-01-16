@@ -487,12 +487,14 @@ body {
     display: flex;
     flex-direction: column;
     align-items: flex-start;
-    gap: 4px;
-    padding-top: 4px;
+    justify-content: center;
+    position: relative;
 }
 
 .row-label-container .btn-delete {
-    position: static;
+    position: absolute;
+    bottom: 0;
+    left: 0;
     opacity: 0;
     width: 20px;
     height: 20px;
@@ -551,15 +553,27 @@ body {
         3px 4px 12px rgba(0, 0, 0, 0.1);
 }
 
-.story-card.dragging {
-    opacity: 0.5;
-    transform: rotate(2deg);
+/* Sortable drag styles */
+.sortable-ghost {
+    opacity: 0.4;
+}
+
+.sortable-chosen {
     box-shadow: 4px 4px 12px rgba(0, 0, 0, 0.2);
 }
 
-.story-column.drag-over {
+.sortable-drag {
+    opacity: 1;
+}
+
+.story-card.sortable-ghost {
+    background-color: rgba(20, 184, 166, 0.2);
+}
+
+.slice-container.sortable-ghost {
     background-color: rgba(20, 184, 166, 0.1);
-    border-radius: 2px;
+    border: 2px dashed var(--color-teal);
+    border-radius: 4px;
 }
 
 .story-card::before {
@@ -748,21 +762,6 @@ body {
 .slice-drag-handle:hover {
     color: #888;
     background-color: rgba(0, 0, 0, 0.05);
-}
-
-.slice-container.slice-dragging,
-.personas-row.slice-dragging,
-.activities-row.slice-dragging,
-.backbone-row.slice-dragging {
-    opacity: 0.5;
-}
-
-.slice-container.slice-drag-over,
-.personas-row.slice-drag-over,
-.activities-row.slice-drag-over,
-.backbone-row.slice-drag-over {
-    background-color: rgba(20, 184, 166, 0.08);
-    border-radius: 4px;
 }
 
 /* Card Options Menu */

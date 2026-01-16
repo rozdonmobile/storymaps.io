@@ -66,8 +66,9 @@ Note: Data is always saved to local storage. Real-time collaboration and cloud s
 10. Use zoom controls (bottom-right) to zoom in/out
 11. Use **Print** to save as PDF, **Export** to save as JSON
 
-## Credit
-Thanks to Jeff Patton for pioneering user story mapping. Learn more: [Jeff Patton's Story Mapping](https://jpattonassociates.com/story-mapping/)
+## Credits
+- Thanks to Jeff Patton for pioneering user story mapping. Learn more: [Jeff Patton's Story Mapping](https://jpattonassociates.com/story-mapping/)
+- Drag and drop powered by [SortableJS](https://sortablejs.github.io/Sortable/)
 
 ## License
 MIT

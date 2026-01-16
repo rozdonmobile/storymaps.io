@@ -388,7 +388,8 @@ const createUrlIndicator = (url) => {
 
 const createTextarea = (className, placeholder, value, onChange) => {
     const isCardText = className === 'step-text' || className === 'story-text';
-    const textarea = el('textarea', className, { placeholder, value, rows: isCardText ? 1 : 2 });
+    const isSliceLabel = className === 'slice-label';
+    const textarea = el('textarea', className, { placeholder, value, rows: isCardText ? 1 : (isSliceLabel ? 3 : 2) });
 
     if (isCardText) {
         const autoResize = () => {
@@ -506,23 +507,9 @@ const createStoryCard = (story, columnId, sliceId, isBackboneRow = false) => {
     const card = el('div', 'story-card', {
         dataStoryId: story.id,
         dataColumnId: columnId,
-        dataSliceId: sliceId,
-        draggable: true
+        dataSliceId: sliceId
     });
     if (story.color) card.style.backgroundColor = story.color;
-
-    card.addEventListener('dragstart', (e) => {
-        card.classList.add('dragging');
-        e.dataTransfer.setData('text/plain', JSON.stringify({
-            storyId: story.id,
-            fromColumnId: columnId,
-            fromSliceId: sliceId
-        }));
-    });
-
-    card.addEventListener('dragend', () => {
-        card.classList.remove('dragging');
-    });
 
     const placeholderText = isBackboneRow ? 'Card...' : 'User story...';
     const textarea = createTextarea('story-text', placeholderText, story.name,
@@ -599,51 +586,6 @@ const createStoryColumn = (col, slice) => {
         });
     }
 
-    columnEl.addEventListener('dragover', (e) => {
-        e.preventDefault();
-        columnEl.classList.add('drag-over');
-
-        const dragging = document.querySelector('.dragging');
-        if (!dragging) return;
-
-        const cards = [...columnEl.querySelectorAll('.story-card:not(.dragging)')];
-        const afterElement = cards.find(card => {
-            const rect = card.getBoundingClientRect();
-            return e.clientY < rect.top + rect.height / 2;
-        });
-
-        if (afterElement) {
-            columnEl.insertBefore(dragging, afterElement);
-        } else {
-            const addBtn = columnEl.querySelector('.btn-add-story');
-            columnEl.insertBefore(dragging, addBtn);
-        }
-    });
-
-    columnEl.addEventListener('dragleave', (e) => {
-        if (!columnEl.contains(e.relatedTarget)) {
-            columnEl.classList.remove('drag-over');
-        }
-    });
-
-    columnEl.addEventListener('drop', (e) => {
-        e.preventDefault();
-        columnEl.classList.remove('drag-over');
-
-        const data = JSON.parse(e.dataTransfer.getData('text/plain'));
-        const toColumnId = col.id;
-        const toSliceId = slice.id;
-
-        const dragging = document.querySelector('.dragging');
-        const cards = [...columnEl.querySelectorAll('.story-card:not(.dragging)')];
-        const dropIndex = cards.findIndex(card => {
-            const rect = card.getBoundingClientRect();
-            return e.clientY < rect.top + rect.height / 2;
-        });
-
-        moveStory(data.storyId, data.fromColumnId, data.fromSliceId, toColumnId, toSliceId, dropIndex === -1 ? cards.length : dropIndex);
-    });
-
     const addBtn = el('button', 'btn-add-story', { text: '+' });
     addBtn.addEventListener('click', () => addStory(col.id, slice.id));
     columnEl.appendChild(addBtn);
@@ -700,52 +642,12 @@ const createSliceContainer = (slice, index) => {
     }
     const container = el('div', containerClass, { dataSliceId: slice.id });
 
-    container.addEventListener('dragstart', (e) => {
-        if (e.target !== container) return;
-        container.classList.add('slice-dragging');
-        e.dataTransfer.setData('text/plain', JSON.stringify({ type: 'slice', sliceId: slice.id }));
-        e.dataTransfer.effectAllowed = 'move';
-    });
-
-    container.addEventListener('dragend', () => {
-        container.classList.remove('slice-dragging');
-        container.draggable = false;
-        document.querySelectorAll('.slice-drag-over').forEach(el => el.classList.remove('slice-drag-over'));
-    });
-
-    container.addEventListener('dragover', (e) => {
-        const data = e.dataTransfer.types.includes('text/plain');
-        if (!data) return;
-        e.preventDefault();
-        container.classList.add('slice-drag-over');
-    });
-
-    container.addEventListener('dragleave', (e) => {
-        if (!container.contains(e.relatedTarget)) {
-            container.classList.remove('slice-drag-over');
-        }
-    });
-
-    container.addEventListener('drop', (e) => {
-        e.preventDefault();
-        container.classList.remove('slice-drag-over');
-
-        try {
-            const data = JSON.parse(e.dataTransfer.getData('text/plain'));
-            if (data.type === 'slice' && data.sliceId !== slice.id) {
-                moveSlice(data.sliceId, slice.id);
-            }
-        } catch {}
-    });
-
     // Label container (only for release slices, not backbone rows)
     if (slice.separator !== false) {
         const labelContainer = el('div', 'slice-label-container', { dataSliceId: slice.id });
 
-        // Drag handle
+        // Drag handle for Sortable
         const dragHandle = el('div', 'slice-drag-handle', { html: '⋮⋮', title: 'Drag to reorder' });
-        dragHandle.addEventListener('mousedown', () => container.draggable = true);
-        dragHandle.addEventListener('mouseup', () => container.draggable = false);
         labelContainer.appendChild(dragHandle);
 
         if (state.slices.length > 1) {
@@ -871,6 +773,79 @@ const render = () => {
     slices.forEach(({ slice, index }) => {
         dom.storyMap.appendChild(createSliceContainer(slice, index));
     });
+
+    // Initialize Sortable for drag and drop
+    initSortable();
+};
+
+// Store Sortable instances to destroy on re-render
+let sortableInstances = [];
+
+const initSortable = () => {
+    // Destroy previous instances
+    sortableInstances.forEach(s => s.destroy());
+    sortableInstances = [];
+
+    // Make story cards sortable within and between columns
+    document.querySelectorAll('.story-column').forEach(column => {
+        const sortable = Sortable.create(column, {
+            group: 'stories',
+            animation: 150,
+            ghostClass: 'sortable-ghost',
+            chosenClass: 'sortable-chosen',
+            dragClass: 'sortable-drag',
+            filter: '.btn-add-story',
+            onEnd: (evt) => {
+                const storyId = evt.item.dataset.storyId;
+                const fromColumnId = evt.from.dataset.columnId;
+                const fromSliceId = evt.from.dataset.sliceId;
+                const toColumnId = evt.to.dataset.columnId;
+                const toSliceId = evt.to.dataset.sliceId;
+                const toIndex = evt.newIndex;
+
+                // Only update state if something actually changed
+                if (fromColumnId !== toColumnId || fromSliceId !== toSliceId || evt.oldIndex !== evt.newIndex) {
+                    moveStory(storyId, fromColumnId, fromSliceId, toColumnId, toSliceId, toIndex);
+                }
+            }
+        });
+        sortableInstances.push(sortable);
+    });
+
+    // Make release slices sortable (not backbone rows)
+    const sliceContainers = document.querySelectorAll('.slice-container');
+    if (sliceContainers.length > 0) {
+        const sortable = Sortable.create(dom.storyMap, {
+            animation: 150,
+            handle: '.slice-drag-handle',
+            ghostClass: 'sortable-ghost',
+            chosenClass: 'sortable-chosen',
+            dragClass: 'sortable-drag',
+            draggable: '.slice-container',
+            onEnd: (evt) => {
+                const fromSliceId = evt.item.dataset.sliceId;
+                const toIndex = evt.newIndex;
+
+                // Find the slice that was moved
+                const fromIndex = state.slices.findIndex(s => s.id === fromSliceId);
+                if (fromIndex === -1) return;
+
+                // Calculate actual slice index accounting for backbone rows and steps row
+                // The DOM has: backbone rows, steps row, then slice containers
+                // We need to map DOM index to state.slices index for release slices only
+                const releaseSlices = state.slices.filter(s => s.separator !== false);
+                const movedSlice = releaseSlices[evt.oldIndex];
+                if (!movedSlice) return;
+
+                // Find target position in releaseSlices array
+                const targetSlice = releaseSlices[toIndex];
+                if (targetSlice && movedSlice.id !== targetSlice.id) {
+                    moveSlice(movedSlice.id, targetSlice.id);
+                }
+            }
+        });
+        sortableInstances.push(sortable);
+    }
 };
 
 // =============================================================================
