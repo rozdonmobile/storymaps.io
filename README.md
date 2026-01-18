@@ -54,7 +54,7 @@ This app uses Firebase for real-time collaboration and cloud storage. To run you
 Note: Data is always saved to local storage. Real-time collaboration and cloud sync require Firebase.
 
 ## Usage
-1. Visit [storymaps.io](https://storymaps.io) or serve locally with `node server.js`
+1. Visit [storymaps.io](https://storymaps.io) or run locally with `npx serve -s` (SPA mode for client-side routing)
 2. Click **New Story Map** or try a sample to get started
 3. Click **+** to add steps (columns) to the backbone
 4. Click **+** in a column to add user stories
