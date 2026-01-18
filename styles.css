@@ -369,6 +369,30 @@ body {
     font-weight: 500;
 }
 
+/* Magnifier Lens (desktop only) */
+.magnifier {
+    position: fixed;
+    width: 350px;
+    height: 200px;
+    border-radius: 4px;
+    border: 2px solid rgba(0, 0, 0, 0.2);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
+    overflow: hidden;
+    pointer-events: none;
+    z-index: 2000;
+    display: none;
+    background: #f8fafc;
+}
+
+.magnifier.active {
+    display: block;
+}
+
+.magnifier-content {
+    position: absolute;
+    transform-origin: top left;
+}
+
 /* Story Map Container */
 .story-map {
     display: flex;
@@ -1534,6 +1558,7 @@ body {
     .options-menu,
     .empty-backbone-row,
     .zoom-controls,
+    .magnifier,
     footer {
         display: none !important;
     }

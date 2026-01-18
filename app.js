@@ -384,6 +384,89 @@ const endPan = () => {
 };
 
 // =============================================================================
+// Magnifier (desktop only)
+// =============================================================================
+
+let magnifier = null;
+let magnifierContent = null;
+const MAGNIFIER_WIDTH = 350;
+const MAGNIFIER_HEIGHT = 200;
+const MAGNIFIER_SCALE = 0.75;
+
+const createMagnifier = () => {
+    // Only create on desktop (non-touch devices)
+    if (window.matchMedia('(pointer: coarse)').matches) return;
+
+    magnifier = document.createElement('div');
+    magnifier.className = 'magnifier';
+    magnifierContent = document.createElement('div');
+    magnifierContent.className = 'magnifier-content';
+    magnifier.appendChild(magnifierContent);
+    document.body.appendChild(magnifier);
+};
+
+const updateMagnifier = (e) => {
+    if (!magnifier || zoomLevel >= 0.75 || isPanning) {
+        magnifier?.classList.remove('active');
+        return;
+    }
+
+    const wrapperRect = dom.storyMapWrapper.getBoundingClientRect();
+    const mouseX = e.clientX;
+    const mouseY = e.clientY;
+
+    // Check if mouse is over the story map wrapper
+    if (mouseX < wrapperRect.left || mouseX > wrapperRect.right ||
+        mouseY < wrapperRect.top || mouseY > wrapperRect.bottom) {
+        magnifier.classList.remove('active');
+        return;
+    }
+
+    magnifier.classList.add('active');
+
+    // Position magnifier centered above cursor
+    const offsetX = -MAGNIFIER_WIDTH / 2;
+    const offsetY = -MAGNIFIER_HEIGHT - 15;
+    const magLeft = mouseX + offsetX;
+    const magTop = mouseY + offsetY;
+    magnifier.style.left = `${magLeft}px`;
+    magnifier.style.top = `${magTop}px`;
+
+    // Clone the story map content if not already done
+    if (!magnifierContent.hasChildNodes()) {
+        const clone = dom.storyMap.cloneNode(true);
+        clone.style.transform = 'none';
+        magnifierContent.appendChild(clone);
+    }
+
+    // Get the map's position within the wrapper (accounts for margin: auto centering)
+    const mapRect = dom.storyMap.getBoundingClientRect();
+
+    // Calculate center of the magnifier rectangle on screen
+    const magCenterX = magLeft + MAGNIFIER_WIDTH / 2;
+    const magCenterY = magTop + MAGNIFIER_HEIGHT / 2;
+
+    // Calculate position relative to the map (where the magnifier is, not the cursor)
+    const mapX = (magCenterX - mapRect.left) / zoomLevel;
+    const mapY = (magCenterY - mapRect.top) / zoomLevel;
+
+    // Offset content so the magnifier center shows the zoomed view of that area
+    const contentX = (MAGNIFIER_WIDTH / 2) / MAGNIFIER_SCALE - mapX;
+    const contentY = (MAGNIFIER_HEIGHT / 2) / MAGNIFIER_SCALE - mapY;
+    magnifierContent.style.transform = `scale(${MAGNIFIER_SCALE}) translate(${contentX}px, ${contentY}px)`;
+};
+
+const hideMagnifier = () => {
+    magnifier?.classList.remove('active');
+};
+
+const refreshMagnifierContent = () => {
+    if (magnifierContent) {
+        magnifierContent.innerHTML = '';
+    }
+};
+
+// =============================================================================
 // UI Components
 // =============================================================================
 
@@ -935,6 +1018,9 @@ const render = () => {
 
     // Update navigation arrows after DOM settles
     setTimeout(updateNavArrows, 0);
+
+    // Refresh magnifier content (if active)
+    refreshMagnifierContent();
 };
 
 // Store Sortable instances to destroy on re-render
@@ -1532,11 +1618,13 @@ const initEventListeners = () => {
         updateZoom();
     });
     dom.zoomReset.addEventListener('click', () => {
-        // Cycle through 100% -> 75% -> 50% -> 100%
+        // Cycle through 100% -> 75% -> 50% -> 25% -> 100%
         if (zoomLevel === 1) {
             zoomLevel = 0.75;
         } else if (zoomLevel === 0.75) {
             zoomLevel = 0.5;
+        } else if (zoomLevel === 0.5) {
+            zoomLevel = 0.25;
         } else {
             zoomLevel = 1;
         }
@@ -1607,6 +1695,11 @@ const initEventListeners = () => {
     dom.storyMapWrapper.addEventListener('mousedown', startPan);
     document.addEventListener('mousemove', doPan);
     document.addEventListener('mouseup', endPan);
+
+    // Magnifier (desktop only)
+    createMagnifier();
+    document.addEventListener('mousemove', updateMagnifier);
+    dom.storyMapWrapper.addEventListener('mouseleave', hideMagnifier);
 };
 
 // =============================================================================
