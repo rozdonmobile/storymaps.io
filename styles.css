@@ -549,8 +549,8 @@ body {
     padding-top: 0;
 }
 
-/* Backbone rows (Personas, Activities) */
-.personas-row,
+/* Backbone rows (Users, Activities) */
+.users-row,
 .activities-row,
 .backbone-row {
     display: flex;
@@ -665,7 +665,7 @@ body {
     font-size: 12px;
 }
 
-.personas-row:hover .row-label-container .btn-delete,
+.users-row:hover .row-label-container .btn-delete,
 .activities-row:hover .row-label-container .btn-delete,
 .backbone-row:hover .row-label-container .btn-delete {
     opacity: 1;
@@ -810,7 +810,7 @@ body {
 }
 
 /* Hide add buttons in backbone rows */
-.personas-row .btn-add-story,
+.users-row .btn-add-story,
 .activities-row .btn-add-story,
 .backbone-row .btn-add-story {
     display: none;

@@ -15,7 +15,7 @@ User story mapping transforms a flat, disconnected backlog into a living visual 
 By mapping out the backbone of the user experience, you can instantly spot functional gaps. For example, if you're building an online store for a local sign shop that makes custom signs, you might plan the "Browse Designs", "Customise Text", and "Checkout" steps, but completely forget the "Approve Design Proof" step before production. In a flat backlog, this critical approval step stays hidden; in a story map, the empty column in the customer's journey makes the gap obvious.
 
 ### User Story Mapping Structure:
-- **Personas** - Who are the users? e.g. first-time shopper
+- **Users** - Who are the users? e.g. first-time shopper
 - **Activities** - What are they trying to achieve? e.g. find a product
 - **Steps** - The journey they take to achieve their goals from left to right e.g. search -> browse -> compare
 - **Tasks** - The work to be done at each step, e.g. "add keyword search", "filter by category", "compare side-by-side"
@@ -25,7 +25,7 @@ By mapping out the backbone of the user experience, you can instantly spot funct
 - **Real-time Collaboration** - Multiple users can edit the same map simultaneously
 - **Live Viewer Count** - See how many people are viewing the map in real-time
 - **Shareable URLs** - Each map gets a unique URL for easy sharing
-- **Personas** - Add context rows showing who does what
+- **Users** - Add context rows showing who does what
 - **Activities & Steps (Backbone)** - Define activities & steps representing the user journey left-to-right
 - **Tasks** - Add task cards under each step to break down the work
 - **Release Slices** - Group tasks horizontally into releases or priorities

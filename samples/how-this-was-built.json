@@ -34,7 +34,7 @@
       []
     ],
     "sep": false,
-    "rt": "Personas"
+    "rt": "Users"
   }, {
     "n": "",
     "t": [
@@ -63,7 +63,7 @@
         "st": "done"
       }],
       [{
-        "n": "Understand Personas",
+        "n": "Understand Users",
         "st": "done"
       }, {
         "n": "Understand release slices",

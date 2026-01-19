@@ -11,7 +11,7 @@
   ],
   "s": [{
     "sep": false,
-    "rt": "Personas",
+    "rt": "Users",
     "n": "",
     "t": [
       [{"n": "Potential Client", "c": "#fda4af"}],

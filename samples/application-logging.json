@@ -12,7 +12,7 @@
   ],
   "s": [{
     "sep": false,
-    "rt": "Personas",
+    "rt": "Users",
     "n": "",
     "t": [
       [{"n": "Developer", "c": "#fda4af"}],

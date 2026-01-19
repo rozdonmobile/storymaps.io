@@ -116,7 +116,7 @@ const CARD_COLORS = {
 
 // Default colors for card types (references CARD_COLORS values)
 const DEFAULT_CARD_COLORS = {
-    Personas: '#fda4af',    // pink
+    Users: '#fda4af',    // pink
     Activities: '#93c5fd',  // blue
     story: '#fef08a'        // yellow
 };
@@ -211,7 +211,7 @@ const initState = () => {
     state.name = '';
     state.columns = [column];
     state.slices = [
-        { id: generateId(), name: '', separator: false, rowType: 'Personas', stories: { [column.id]: [createStory('User Type', '#fda4af')] } },
+        { id: generateId(), name: '', separator: false, rowType: 'Users', stories: { [column.id]: [createStory('User Type', '#fda4af')] } },
         { id: generateId(), name: '', separator: false, rowType: 'Activities', stories: { [column.id]: [createStory('New Activity', '#93c5fd')] } },
         { id: generateId(), name: '', separator: true, rowType: null, stories: { [column.id]: [createStory('New Task')] } }
     ];
@@ -850,7 +850,7 @@ const createStoryColumn = (col, slice) => {
 };
 
 const createEmptyBackboneRow = (rowType, insertIndex) => {
-    const containerClass = rowType === 'Personas' ? 'personas-row empty-backbone-row' :
+    const containerClass = rowType === 'Users' ? 'users-row empty-backbone-row' :
                            rowType === 'Activities' ? 'activities-row empty-backbone-row' :
                            'backbone-row empty-backbone-row';
     const container = el('div', containerClass);
@@ -892,7 +892,7 @@ const createSliceContainer = (slice, index) => {
     // Use semantic class names based on row type
     let containerClass = 'slice-container';
     if (slice.separator === false) {
-        containerClass = slice.rowType === 'Personas' ? 'personas-row' :
+        containerClass = slice.rowType === 'Users' ? 'users-row' :
                          slice.rowType === 'Activities' ? 'activities-row' :
                          'backbone-row';
     }
@@ -971,7 +971,7 @@ const createSliceContainer = (slice, index) => {
 const render = () => {
     dom.storyMap.innerHTML = '';
 
-    // Separate backbone rows (Personas, Activities) from release slices
+    // Separate backbone rows (Users, Activities) from release slices
     const rows = [];
     const slices = [];
     state.slices.forEach((slice, index) => {
@@ -983,28 +983,28 @@ const render = () => {
     });
 
     // Check which row types exist
-    const hasPersonas = rows.some(r => r.slice.rowType === 'Personas');
+    const hasUsers = rows.some(r => r.slice.rowType === 'Users');
     const hasActivities = rows.some(r => r.slice.rowType === 'Activities');
-    const personasRow = rows.find(r => r.slice.rowType === 'Personas');
+    const usersRow = rows.find(r => r.slice.rowType === 'Users');
     const activitiesRow = rows.find(r => r.slice.rowType === 'Activities');
 
-    // Render Personas row (or empty placeholder)
-    if (personasRow) {
-        dom.storyMap.appendChild(createSliceContainer(personasRow.slice, personasRow.index));
+    // Render Users row (or empty placeholder)
+    if (usersRow) {
+        dom.storyMap.appendChild(createSliceContainer(usersRow.slice, usersRow.index));
     } else {
-        dom.storyMap.appendChild(createEmptyBackboneRow('Personas', 0));
+        dom.storyMap.appendChild(createEmptyBackboneRow('Users', 0));
     }
 
     // Render Activities row (or empty placeholder)
     if (activitiesRow) {
         dom.storyMap.appendChild(createSliceContainer(activitiesRow.slice, activitiesRow.index));
     } else {
-        const idx = hasPersonas ? personasRow.index + 1 : 0;
+        const idx = hasUsers ? usersRow.index + 1 : 0;
         dom.storyMap.appendChild(createEmptyBackboneRow('Activities', idx));
     }
 
-    // Render any other backbone rows (non-Personas, non-Activities)
-    rows.filter(r => r.slice.rowType !== 'Personas' && r.slice.rowType !== 'Activities')
+    // Render any other backbone rows (non-Users, non-Activities)
+    rows.filter(r => r.slice.rowType !== 'Users' && r.slice.rowType !== 'Activities')
         .forEach(({ slice, index }) => {
             dom.storyMap.appendChild(createSliceContainer(slice, index));
         });

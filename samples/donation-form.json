@@ -12,7 +12,7 @@
   ],
   "s": [{
     "sep": false,
-    "rt": "Personas",
+    "rt": "Users",
     "n": "",
     "t": [
       [{"n": "Donor", "c": "#fda4af"}],

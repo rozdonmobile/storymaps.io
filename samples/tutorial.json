@@ -13,7 +13,7 @@
   ],
   "s": [{
     "sep": false,
-    "rt": "Personas",
+    "rt": "Users",
     "n": "",
     "t": [
       [{"n": "Team", "c": "#fda4af"}],
@@ -40,7 +40,7 @@
   }, {
     "n": "Getting Started",
     "t": [
-      [{"n": "Identify your target users", "st": "done"}, {"n": "Create persona cards", "st": "done", "u": "https://www.nngroup.com/articles/persona/"}],
+      [{"n": "Identify your target users", "st": "done"}, {"n": "Create user persona cards", "st": "done", "u": "https://www.nngroup.com/articles/persona/"}],
       [{"n": "Walk through the journey", "st": "done"}, {"n": "Talk out loud together", "st": "done"}],
       [{"n": "List user goals", "st": "done"}, {"n": "Arrange left to right", "st": "done"}],
       [{"n": "Break activities into steps", "st": "done"}, {"n": "Add step cards", "st": "done"}],

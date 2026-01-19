@@ -14,7 +14,7 @@
   ],
   "s": [{
     "sep": false,
-    "rt": "Personas",
+    "rt": "Users",
     "n": "",
     "t": [
       [{"n": "Bank Customer", "c": "#fda4af"}],
