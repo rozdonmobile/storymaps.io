@@ -3,14 +3,14 @@
   "v": 1,
   "name": "Mobile Banking: Send Money",
   "a": [
-    {"n": "Open App", "c": "#86efac"},
+    {"n": "Find App", "c": "#86efac"},
     {"n": "Log In", "c": "#86efac"},
-    {"n": "Tap Transfer", "c": "#86efac"},
-    {"n": "Choose Recipient", "c": "#86efac"},
+    {"n": "Start Transfer", "c": "#86efac"},
+    {"n": "Select Recipient", "c": "#86efac"},
     {"n": "Enter Amount", "c": "#86efac"},
-    {"n": "Review Transfer", "c": "#86efac"},
-    {"n": "Confirm & Send", "c": "#86efac"},
-    {"n": "See Confirmation", "c": "#86efac"}
+    {"n": "Review", "c": "#86efac"},
+    {"n": "Confirm", "c": "#86efac"},
+    {"n": "Done", "c": "#86efac"}
   ],
   "s": [{
     "sep": false,
@@ -31,7 +31,7 @@
     "rt": "Activities",
     "n": "",
     "t": [
-      [{"n": "Send Money to Friend", "c": "#93c5fd"}],
+      [{"n": "Send Money", "c": "#93c5fd"}],
       [],
       [],
       [],
@@ -43,38 +43,38 @@
   }, {
     "n": "MVP",
     "t": [
-      [{"n": "App icon on home screen", "st": "done"}, {"n": "Splash screen", "st": "done"}],
-      [{"n": "Email/password login", "st": "done"}, {"n": "Remember me option", "st": "done"}],
-      [{"n": "Transfer button on dashboard", "st": "done"}, {"n": "Quick action shortcut", "st": "done"}],
-      [{"n": "Search contacts", "st": "done"}, {"n": "Recent recipients list", "st": "done"}],
-      [{"n": "Amount input field", "st": "done"}, {"n": "Currency display", "st": "done"}, {"n": "Available balance shown", "st": "done"}],
-      [{"n": "Summary screen", "st": "done"}, {"n": "Edit option", "st": "done"}, {"n": "Fee disclosure", "st": "done"}],
-      [{"n": "Confirm button", "st": "done"}, {"n": "Processing indicator", "st": "done"}],
-      [{"n": "Success message", "st": "done"}, {"n": "Transaction reference", "st": "done"}, {"n": "Done button", "st": "done"}]
+      [{"n": "List app in app store", "st": "done"}],
+      [{"n": "Username/password login", "st": "done"}],
+      [{"n": "Transfer button on dashboard", "st": "done"}],
+      [{"n": "Search contacts", "st": "done"}, {"n": "Recent recipients", "st": "done"}],
+      [{"n": "Amount input", "st": "done"}, {"n": "Show available balance", "st": "done"}],
+      [{"n": "Summary screen", "st": "done"}, {"n": "Show fees", "st": "done"}],
+      [{"n": "Confirm button", "st": "done"}, {"n": "SMS verification", "st": "done"}],
+      [{"n": "Success message", "st": "done"}, {"n": "Reference number", "st": "done"}]
     ]
   }, {
     "n": "V1",
     "t": [
-      [{"n": "Push notification deep link", "st": "in-progress"}, {"n": "Widget shortcut", "st": "planned"}],
-      [{"n": "Biometric login (Face/Touch ID)", "st": "done"}, {"n": "PIN fallback", "st": "in-progress"}],
-      [{"n": "Favorite recipients", "st": "in-progress"}, {"n": "Transfer from notification", "st": "planned"}],
-      [{"n": "Add new recipient inline", "st": "done"}, {"n": "Recipient photos", "st": "in-progress"}],
-      [{"n": "Preset amount buttons", "st": "done"}, {"n": "Add note/memo", "st": "in-progress"}, {"n": "Choose source account", "st": "done"}],
-      [{"n": "Scheduled transfer option", "st": "planned"}, {"n": "Recurring option", "st": "planned"}],
-      [{"n": "Face ID to confirm", "st": "in-progress"}, {"n": "SMS verification", "st": "done"}],
-      [{"n": "Share receipt", "st": "in-progress"}, {"n": "Add to calendar", "st": "planned"}, {"n": "Send another prompt", "st": "planned"}]
+      [],
+      [{"n": "Biometric login", "st": "done"}, {"n": "Remember device", "st": "done"}],
+      [{"n": "Quick actions", "st": "in-progress"}, {"n": "Favorite recipients shortcut", "st": "planned"}],
+      [{"n": "Add new recipient", "st": "done"}, {"n": "Mark as favorite", "st": "in-progress"}],
+      [{"n": "Preset amounts", "st": "done"}, {"n": "Add memo", "st": "in-progress"}, {"n": "Select source account", "st": "done"}],
+      [{"n": "Edit details", "st": "done"}, {"n": "Schedule for later", "st": "planned"}],
+      [{"n": "Biometric confirmation", "st": "in-progress"}],
+      [{"n": "Share receipt", "st": "planned"}, {"n": "Send another", "st": "planned"}]
     ]
   }, {
     "n": "V2",
     "t": [
-      [{"n": "Instant app (no install)", "st": "planned"}, {"n": "Apple Watch app", "st": "planned"}],
-      [{"n": "Passwordless login", "st": "planned"}, {"n": "Multi-device sync", "st": "planned"}],
-      [{"n": "Siri shortcut", "st": "planned"}, {"n": "Voice command transfer", "st": "planned"}],
-      [{"n": "QR code scan to pay", "st": "planned"}, {"n": "NFC tap to pay", "st": "planned"}],
-      [{"n": "Multi-currency conversion", "st": "planned"}, {"n": "Split amount", "st": "planned"}, {"n": "Request money option", "st": "planned"}],
-      [{"n": "Compare exchange rates", "st": "planned"}, {"n": "Delivery speed options", "st": "planned"}],
-      [{"n": "Hardware key support", "st": "planned"}, {"n": "Spending limit warnings", "st": "planned"}],
-      [{"n": "PDF receipt download", "st": "planned"}, {"n": "Transaction dispute", "st": "planned"}, {"n": "Rate the experience", "st": "planned"}]
+      [],
+      [],
+      [{"n": "Recurring transfer", "st": "planned"}],
+      [{"n": "Scan QR code", "st": "planned"}],
+      [],
+      [],
+      [{"n": "Spending limit alert", "st": "planned"}],
+      [{"n": "Download PDF receipt", "st": "planned"}]
     ]
   }]
 }

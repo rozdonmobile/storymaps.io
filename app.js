@@ -1449,16 +1449,31 @@ const exportMap = () => {
 };
 
 const importMap = (file) => {
-    flushSave();
-    if (!confirmOverwrite()) return;
+    const isFromWelcome = !state.mapId;
+
+    if (!isFromWelcome) {
+        flushSave();
+        if (!confirmOverwrite()) return;
+    }
 
     const reader = new FileReader();
     reader.onload = (e) => {
         try {
-            pushUndo(); // Save state before import
+            if (isFromWelcome) {
+                hideWelcomeScreen();
+                initState();
+                const mapId = generateId();
+                state.mapId = mapId;
+                history.replaceState({ mapId }, '', `/${mapId}`);
+            } else {
+                pushUndo(); // Save state before import
+            }
             deserialize(JSON.parse(e.target.result));
             dom.boardName.value = state.name;
             renderAndSave();
+            if (isFromWelcome) {
+                subscribeToMap(state.mapId);
+            }
         } catch {
             alert('Failed to import: Invalid file format');
         }
@@ -1707,6 +1722,7 @@ const loadMapById = async (mapId) => {
 };
 
 const showWelcomeScreen = () => {
+    document.body.classList.add('welcome-visible');
     dom.welcomeScreen.classList.add('visible');
     dom.storyMapWrapper.classList.remove('visible');
     dom.boardName.classList.add('hidden');
@@ -1715,6 +1731,7 @@ const showWelcomeScreen = () => {
 };
 
 const hideWelcomeScreen = () => {
+    document.body.classList.remove('welcome-visible');
     dom.welcomeScreen.classList.remove('visible');
     dom.storyMapWrapper.classList.add('visible');
     dom.boardName.classList.remove('hidden');
