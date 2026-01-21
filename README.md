@@ -18,7 +18,7 @@ By mapping out the user experience upfront, you can instantly spot functional ga
 - **Users** - Who are the users? e.g. first-time shopper
 - **Activities** - What are they trying to achieve? e.g. find a product
 - **Steps** - The journey they take to achieve their goals from left to right e.g. search -> browse -> compare
-- **Tasks** - The work to support each step e.g. keyword search, category filters, comparison items
+- **Tasks** - The work to support each step e.g. keyword search, category filters, compare products
 - **Slices** - Horizontal groupings for releases (MVP, v1, v2, etc.)
 
 ## App Features
