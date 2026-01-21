@@ -1,8 +1,8 @@
 # Storymaps.io
 
-**https://storymaps.io**
-
 A simple, interactive user story mapping tool built with vanilla JavaScript.
+
+![Screenshot](resources/screenshot.png)
 
 ## What is User Story Mapping?
 User story mapping is a technique for organising user stories into a visual map that helps teams understand the big picture of a software project, feature, or product. More importantly, it helps teams agree on what the product should do and how it should be built. It acts as a canonical source of information for the team that can be referenced throughout the project.
@@ -18,7 +18,7 @@ By mapping out the user experience upfront, you can instantly spot functional ga
 - **Users** - Who are the users? e.g. first-time shopper
 - **Activities** - What are they trying to achieve? e.g. find a product
 - **Steps** - The journey they take to achieve their goals from left to right e.g. search -> browse -> compare
-- **Tasks** - The work to be done at each step, e.g. "add keyword search", "filter by category", "compare side-by-side"
+- **Tasks** - The work to support each step e.g. keyword search, category filters, comparison items
 - **Slices** - Horizontal groupings for releases (MVP, v1, v2, etc.)
 
 ## App Features
