@@ -10,9 +10,9 @@ User story mapping is a technique for organising user stories into a visual map 
 It's not a replacement for Jira, Trello, Phabricator, or any other project management tool. Instead, it's to be used alongside them to visualise the big picture of the work being done and keep track of progress. Think of it as a visual way to organise your backlog in a way that makes sense to everyone.
 
 ### The Power of the Big Picture
-User story mapping transforms a flat, disconnected backlog into a living visual narrative that ensures your team never loses sight of the user's journey. While traditional tools are excellent for tracking individual tasks, they often obscure the "why" behind the work.
+User story mapping transforms a flat agile backlog into a living visual narrative that ensures your team never loses sight of the user's journey. While traditional tools are excellent for tracking individual tasks, they often obscure the "why" behind the work.
 
-By mapping out the backbone of the user experience, you can instantly spot functional gaps. For example, if you're building an online store for a local sign shop that makes custom signs, you might plan the "Browse Designs", "Customise Text", and "Checkout" steps, but completely forget the "Approve Design Proof" step before production. In a flat backlog, this critical approval step stays hidden; in a story map, the empty column in the customer's journey makes the gap obvious.
+By mapping out the user experience upfront, you can instantly spot functional gaps. For example, if you're building an online store for a local sign shop that makes custom signs, you might plan steps like "Browse Designs", "Customise Text", "Review Proof", "Approve Proof", and "Checkout", but forget the revision cycle needed if the proof isn't approved ("Request Changes" → "Revise Design" → "Re-send Proof"). In a flat backlog, that scenario can stay hidden until someone starts implementing the proof approval work, leading to unplanned extra work, UI changes, scope creep, and all those fun things we see in software projects. In a story map, the question "What happens if they don't approve?" surfaces early, exposing the missing path in the customer's journey.
 
 ### User Story Mapping Structure:
 - **Users** - Who are the users? e.g. first-time shopper
