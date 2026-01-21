@@ -92,7 +92,7 @@ const clearPresence = () => {
 // Utils
 // =============================================================================
 
-const generateId = () => Math.random().toString(36).substring(2, 9);
+const generateId = () => Math.random().toString(36).substring(2, 10);
 
 const isValidUrl = (url) => {
     if (!url) return false;
