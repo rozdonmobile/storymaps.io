@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://storymaps.io/sitemap.xml
