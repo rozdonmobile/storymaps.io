@@ -1065,6 +1065,19 @@ const createEmptyBackboneRow = (rowType, insertIndex) => {
     return container;
 };
 
+// Calculate progress for a slice (% of tasks marked done)
+const getSliceProgress = (slice) => {
+    let total = 0;
+    let done = 0;
+    Object.values(slice.stories || {}).forEach(stories => {
+        stories.forEach(story => {
+            total++;
+            if (story.status === 'done') done++;
+        });
+    });
+    return { total, done, percent: total > 0 ? Math.round((done / total) * 100) : 0 };
+};
+
 const createSliceContainer = (slice, index) => {
     // Use semantic class names based on row type
     let containerClass = 'slice-container';
@@ -1093,6 +1106,23 @@ const createSliceContainer = (slice, index) => {
         const labelInput = createTextarea('slice-label', 'Release...', slice.name,
             (val) => slice.name = val);
         labelContainer.appendChild(labelInput);
+
+        // Progress bar
+        const progress = getSliceProgress(slice);
+        if (progress.total > 0) {
+            const progressContainer = el('div', 'slice-progress');
+            const progressTrack = el('div', 'slice-progress-track');
+            const progressBar = el('div', 'slice-progress-bar');
+            progressBar.style.width = `${progress.percent}%`;
+            progressTrack.appendChild(progressBar);
+            progressContainer.appendChild(progressTrack);
+            const progressText = el('span', 'slice-progress-text', {
+                text: `${progress.done}/${progress.total}`
+            });
+            progressContainer.appendChild(progressText);
+            labelContainer.appendChild(progressContainer);
+        }
+
         container.appendChild(labelContainer);
     } else {
         // Label container for backbone rows

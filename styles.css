@@ -579,6 +579,36 @@ body {
     letter-spacing: 0;
 }
 
+/* Slice Progress Bar */
+.slice-progress {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 6px;
+    width: 100%;
+}
+
+.slice-progress-track {
+    flex: 1;
+    height: 4px;
+    background: #e5e5e5;
+    border-radius: 2px;
+    overflow: hidden;
+}
+
+.slice-progress-bar {
+    height: 100%;
+    background: #22c55e;
+    border-radius: 2px;
+    transition: width 0.3s ease;
+}
+
+.slice-progress-text {
+    font-size: 10px;
+    color: #888;
+    white-space: nowrap;
+}
+
 /* Slice Stories Area */
 .slice-stories-area {
     flex: 1;
