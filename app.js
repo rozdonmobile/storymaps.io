@@ -417,8 +417,6 @@ const dom = {
     storyMapWrapper: document.getElementById('storyMapWrapper'),
     samplesSubmenuTrigger: document.getElementById('samplesSubmenuTrigger'),
     samplesSubmenu: document.getElementById('samplesSubmenu'),
-    navArrowLeft: document.getElementById('navArrowLeft'),
-    navArrowRight: document.getElementById('navArrowRight'),
     zoomControls: document.getElementById('zoomControls'),
     magnifierToggle: document.getElementById('magnifierToggle'),
     loadingIndicator: document.getElementById('loadingIndicator'),
@@ -472,6 +470,33 @@ const updateZoom = () => {
     }
 };
 
+// Auto-fit content to viewport width
+const zoomToFit = () => {
+    const wrapper = dom.storyMapWrapper;
+
+    // Calculate content width based on column count
+    // Layout: label-gutter (80px) + columns (180px each) + gaps (10px) + add-btn (36px)
+    const CARD_WIDTH = 180;
+    const LABEL_WIDTH = 80;
+    const GAP = 10;
+    const ADD_BTN_WIDTH = 36;
+    const BODY_PADDING = 48; // 24px on each side
+
+    const columnCount = state.columns.length;
+    const contentWidth = LABEL_WIDTH + (columnCount * CARD_WIDTH) + (columnCount * GAP) + ADD_BTN_WIDTH;
+
+    // Get available width (viewport minus body padding)
+    const availableWidth = wrapper.clientWidth - BODY_PADDING;
+
+    // Calculate zoom to fit width (leave small buffer)
+    const fitZoom = Math.min(1, (availableWidth - 20) / contentWidth);
+
+    // Round down to nearest 5% and clamp
+    zoomLevel = Math.max(ZOOM_MIN, Math.min(ZOOM_MAX, Math.floor(fitZoom * 20) / 20));
+
+    updateZoom();
+};
+
 // =============================================================================
 // Navigation Helpers
 // =============================================================================
@@ -500,27 +525,6 @@ const scrollElementIntoView = (element) => {
     }
 };
 
-// Update navigation arrow visibility based on scroll position
-const updateNavArrows = () => {
-    const wrapper = dom.storyMapWrapper;
-    const scrollLeft = wrapper.scrollLeft;
-    const maxScroll = wrapper.scrollWidth - wrapper.clientWidth;
-
-    // Show/hide arrows based on scroll position
-    if (maxScroll > 10) {
-        dom.navArrowLeft.classList.toggle('visible', scrollLeft > 10);
-        dom.navArrowRight.classList.toggle('visible', scrollLeft < maxScroll - 10);
-    } else {
-        dom.navArrowLeft.classList.remove('visible');
-        dom.navArrowRight.classList.remove('visible');
-    }
-};
-
-// Scroll by amount with smooth animation
-const scrollByAmount = (amount) => {
-    dom.storyMapWrapper.scrollBy({ left: amount, behavior: 'smooth' });
-};
-
 // Pan/drag state
 let isPanning = false;
 let panStartX = 0;
@@ -530,17 +534,21 @@ let panScrollTop = 0;
 
 // Update pan mode based on zoom level
 const updatePanMode = () => {
-    if (zoomLevel < 1) {
-        dom.storyMapWrapper.classList.add('pan-enabled');
+    const wrapper = dom.storyMapWrapper;
+    const hasOverflow = wrapper.scrollWidth > wrapper.clientWidth || wrapper.scrollHeight > wrapper.clientHeight;
+    if (hasOverflow) {
+        wrapper.classList.add('pan-enabled');
     } else {
-        dom.storyMapWrapper.classList.remove('pan-enabled');
+        wrapper.classList.remove('pan-enabled');
     }
 };
 
 // Pan handlers
 const startPan = (e) => {
-    // Only enable pan when zoomed out and not clicking on interactive elements
-    if (zoomLevel >= 1) return;
+    // Only enable pan when there's overflow and not clicking on interactive elements
+    const wrapper = dom.storyMapWrapper;
+    const hasOverflow = wrapper.scrollWidth > wrapper.clientWidth || wrapper.scrollHeight > wrapper.clientHeight;
+    if (!hasOverflow) return;
     if (e.target.closest('button, textarea, input, .story-card, .step, .options-menu')) return;
 
     isPanning = true;
@@ -1202,9 +1210,6 @@ const render = () => {
     // Initialize Sortable for drag and drop
     initSortable();
 
-    // Update navigation arrows after DOM settles
-    setTimeout(updateNavArrows, 0);
-
     // Refresh magnifier content (if active)
     refreshMagnifierContent();
 };
@@ -1316,7 +1321,6 @@ const addColumn = (hidden = true) => {
                 newStep.querySelector('.step-text')?.focus();
             }
         }
-        updateNavArrows();
     });
 };
 
@@ -1344,7 +1348,6 @@ const addStory = (columnId, sliceId) => {
             scrollElementIntoView(newCard);
             newCard.querySelector('.story-text')?.focus();
         }
-        updateNavArrows();
     });
 };
 
@@ -1988,17 +1991,35 @@ const initEventListeners = () => {
             closeAllOptionsMenus();
             hideImportModal();
             hideExportModal();
+            if (magnifierEnabled) {
+                magnifierEnabled = false;
+                dom.magnifierToggle.innerHTML = '&#128269;';
+                hideMagnifier();
+            }
+        }
+        // Arrow key panning (only when not in text input)
+        if (!isTextInput && ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(e.key)) {
+            const PAN_AMOUNT = 100;
+            const wrapper = dom.storyMapWrapper;
+            switch (e.key) {
+                case 'ArrowLeft':
+                    wrapper.scrollBy({ left: -PAN_AMOUNT, behavior: 'smooth' });
+                    break;
+                case 'ArrowRight':
+                    wrapper.scrollBy({ left: PAN_AMOUNT, behavior: 'smooth' });
+                    break;
+                case 'ArrowUp':
+                    wrapper.scrollBy({ top: -PAN_AMOUNT, behavior: 'smooth' });
+                    break;
+                case 'ArrowDown':
+                    wrapper.scrollBy({ top: PAN_AMOUNT, behavior: 'smooth' });
+                    break;
+            }
+            e.preventDefault();
         }
     });
 
-    // Navigation arrows
-    dom.navArrowLeft.addEventListener('click', () => scrollByAmount(-300));
-    dom.navArrowRight.addEventListener('click', () => scrollByAmount(300));
-
-    // Update nav arrows on scroll
-    dom.storyMapWrapper.addEventListener('scroll', updateNavArrows);
-
-    // Pan/drag navigation when zoomed out
+    // Pan/drag navigation
     dom.storyMapWrapper.addEventListener('mousedown', startPan);
     document.addEventListener('mousemove', doPan);
     document.addEventListener('mouseup', endPan);
@@ -2068,6 +2089,7 @@ const startNewMap = async () => {
     history.replaceState({ mapId }, '', `/${mapId}`);
     dom.boardName.value = state.name;
     render();
+    requestAnimationFrame(zoomToFit);
     await createYjsDoc();
     subscribeToMap(mapId);
     saveToStorage();
@@ -2091,12 +2113,14 @@ const startWithSample = async (sampleName) => {
         deserialize(await response.json());
         dom.boardName.value = state.name;
         render();
+        requestAnimationFrame(zoomToFit);
         subscribeToMap(mapId);
         saveToStorage();
     } catch {
         alert('Failed to load sample');
         dom.boardName.value = state.name;
         render();
+        requestAnimationFrame(zoomToFit);
         subscribeToMap(mapId);
         saveToStorage();
     }
@@ -2117,6 +2141,8 @@ const init = async () => {
             hideWelcomeScreen();
             dom.boardName.value = state.name;
             render();
+            // Auto-fit to viewport after DOM settles
+            requestAnimationFrame(zoomToFit);
         } else {
             // Map not found - show welcome screen
             showWelcomeScreen();

@@ -176,8 +176,13 @@ body {
     transition: background-color 0.1s ease;
 }
 
-.dropdown-item:hover {
+.dropdown-item:hover:not(:disabled) {
     background-color: var(--color-hover-bg);
+}
+
+.dropdown-item:disabled {
+    color: #9ca3af;
+    cursor: not-allowed;
 }
 
 .dropdown-divider {
@@ -262,33 +267,14 @@ body {
     min-height: 0;
     position: relative;
 
-    /* Firefox scrollbar */
-    scrollbar-width: thin;
-    scrollbar-color: #c1c1c1 #f1f1f1;
+    /* Hide scrollbar but keep scroll functionality */
+    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none; /* IE/Edge */
 }
 
-/* Webkit scrollbar (Chrome, Safari, Edge) */
+/* Hide scrollbar for Webkit (Chrome, Safari, Edge) */
 .story-map-wrapper::-webkit-scrollbar {
-    width: 10px;
-    height: 10px;
-}
-
-.story-map-wrapper::-webkit-scrollbar-track {
-    background: #f1f1f1;
-    border-radius: 5px;
-}
-
-.story-map-wrapper::-webkit-scrollbar-thumb {
-    background: #c1c1c1;
-    border-radius: 5px;
-}
-
-.story-map-wrapper::-webkit-scrollbar-thumb:hover {
-    background: #a1a1a1;
-}
-
-.story-map-wrapper::-webkit-scrollbar-corner {
-    background: #f1f1f1;
+    display: none;
 }
 
 .story-map-wrapper.visible {
@@ -302,46 +288,6 @@ body {
 
 .story-map-wrapper.pan-enabled {
     cursor: grab;
-}
-
-/* Navigation Arrows */
-.nav-arrow {
-    position: fixed;
-    top: 50%;
-    transform: translateY(-50%);
-    width: 40px;
-    height: 80px;
-    background: rgba(255, 255, 255, 0.95);
-    border: 1px solid #ddd;
-    border-radius: 8px;
-    font-size: 28px;
-    color: #666;
-    cursor: pointer;
-    z-index: 900;
-    opacity: 0;
-    pointer-events: none;
-    transition: opacity 0.2s ease, background-color 0.15s ease;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.nav-arrow:hover {
-    background-color: #f0f0f0;
-    color: #333;
-}
-
-.nav-arrow.visible {
-    opacity: 1;
-    pointer-events: auto;
-}
-
-.nav-arrow-left {
-    left: 20px;
-}
-
-.nav-arrow-right {
-    right: 20px;
 }
 
 .zoom-controls {
@@ -400,8 +346,8 @@ body {
 /* Magnifier Lens (desktop only) */
 .magnifier {
     position: fixed;
-    width: 350px;
-    height: 200px;
+    width: 500px;
+    height: 400px;
     border-radius: 4px;
     border: 2px solid rgba(0, 0, 0, 0.2);
     box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
@@ -541,6 +487,8 @@ body {
     border-top: 2px solid #d0d0d0;
     margin-top: 12px;
     padding-top: 12px;
+    width: fit-content;
+    min-width: 100%;
 }
 
 .slice-container:first-of-type {
