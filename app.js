@@ -8,6 +8,25 @@ import { getFirestore, doc, getDoc, setDoc, onSnapshot, serverTimestamp } from '
 import { getDatabase, ref, set, onValue, onDisconnect, serverTimestamp as rtdbTimestamp } from 'https://www.gstatic.com/firebasejs/12.8.0/firebase-database.js';
 import { firebaseConfig, recaptchaSiteKey } from './config.js';
 
+const firebaseApp = initializeApp(firebaseConfig);
+const db = getFirestore(firebaseApp);
+const rtdb = getDatabase(firebaseApp);
+
+// App Check - initialized lazily to speed up initial page load
+let appCheckInstance = null;
+let appCheckReady = null;
+
+const ensureAppCheck = () => {
+    if (!appCheckInstance) {
+        appCheckInstance = initializeAppCheck(firebaseApp, {
+            provider: new ReCaptchaV3Provider(recaptchaSiteKey),
+            isTokenAutoRefreshEnabled: true
+        });
+        appCheckReady = getToken(appCheckInstance, false).catch(() => {});
+    }
+    return appCheckReady;
+};
+
 // =============================================================================
 // Yjs - Collaborative Editing (lazy loaded)
 // =============================================================================
@@ -19,10 +38,6 @@ const ensureYjs = async () => {
     }
     return Y;
 };
-
-const firebaseApp = initializeApp(firebaseConfig);
-const db = getFirestore(firebaseApp);
-const rtdb = getDatabase(firebaseApp);
 
 // =============================================================================
 // Yjs Document & Custom Firestore Sync
@@ -159,32 +174,17 @@ const destroyYjs = () => {
     }
 };
 
-// App Check - initialized lazily to speed up initial page load
-let appCheckInstance = null;
-let appCheckReady = null;
+// =============================================================================
+// Presence Tracking
+// =============================================================================
 
-const ensureAppCheck = () => {
-    if (!appCheckInstance) {
-        appCheckInstance = initializeAppCheck(firebaseApp, {
-            provider: new ReCaptchaV3Provider(recaptchaSiteKey),
-            isTokenAutoRefreshEnabled: true
-        });
-        appCheckReady = getToken(appCheckInstance, false).catch(() => {});
-    }
-    return appCheckReady;
-};
-
-// Session ID to track who made changes (for real-time sync)
+// Session ID to track unique viewers
 const getSessionId = () => {
     if (!sessionStorage.sessionId) {
         sessionStorage.sessionId = crypto.randomUUID();
     }
     return sessionStorage.sessionId;
 };
-
-// =============================================================================
-// Presence Tracking
-// =============================================================================
 
 let presenceUnsubscribe = null;
 let viewerCount = 0;
@@ -243,7 +243,14 @@ const clearPresence = () => {
 // Utils
 // =============================================================================
 
-const generateId = () => Math.random().toString(36).substring(2, 10);
+// Generate cryptographically secure 8-char ID
+// 6 random bytes → BigInt → base36 string (0-9, a-z) → last 8 chars
+const generateId = () => {
+    const bytes = new Uint8Array(6);
+    crypto.getRandomValues(bytes);
+    const num = Array.from(bytes).reduce((acc, b) => acc * 256n + BigInt(b), 0n);
+    return num.toString(36).slice(-8).padStart(8, '0');
+};
 
 const isValidUrl = (url) => {
     if (!url) return false;
@@ -333,27 +340,119 @@ const pushUndo = () => {
 
 const undo = () => {
     if (undoStack.length === 0) return;
-    redoStack.push(JSON.stringify(serialize()));
+    const beforeState = serialize();
+    redoStack.push(JSON.stringify(beforeState));
     const previous = JSON.parse(undoStack.pop());
+    const changes = findChangedPositions(beforeState, previous);
     deserialize(previous);
     dom.boardName.value = state.name;
     renderAndSave();
+    highlightChangedElements(changes);
     updateUndoRedoButtons();
 };
 
 const redo = () => {
     if (redoStack.length === 0) return;
-    undoStack.push(JSON.stringify(serialize()));
+    const beforeState = serialize();
+    undoStack.push(JSON.stringify(beforeState));
     const next = JSON.parse(redoStack.pop());
+    const changes = findChangedPositions(beforeState, next);
     deserialize(next);
     dom.boardName.value = state.name;
     renderAndSave();
+    highlightChangedElements(changes);
     updateUndoRedoButtons();
 };
 
 const updateUndoRedoButtons = () => {
     if (dom.undoBtn) dom.undoBtn.disabled = undoStack.length === 0;
     if (dom.redoBtn) dom.redoBtn.disabled = redoStack.length === 0;
+};
+
+// Compare two serialized states and return positions of changed elements
+const findChangedPositions = (before, after) => {
+    const changes = { columns: [], stories: [], sliceNames: [] };
+
+    // Compare columns (steps)
+    const maxCols = Math.max(before.a?.length || 0, after.a?.length || 0);
+    for (let i = 0; i < maxCols; i++) {
+        const bCol = before.a?.[i];
+        const aCol = after.a?.[i];
+        if (JSON.stringify(bCol) !== JSON.stringify(aCol)) {
+            changes.columns.push(i);
+        }
+    }
+
+    // Compare slices and stories
+    const maxSlices = Math.max(before.s?.length || 0, after.s?.length || 0);
+    for (let si = 0; si < maxSlices; si++) {
+        const bSlice = before.s?.[si];
+        const aSlice = after.s?.[si];
+
+        // Check slice name
+        if ((bSlice?.n || '') !== (aSlice?.n || '')) {
+            changes.sliceNames.push(si);
+        }
+
+        // Compare stories in each column
+        for (let ci = 0; ci < maxCols; ci++) {
+            const bStories = bSlice?.t?.[ci] || [];
+            const aStories = aSlice?.t?.[ci] || [];
+            const maxStories = Math.max(bStories.length, aStories.length);
+
+            for (let sti = 0; sti < maxStories; sti++) {
+                if (JSON.stringify(bStories[sti]) !== JSON.stringify(aStories[sti])) {
+                    changes.stories.push({ slice: si, col: ci, story: sti });
+                }
+            }
+        }
+    }
+
+    return changes;
+};
+
+// Apply highlight to changed elements after render
+const highlightChangedElements = (changes) => {
+    // Highlight changed columns (steps row)
+    changes.columns.forEach(colIdx => {
+        const col = state.columns[colIdx];
+        if (col) {
+            const step = dom.storyMap.querySelector(`.step[data-column-id="${col.id}"]`);
+            if (step) step.classList.add('undo-highlight');
+        }
+    });
+
+    // Highlight changed stories
+    changes.stories.forEach(({ slice: sliceIdx, col: colIdx, story: storyIdx }) => {
+        const slice = state.slices[sliceIdx];
+        const col = state.columns[colIdx];
+        if (!slice || !col) return;
+
+        const sliceContainer = dom.storyMap.querySelector(`[data-slice-id="${slice.id}"]`);
+        if (!sliceContainer) return;
+
+        const column = sliceContainer.querySelector(`.story-column[data-column-id="${col.id}"]`);
+        if (!column) return;
+
+        const card = column.querySelectorAll('.story-card')[storyIdx];
+        if (card) card.classList.add('undo-highlight');
+    });
+
+    // Highlight changed slice names (only for release slices with labels)
+    changes.sliceNames.forEach(sliceIdx => {
+        const slice = state.slices[sliceIdx];
+        if (!slice) return;
+
+        const label = dom.storyMap.querySelector(`.slice-label-container[data-slice-id="${slice.id}"]`);
+        if (label) label.classList.add('undo-highlight');
+    });
+
+    // Remove highlight class after animation completes
+    setTimeout(() => {
+        dom.storyMap.querySelectorAll('.undo-highlight').forEach(el => {
+            el.classList.remove('undo-highlight');
+        });
+    }, 1600);
 };
 
 const initState = () => {
@@ -549,7 +648,7 @@ const startPan = (e) => {
     const wrapper = dom.storyMapWrapper;
     const hasOverflow = wrapper.scrollWidth > wrapper.clientWidth || wrapper.scrollHeight > wrapper.clientHeight;
     if (!hasOverflow) return;
-    if (e.target.closest('button, textarea, input, .story-card, .step, .options-menu')) return;
+    if (e.target.closest('button, textarea, input, .story-card, .step, .options-menu, .slice-drag-handle, .step-drag-handle')) return;
 
     isPanning = true;
     panStartX = e.clientX;
@@ -833,6 +932,9 @@ const createTextarea = (className, placeholder, value, onChange) => {
     const isSliceLabel = className === 'slice-label';
     const textarea = el('textarea', className, { placeholder, value, rows: isCardText ? 1 : (isSliceLabel ? 3 : 2) });
 
+    // Push undo when user starts editing
+    textarea.addEventListener('focus', () => pushUndo());
+
     if (isCardText) {
         const autoResize = () => {
             textarea.rows = 1;
@@ -879,6 +981,10 @@ const createColumnCard = (column) => {
 
     const card = el('div', 'step', { dataColumnId: column.id });
     if (column.color) card.style.backgroundColor = column.color;
+
+    // Drag handle for reordering columns
+    const dragHandle = el('div', 'step-drag-handle', { html: '↔', title: 'Drag to move entire column' });
+    card.appendChild(dragHandle);
 
     const textarea = createTextarea('step-text', 'Step...', column.name,
         (val) => column.name = val);
@@ -1092,25 +1198,17 @@ const createSliceContainer = (slice, index) => {
     if (slice.separator !== false) {
         const labelContainer = el('div', 'slice-label-container', { dataSliceId: slice.id });
 
-        // Drag handle for Sortable
-        const dragHandle = el('div', 'slice-drag-handle', { html: '⋮⋮', title: 'Drag to reorder' });
-        labelContainer.appendChild(dragHandle);
-
-        if (state.slices.length > 1) {
-            labelContainer.appendChild(createDeleteBtn(
-                () => deleteSlice(slice.id),
-                `Delete "${slice.name || 'this slice'}" and all its stories?`
-            ));
-        }
-
+        // Label at top
         const labelInput = createTextarea('slice-label', 'Release...', slice.name,
             (val) => slice.name = val);
         labelContainer.appendChild(labelInput);
 
-        // Progress bar
+        // Progress bar in middle
         const progress = getSliceProgress(slice);
         if (progress.total > 0) {
-            const progressContainer = el('div', 'slice-progress');
+            const progressContainer = el('div', 'slice-progress', {
+                title: `${progress.percent}% complete`
+            });
             const progressTrack = el('div', 'slice-progress-track');
             const progressBar = el('div', 'slice-progress-bar');
             progressBar.style.width = `${progress.percent}%`;
@@ -1122,6 +1220,24 @@ const createSliceContainer = (slice, index) => {
             progressContainer.appendChild(progressText);
             labelContainer.appendChild(progressContainer);
         }
+
+        // Controls row at bottom: drag handle on left, delete on right
+        const controlsRow = el('div', 'slice-controls-row');
+        const dragHandle = el('div', 'slice-drag-handle', { html: '↕', title: 'Drag to reorder' });
+        controlsRow.appendChild(dragHandle);
+
+        if (state.slices.length > 1) {
+            controlsRow.appendChild(createDeleteBtn(
+                () => deleteSlice(slice.id),
+                `Delete "${slice.name || 'this slice'}" and all its stories?`
+            ));
+        }
+        labelContainer.appendChild(controlsRow);
+
+        // Add slice button in gutter
+        const addSliceBtn = el('button', 'btn-add-slice', { text: '+ Slice' });
+        addSliceBtn.addEventListener('click', () => addSlice(index + 1, true));
+        labelContainer.appendChild(addSliceBtn);
 
         container.appendChild(labelContainer);
     } else {
@@ -1157,15 +1273,6 @@ const createSliceContainer = (slice, index) => {
     addColumnBtn.addEventListener('click', () => addColumn(true));
     storiesRow.appendChild(addColumnBtn);
     storiesArea.appendChild(storiesRow);
-
-    // Add slice button (only for release slices, not backbone rows)
-    if (slice.separator !== false) {
-        const addSliceRow = el('div', 'add-slice-row');
-        const addSliceBtn = el('button', 'btn-add-slice', { text: '+ Add Slice' });
-        addSliceBtn.addEventListener('click', () => addSlice(index + 1, true));
-        addSliceRow.appendChild(addSliceBtn);
-        storiesArea.appendChild(addSliceRow);
-    }
 
     container.appendChild(storiesArea);
     return container;
@@ -1319,6 +1426,106 @@ const initSortable = () => {
         });
         sortableInstances.push(sortable);
     }
+
+    // Make steps (columns) sortable - moves entire column
+    const stepsRow = document.querySelector('.steps-row');
+    if (stepsRow) {
+        let isDragging = false;
+        let dragColumnId = null;
+        let columnStartX = new Map(); // columnId -> start X of story columns
+        let animFrame = null;
+
+        const captureStartPositions = () => {
+            columnStartX.clear();
+            // Capture start position of first story column for each column
+            state.columns.forEach(col => {
+                const firstStoryCol = document.querySelector(`.story-column[data-column-id="${col.id}"]`);
+                if (firstStoryCol) {
+                    columnStartX.set(col.id, firstStoryCol.getBoundingClientRect().left);
+                }
+            });
+        };
+
+        const updateColumnPositions = () => {
+            if (!isDragging) return;
+
+            // For each step, calculate where it is now vs where its story column started
+            stepsRow.querySelectorAll('.step').forEach(step => {
+                const columnId = step.dataset.columnId;
+                const startX = columnStartX.get(columnId);
+                if (startX === undefined) return;
+
+                // Get the step's current visual position
+                const stepRect = step.getBoundingClientRect();
+                const deltaX = stepRect.left - startX;
+
+                // Apply same transform to all story columns
+                document.querySelectorAll(`.story-column[data-column-id="${columnId}"]`).forEach(el => {
+                    el.style.transform = `translateX(${deltaX}px)`;
+                });
+            });
+
+            animFrame = requestAnimationFrame(updateColumnPositions);
+        };
+
+        const sortable = Sortable.create(stepsRow, {
+            animation: 150,
+            handle: '.step-drag-handle',
+            ghostClass: 'sortable-ghost',
+            chosenClass: 'sortable-chosen',
+            dragClass: 'sortable-drag',
+            draggable: '.step',
+            filter: '.steps-row-spacer, .btn-add-step-inline',
+            onStart: (evt) => {
+                isDragging = true;
+                dragColumnId = evt.item.dataset.columnId;
+                captureStartPositions();
+
+                // Mark dragged column's visible cards for styling
+                evt.item.classList.add('column-being-dragged');
+                document.querySelectorAll(`.story-column[data-column-id="${dragColumnId}"] .story-card`).forEach(card => {
+                    card.classList.add('column-being-dragged');
+                });
+
+                animFrame = requestAnimationFrame(updateColumnPositions);
+            },
+            onEnd: () => {
+                isDragging = false;
+
+                if (animFrame) {
+                    cancelAnimationFrame(animFrame);
+                    animFrame = null;
+                }
+
+                // Reset all transforms and styles
+                document.querySelectorAll('.story-column').forEach(el => {
+                    el.style.transform = '';
+                });
+                document.querySelectorAll('.column-being-dragged').forEach(el => {
+                    el.classList.remove('column-being-dragged');
+                });
+
+                // Read new order from DOM
+                const stepElements = stepsRow.querySelectorAll('.step');
+                const newOrder = [...stepElements].map(el =>
+                    state.columns.find(c => c.id === el.dataset.columnId)
+                ).filter(Boolean);
+
+                // Check if order actually changed
+                const orderChanged = newOrder.some((col, i) => col.id !== state.columns[i]?.id);
+                if (!orderChanged) {
+                    dragColumnId = null;
+                    return;
+                }
+
+                pushUndo();
+                state.columns = newOrder;
+                dragColumnId = null;
+                renderAndSave();
+            }
+        });
+        sortableInstances.push(sortable);
+    }
 };
 
 // =============================================================================
@@ -1387,9 +1594,9 @@ const addSlice = (afterIndex, separator = true, rowType = null) => {
     state.slices.splice(afterIndex, 0, slice);
     renderAndSave();
 
-    // Scroll to new slice after layout completes
+    // Scroll to new slice and focus label after layout completes
     requestAnimationFrame(() => {
-        const sliceElement = dom.storyMap.querySelectorAll('.slice-container')[afterIndex];
+        const sliceElement = dom.storyMap.querySelector(`[data-slice-id="${slice.id}"]`);
         if (sliceElement) {
             scrollElementIntoView(sliceElement);
             if (separator) {

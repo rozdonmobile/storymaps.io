@@ -38,7 +38,7 @@
       [{"n": "Implement Features", "c": "#93c5fd"}]
     ]
   }, {
-    "n": "Getting Started",
+    "n": "MVP",
     "t": [
       [{"n": "Identify your target users", "st": "done"}, {"n": "Create user persona cards", "st": "done", "u": "https://www.nngroup.com/articles/persona/"}],
       [{"n": "Walk through the journey", "st": "done"}, {"n": "Talk out loud together", "st": "done"}],
@@ -49,7 +49,7 @@
       [{"n": "Pick up tasks from map", "st": "planned"}, {"n": "Understand context", "st": "planned"}]
     ]
   }, {
-    "n": "Going Deeper",
+    "n": "V1",
     "t": [
       [{"n": "Interview real users", "st": "planned", "u": "https://www.nngroup.com/articles/user-interviews/"}, {"n": "Validate assumptions", "st": "planned"}],
       [{"n": "Narrate from user's perspective", "st": "planned"}, {"n": "Capture emotions & pain points", "st": "planned"}],

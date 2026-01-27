@@ -35,7 +35,7 @@
       [{"n": "Respond to Incidents", "c": "#93c5fd"}]
     ]
   }, {
-    "n": "Release 1",
+    "n": "R1",
     "t": [
       [{"n": "Choose logging library", "st": "done"}, {"n": "Define log levels", "st": "done"}, {"n": "Add error logging", "st": "done"}],
       [{"n": "Capture stdout/stderr", "st": "done"}, {"n": "Request logging", "st": "done"}],
@@ -45,7 +45,7 @@
       [{"n": "Email on errors", "st": "done"}]
     ]
   }, {
-    "n": "Release 2",
+    "n": "R2",
     "t": [
       [{"n": "Structured JSON logs", "st": "in-progress"}, {"n": "Correlation IDs", "st": "in-progress"}, {"n": "Context fields", "st": "planned"}],
       [{"n": "Async log shipping", "st": "done"}, {"n": "Log sampling", "st": "planned"}],
@@ -55,7 +55,7 @@
       [{"n": "Threshold alerts", "st": "planned"}, {"n": "PagerDuty integration", "st": "planned", "u": "https://developer.pagerduty.com/docs/"}]
     ]
   }, {
-    "n": "Release 3",
+    "n": "R3",
     "t": [
       [{"n": "Distributed tracing", "st": "planned"}, {"n": "Performance profiling", "st": "planned"}],
       [{"n": "Multi-region collection", "st": "planned"}, {"n": "Edge buffering", "st": "planned"}],
