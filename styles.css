@@ -266,6 +266,7 @@ body {
     flex: 1;
     min-height: 0;
     position: relative;
+    width: 100%; /* Fix Safari alignment */
 
     /* Hide scrollbar but keep scroll functionality */
     scrollbar-width: none; /* Firefox */
@@ -371,6 +372,7 @@ body {
 .story-map {
     display: flex;
     flex-direction: column;
+    width: 100%;
     max-width: 1400px;
     margin: 0 auto;
     padding-top: 4px; /* Space for highlight glow on top cards */
@@ -2037,6 +2039,9 @@ body {
     body {
         padding: 0;
         background: white;
+        display: block; /* Reset flex for Safari print */
+        height: auto;
+        overflow: visible;
     }
 
     .header {
@@ -2060,6 +2065,12 @@ body {
     .loading-indicator,
     footer {
         display: none !important;
+    }
+
+    .story-map-wrapper {
+        display: block !important;
+        overflow: visible !important;
+        height: auto !important;
     }
 
     .story-map {

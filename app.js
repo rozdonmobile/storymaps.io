@@ -4,12 +4,15 @@
 
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/12.8.0/firebase-app.js';
 import { initializeAppCheck, ReCaptchaV3Provider, getToken } from 'https://www.gstatic.com/firebasejs/12.8.0/firebase-app-check.js';
-import { getFirestore, doc, getDoc, setDoc, onSnapshot, serverTimestamp } from 'https://www.gstatic.com/firebasejs/12.8.0/firebase-firestore.js';
+import { initializeFirestore, doc, getDoc, setDoc, onSnapshot, serverTimestamp } from 'https://www.gstatic.com/firebasejs/12.8.0/firebase-firestore.js';
 import { getDatabase, ref, set, onValue, onDisconnect, serverTimestamp as rtdbTimestamp } from 'https://www.gstatic.com/firebasejs/12.8.0/firebase-database.js';
 import { firebaseConfig, recaptchaSiteKey } from './config.js';
 
 const firebaseApp = initializeApp(firebaseConfig);
-const db = getFirestore(firebaseApp);
+const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+const db = initializeFirestore(firebaseApp, isSafari ? {
+    experimentalForceLongPolling: true // Fix for Safari CORS issues
+} : {});
 const rtdb = getDatabase(firebaseApp);
 
 // App Check - initialized lazily to speed up initial page load
@@ -92,7 +95,7 @@ const saveYjsToFirestore = async () => {
 let yjsSaveTimeout = null;
 const debouncedYjsSave = () => {
     clearTimeout(yjsSaveTimeout);
-    yjsSaveTimeout = setTimeout(saveYjsToFirestore, 150);
+    yjsSaveTimeout = setTimeout(saveYjsToFirestore, 100);
 };
 
 // Load Yjs state from Firestore and apply to document
@@ -139,15 +142,239 @@ const subscribeToYjsUpdates = (mapId) => {
     });
 };
 
+// =============================================================================
+// Yjs Nested CRDT Helpers
+// =============================================================================
+
+// Create a Y.Map from a column object
+const createYColumn = (col) => {
+    const yCol = new Y.Map();
+    yCol.set('id', col.id);
+    yCol.set('name', col.name || '');
+    if (col.color) yCol.set('color', col.color);
+    if (col.url) yCol.set('url', col.url);
+    if (col.hidden) yCol.set('hidden', true);
+    if (col.status) yCol.set('status', col.status);
+    return yCol;
+};
+
+// Create a Y.Map from a story object
+const createYStory = (story) => {
+    const yStory = new Y.Map();
+    yStory.set('id', story.id);
+    yStory.set('name', story.name || '');
+    if (story.color) yStory.set('color', story.color);
+    if (story.url) yStory.set('url', story.url);
+    if (story.hidden) yStory.set('hidden', true);
+    if (story.status) yStory.set('status', story.status);
+    return yStory;
+};
+
+// Create a Y.Map from a slice object with nested stories structure
+const createYSlice = (slice, columns) => {
+    const ySlice = new Y.Map();
+    ySlice.set('id', slice.id);
+    ySlice.set('name', slice.name || '');
+    if (slice.separator === false) ySlice.set('separator', false);
+    if (slice.rowType) ySlice.set('rowType', slice.rowType);
+
+    // Create nested stories structure: Y.Map<columnId, Y.Array<Y.Map>>
+    const yStories = new Y.Map();
+    columns.forEach(col => {
+        const yStoryArray = new Y.Array();
+        const stories = slice.stories[col.id] || [];
+        stories.forEach(story => {
+            yStoryArray.push([createYStory(story)]);
+        });
+        yStories.set(col.id, yStoryArray);
+    });
+    ySlice.set('stories', yStories);
+
+    return ySlice;
+};
+
 // Sync state from Yjs document to local state object
 const syncFromYjs = () => {
     if (!ymap) return;
 
-    const data = ymap.toJSON();
-    if (data.name !== undefined) state.name = data.name;
-    if (data.columns) state.columns = data.columns;
-    if (data.slices) state.slices = data.slices;
+    const name = ymap.get('name');
+    if (name !== undefined) state.name = name;
+
+    // Read columns - use toJSON() for reliable conversion
+    const yColumns = ymap.get('columns');
+    if (yColumns) {
+        // Use toJSON if available (Y.Array), otherwise assume it's already plain
+        const columnsData = typeof yColumns.toJSON === 'function' ? yColumns.toJSON() : yColumns;
+        if (Array.isArray(columnsData)) {
+            state.columns = columnsData.map(col => ({
+                id: col.id,
+                name: col.name || '',
+                color: col.color || null,
+                url: col.url || null,
+                hidden: col.hidden || false,
+                status: col.status || null
+            }));
+        }
+    }
+
+    // Read slices - use toJSON() for reliable conversion
+    const ySlices = ymap.get('slices');
+    if (ySlices) {
+        // Use toJSON if available (Y.Array), otherwise assume it's already plain
+        const slicesData = typeof ySlices.toJSON === 'function' ? ySlices.toJSON() : ySlices;
+        if (Array.isArray(slicesData)) {
+            state.slices = slicesData.map(sliceData => {
+                const slice = {
+                    id: sliceData.id,
+                    name: sliceData.name || '',
+                    separator: sliceData.separator !== false,
+                    rowType: sliceData.rowType || null,
+                    stories: {}
+                };
+
+                const storiesData = sliceData.stories || {};
+                state.columns.forEach(col => {
+                    const columnStories = storiesData[col.id];
+                    if (Array.isArray(columnStories)) {
+                        slice.stories[col.id] = columnStories.map(story => ({
+                            id: story.id,
+                            name: story.name || '',
+                            color: story.color || null,
+                            url: story.url || null,
+                            hidden: story.hidden || false,
+                            status: story.status || null
+                        }));
+                    } else {
+                        slice.stories[col.id] = [];
+                    }
+                });
+
+                return slice;
+            });
+        }
+    }
+
     if (dom.boardName) dom.boardName.value = state.name;
+};
+
+// Update Y.Map properties in place (preserves CRDT benefits)
+const updateYColumn = (yCol, col) => {
+    if (yCol.get('name') !== (col.name || '')) yCol.set('name', col.name || '');
+    if (yCol.get('color') !== col.color) {
+        if (col.color) yCol.set('color', col.color);
+        else yCol.delete('color');
+    }
+    if (yCol.get('url') !== col.url) {
+        if (col.url) yCol.set('url', col.url);
+        else yCol.delete('url');
+    }
+    if (yCol.get('hidden') !== col.hidden) {
+        if (col.hidden) yCol.set('hidden', true);
+        else yCol.delete('hidden');
+    }
+    if (yCol.get('status') !== col.status) {
+        if (col.status) yCol.set('status', col.status);
+        else yCol.delete('status');
+    }
+};
+
+const updateYStory = (yStory, story) => {
+    if (yStory.get('name') !== (story.name || '')) yStory.set('name', story.name || '');
+    if (yStory.get('color') !== story.color) {
+        if (story.color) yStory.set('color', story.color);
+        else yStory.delete('color');
+    }
+    if (yStory.get('url') !== story.url) {
+        if (story.url) yStory.set('url', story.url);
+        else yStory.delete('url');
+    }
+    if (yStory.get('hidden') !== story.hidden) {
+        if (story.hidden) yStory.set('hidden', true);
+        else yStory.delete('hidden');
+    }
+    if (yStory.get('status') !== story.status) {
+        if (story.status) yStory.set('status', story.status);
+        else yStory.delete('status');
+    }
+};
+
+// Sync Y.Array incrementally - update in place when structure matches, rebuild when it doesn't
+const syncYArray = (yArray, items, getId, createFn, updateFn) => {
+    // Check if structure matches (same IDs in same order)
+    const structureMatches = items.length === yArray.length &&
+        items.every((item, i) => {
+            const yItem = yArray.get(i);
+            return yItem && typeof yItem.get === 'function' && yItem.get('id') === getId(item);
+        });
+
+    if (structureMatches) {
+        // Structure unchanged - update properties in place (preserves CRDT benefits)
+        items.forEach((item, i) => {
+            const yItem = yArray.get(i);
+            updateFn(yItem, item);
+        });
+    } else {
+        // Structure changed - rebuild array
+        // Clear existing items
+        while (yArray.length > 0) {
+            yArray.delete(0);
+        }
+        // Add items in new order
+        items.forEach(item => {
+            yArray.push([createFn(item)]);
+        });
+    }
+};
+
+// Sync stories within a slice (handles nested Y.Map<columnId, Y.Array<Y.Map>>)
+const syncSliceStories = (yStories, slice, columns) => {
+    columns.forEach(col => {
+        const stories = slice.stories[col.id] || [];
+        let yStoryArray = yStories.get(col.id);
+
+        if (!yStoryArray || typeof yStoryArray.toArray !== 'function') {
+            // Column doesn't exist in Yjs yet - create it
+            yStoryArray = new Y.Array();
+            yStories.set(col.id, yStoryArray);
+        }
+
+        syncYArray(
+            yStoryArray,
+            stories,
+            story => story.id,
+            createYStory,
+            updateYStory
+        );
+    });
+
+    // Remove columns that no longer exist
+    const columnIds = new Set(columns.map(c => c.id));
+    const keysToDelete = [];
+    yStories.forEach((_, key) => {
+        if (!columnIds.has(key)) keysToDelete.push(key);
+    });
+    keysToDelete.forEach(key => yStories.delete(key));
+};
+
+// Update slice properties and nested stories
+const updateYSlice = (ySlice, slice, columns) => {
+    if (ySlice.get('name') !== (slice.name || '')) ySlice.set('name', slice.name || '');
+    if (ySlice.get('separator') !== slice.separator) {
+        if (slice.separator === false) ySlice.set('separator', false);
+        else ySlice.delete('separator');
+    }
+    if (ySlice.get('rowType') !== slice.rowType) {
+        if (slice.rowType) ySlice.set('rowType', slice.rowType);
+        else ySlice.delete('rowType');
+    }
+
+    // Sync nested stories
+    let yStories = ySlice.get('stories');
+    if (!yStories || typeof yStories.forEach !== 'function') {
+        yStories = new Y.Map();
+        ySlice.set('stories', yStories);
+    }
+    syncSliceStories(yStories, slice, columns);
 };
 
 // Sync local state to Yjs document
@@ -156,8 +383,50 @@ const syncToYjs = () => {
 
     ydoc.transact(() => {
         ymap.set('name', state.name);
-        ymap.set('columns', state.columns);
-        ymap.set('slices', state.slices);
+
+        // Sync columns incrementally
+        let yColumns = ymap.get('columns');
+        if (!yColumns || typeof yColumns.toArray !== 'function') {
+            yColumns = new Y.Array();
+            ymap.set('columns', yColumns);
+        }
+        syncYArray(
+            yColumns,
+            state.columns,
+            col => col.id,
+            createYColumn,
+            updateYColumn
+        );
+
+        // Sync slices incrementally
+        let ySlices = ymap.get('slices');
+        if (!ySlices || typeof ySlices.toArray !== 'function') {
+            ySlices = new Y.Array();
+            ymap.set('slices', ySlices);
+        }
+
+        // Check if slice structure matches
+        const sliceStructureMatches = state.slices.length === ySlices.length &&
+            state.slices.every((slice, i) => {
+                const ySlice = ySlices.get(i);
+                return ySlice && typeof ySlice.get === 'function' && ySlice.get('id') === slice.id;
+            });
+
+        if (sliceStructureMatches) {
+            // Update slices in place
+            state.slices.forEach((slice, i) => {
+                const ySlice = ySlices.get(i);
+                updateYSlice(ySlice, slice, state.columns);
+            });
+        } else {
+            // Rebuild slices array
+            while (ySlices.length > 0) {
+                ySlices.delete(0);
+            }
+            state.slices.forEach(slice => {
+                ySlices.push([createYSlice(slice, state.columns)]);
+            });
+        }
     }, 'local');
 };
 
@@ -285,7 +554,6 @@ const STATUS_OPTIONS = {
     planned: { label: 'Planned', color: '#f97316' }
 };
 
-const DEBOUNCE_DELAY = 300;
 const ZOOM_LEVELS = [1, 0.75, 0.5, 0.25];
 
 const el = (tag, className, attrs = {}) => {
@@ -946,7 +1214,7 @@ const createTextarea = (className, placeholder, value, onChange) => {
         textarea.addEventListener('input', (e) => {
             onChange(e.target.value);
             autoResize();
-            debouncedSave();
+            saveToStorage();
         });
 
         // Auto-resize on initial render
@@ -954,7 +1222,7 @@ const createTextarea = (className, placeholder, value, onChange) => {
     } else {
         textarea.addEventListener('input', (e) => {
             onChange(e.target.value);
-            debouncedSave();
+            saveToStorage();
         });
     }
 
@@ -1283,6 +1551,35 @@ const createSliceContainer = (slice, index) => {
 // =============================================================================
 
 const render = () => {
+    // Save focused textarea before clearing DOM
+    let savedFocus = null;
+    const active = document.activeElement;
+    if (active && active.tagName === 'TEXTAREA') {
+        const card = active.closest('.story-card');
+        const step = active.closest('.step');
+        const sliceLabel = active.closest('.slice-label-container');
+
+        if (card && card.dataset.storyId) {
+            savedFocus = {
+                selector: `.story-card[data-story-id="${card.dataset.storyId}"] .story-text`,
+                selStart: active.selectionStart || 0,
+                selEnd: active.selectionEnd || 0
+            };
+        } else if (step && step.dataset.columnId) {
+            savedFocus = {
+                selector: `.step[data-column-id="${step.dataset.columnId}"] .step-text`,
+                selStart: active.selectionStart || 0,
+                selEnd: active.selectionEnd || 0
+            };
+        } else if (sliceLabel && sliceLabel.dataset.sliceId) {
+            savedFocus = {
+                selector: `.slice-label-container[data-slice-id="${sliceLabel.dataset.sliceId}"] .slice-label`,
+                selStart: active.selectionStart || 0,
+                selEnd: active.selectionEnd || 0
+            };
+        }
+    }
+
     dom.storyMap.innerHTML = '';
 
     // Separate backbone rows (Users, Activities) from release slices
@@ -1296,9 +1593,7 @@ const render = () => {
         }
     });
 
-    // Check which row types exist
-    const hasUsers = rows.some(r => r.slice.rowType === 'Users');
-    const hasActivities = rows.some(r => r.slice.rowType === 'Activities');
+    // Find specific row types
     const usersRow = rows.find(r => r.slice.rowType === 'Users');
     const activitiesRow = rows.find(r => r.slice.rowType === 'Activities');
 
@@ -1313,7 +1608,7 @@ const render = () => {
     if (activitiesRow) {
         dom.storyMap.appendChild(createSliceContainer(activitiesRow.slice, activitiesRow.index));
     } else {
-        const idx = hasUsers ? usersRow.index + 1 : 0;
+        const idx = usersRow ? usersRow.index + 1 : 0;
         dom.storyMap.appendChild(createEmptyBackboneRow('Activities', idx));
     }
 
@@ -1349,6 +1644,19 @@ const render = () => {
 
     // Refresh magnifier content (if active)
     refreshMagnifierContent();
+
+    // Restore focus if user was editing (but don't override value from state)
+    if (savedFocus) {
+        const textarea = dom.storyMap.querySelector(savedFocus.selector);
+        if (textarea) {
+            textarea.focus();
+            // Only restore cursor position, not value - value comes from synced state
+            const len = textarea.value.length;
+            const selStart = Math.min(savedFocus.selStart, len);
+            const selEnd = Math.min(savedFocus.selEnd, len);
+            textarea.setSelectionRange(selStart, selEnd);
+        }
+    }
 };
 
 // Store Sortable instances to destroy on re-render
@@ -1704,18 +2012,6 @@ const renderAndSave = () => {
     saveToStorage();
 };
 
-// Debounced save for frequent updates (e.g., typing)
-let saveTimeout = null;
-
-const debouncedSave = () => {
-    clearTimeout(saveTimeout);
-    saveTimeout = setTimeout(saveToStorage, DEBOUNCE_DELAY);
-};
-
-const flushSave = () => {
-    clearTimeout(saveTimeout);
-    saveToStorage();
-};
 
 const loadFromStorage = () => {
     const data = localStorage.getItem(STORAGE_KEY);
@@ -1775,8 +2071,6 @@ const deserialize = (data) => {
 
     state.name = data.name || '';
     state.columns = data.a.map(a => {
-        // Support both old format (string) and new format (object with n, c, u, h, st)
-        if (typeof a === 'string') return createColumn(a);
         return createColumn(a.n || '', a.c || null, sanitizeUrl(a.u), !!a.h, a.st || null);
     });
     state.slices = data.s.map(slice => {
@@ -1790,8 +2084,6 @@ const deserialize = (data) => {
         const stories = Array.isArray(slice.t) ? slice.t : [];
         state.columns.forEach((col, i) => {
             newSlice.stories[col.id] = (stories[i] || []).map(t => {
-                // Support both old format (string) and new format (object with n, c, u, h, st)
-                if (typeof t === 'string') return createStory(t);
                 return createStory(t.n || '', t.c || null, sanitizeUrl(t.u), !!t.h, t.st || null);
             });
         });
@@ -1807,7 +2099,7 @@ const deserialize = (data) => {
 const exportMap = () => {
     // Don't export from welcome screen
     if (dom.welcomeScreen.classList.contains('visible')) return;
-    flushSave();
+    saveToStorage();
     showExportModal();
 };
 
@@ -1815,7 +2107,7 @@ const importMap = (file) => {
     const isFromWelcome = !state.mapId;
 
     if (!isFromWelcome) {
-        flushSave();
+        saveToStorage();
         if (!confirmOverwrite()) return;
     }
 
@@ -1861,7 +2153,7 @@ const importFromJsonText = async (jsonText) => {
     const isFromWelcome = !state.mapId;
 
     if (!isFromWelcome) {
-        flushSave();
+        saveToStorage();
         if (!confirmOverwrite()) return;
     }
 
@@ -1950,7 +2242,7 @@ const loadSample = async (name) => {
         return startWithSample(name);
     }
 
-    flushSave();
+    saveToStorage();
     if (!confirmOverwrite()) return;
 
     try {
@@ -1966,7 +2258,7 @@ const loadSample = async (name) => {
 };
 
 const newMap = async () => {
-    flushSave();
+    saveToStorage();
     if (hasContent() && !confirm('Create a new story map?\n\nYou can return to this map using the back button.')) {
         return;
     }
@@ -1994,7 +2286,7 @@ const newMap = async () => {
 };
 
 const copyMap = async () => {
-    flushSave();
+    saveToStorage();
     if (!confirm('Copy this map?\n\nA copy will be created with a new URL.')) {
         return;
     }
@@ -2059,7 +2351,7 @@ const initEventListeners = () => {
 
     dom.boardName.addEventListener('input', (e) => {
         state.name = e.target.value;
-        debouncedSave();
+        saveToStorage();
     });
 
     dom.boardName.addEventListener('keydown', (e) => {
