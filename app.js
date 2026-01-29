@@ -1006,6 +1006,9 @@ const updateLockUI = () => {
         dom.removeLockBtn.classList.remove('visible');
         dom.readOnlyBanner.classList.add('visible');
         document.body.classList.add('read-only-mode');
+        // Disable samples and import when locked
+        dom.samplesSubmenuTrigger?.classList.add('disabled');
+        dom.importBtn?.classList.add('disabled');
     } else if (lockState.isLocked && lockState.sessionUnlocked) {
         // Locked but user has unlocked - show re-lock, update password, and remove lock
         dom.lockMapBtn.classList.remove('visible');
@@ -1014,6 +1017,9 @@ const updateLockUI = () => {
         dom.removeLockBtn.classList.add('visible');
         dom.readOnlyBanner.classList.remove('visible');
         document.body.classList.remove('read-only-mode');
+        // Enable samples and import when unlocked
+        dom.samplesSubmenuTrigger?.classList.remove('disabled');
+        dom.importBtn?.classList.remove('disabled');
     } else {
         // Not locked - show lock option only
         dom.lockMapBtn.classList.add('visible');
@@ -1023,6 +1029,9 @@ const updateLockUI = () => {
         dom.removeLockBtn.classList.remove('visible');
         dom.readOnlyBanner.classList.remove('visible');
         document.body.classList.remove('read-only-mode');
+        // Enable samples and import when not locked
+        dom.samplesSubmenuTrigger?.classList.remove('disabled');
+        dom.importBtn?.classList.remove('disabled');
     }
 };
 
@@ -3117,6 +3126,10 @@ const initEventListeners = () => {
     });
     dom.importBtn.addEventListener('click', () => {
         closeMainMenu();
+        if (lockState.isLocked && !lockState.sessionUnlocked) {
+            alert('This map is locked. Unlock it first to import.');
+            return;
+        }
         showImportModal();
     });
 
@@ -3229,6 +3242,11 @@ const initEventListeners = () => {
     dom.mainMenu.addEventListener('click', (e) => {
         const item = e.target.closest('.dropdown-item');
         if (item?.dataset.sample) {
+            if (lockState.isLocked && !lockState.sessionUnlocked) {
+                alert('This map is locked. Unlock it first to load a sample.');
+                closeMainMenu();
+                return;
+            }
             loadSample(item.dataset.sample);
             closeMainMenu();
         }

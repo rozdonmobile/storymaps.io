@@ -176,13 +176,15 @@ body {
     transition: background-color 0.1s ease;
 }
 
-.dropdown-item:hover:not(:disabled) {
+.dropdown-item:hover:not(:disabled):not(.disabled) {
     background-color: var(--color-hover-bg);
 }
 
-.dropdown-item:disabled {
+.dropdown-item:disabled,
+.dropdown-item.disabled {
     color: #9ca3af;
     cursor: not-allowed;
+    pointer-events: none;
 }
 
 .dropdown-divider {
