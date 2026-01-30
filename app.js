@@ -592,23 +592,18 @@ const clearPresence = () => {
 // Classic arrow pointer SVG path
 const CURSOR_SVG_PATH = 'M8 0L8 22L13 17L17 28L21 26L17 15L24 15Z';
 
-// Distinct colors for cursor identification (15 colors)
+// Distinct colors for cursor identification (10 colors, maximally distinct)
 const CURSOR_COLORS = [
     '#e53935', // red
-    '#8e24aa', // purple
-    '#3949ab', // indigo
-    '#00acc1', // cyan
+    '#1e88e5', // blue
     '#43a047', // green
     '#fb8c00', // orange
-    '#6d4c41', // brown
-    '#d81b60', // pink
-    '#1e88e5', // blue
-    '#ffb300', // amber
+    '#8e24aa', // purple
     '#00897b', // teal
-    '#5e35b1', // deep purple
-    '#f4511e', // deep orange
-    '#546e7a', // blue grey
-    '#c0ca33', // lime
+    '#d81b60', // pink
+    '#ffb300', // amber
+    '#6d4c41', // brown
+    '#546e7a', // slate
 ];
 
 // Get consistent color for a session ID
@@ -626,6 +621,27 @@ let cursorElements = new Map(); // sessionId -> DOM element
 let cursorUnsubscribe = null;
 let cursorThrottleTimeout = null;
 const CURSOR_THROTTLE_MS = 50;
+
+// Cursor visibility preference
+let cursorsVisible = localStorage.getItem('cursorsVisible') !== 'false'; // Default true
+
+const toggleCursorsVisibility = () => {
+    cursorsVisible = !cursorsVisible;
+    localStorage.setItem('cursorsVisible', cursorsVisible);
+    updateCursorsVisibilityUI();
+
+    // Show/hide existing cursor elements
+    const overlay = document.querySelector('.cursor-overlay');
+    if (overlay) {
+        overlay.style.display = cursorsVisible ? 'block' : 'none';
+    }
+};
+
+const updateCursorsVisibilityUI = () => {
+    if (dom.toggleCursorsText) {
+        dom.toggleCursorsText.textContent = cursorsVisible ? 'Hide External Cursors' : 'Show External Cursors';
+    }
+};
 
 // Track and broadcast cursor position
 const trackCursor = (mapId) => {
@@ -693,6 +709,7 @@ const trackCursor = (mapId) => {
     if (!cursorOverlay) {
         cursorOverlay = document.createElement('div');
         cursorOverlay.className = 'cursor-overlay';
+        cursorOverlay.style.display = cursorsVisible ? 'block' : 'none';
         dom.storyMapWrapper.appendChild(cursorOverlay);
     }
 
@@ -1514,6 +1531,9 @@ const dom = {
     exportCopyBtn: document.getElementById('exportCopyBtn'),
     exportFilename: document.getElementById('exportFilename'),
     exportDownloadBtn: document.getElementById('exportDownloadBtn'),
+    // Cursor toggle
+    toggleCursorsBtn: document.getElementById('toggleCursorsBtn'),
+    toggleCursorsText: document.getElementById('toggleCursorsText'),
     // Lock feature
     lockMapBtn: document.getElementById('lockMapBtn'),
     relockBtn: document.getElementById('relockBtn'),
@@ -3239,6 +3259,10 @@ const initEventListeners = () => {
         closeMainMenu();
         window.print();
     });
+    dom.toggleCursorsBtn?.addEventListener('click', () => {
+        closeMainMenu();
+        toggleCursorsVisibility();
+    });
     dom.importBtn.addEventListener('click', () => {
         closeMainMenu();
         if (lockState.isLocked && !lockState.sessionUnlocked) {
@@ -3548,6 +3572,7 @@ const init = async () => {
     const mapId = window.location.pathname.slice(1) || null;
 
     initEventListeners();
+    updateCursorsVisibilityUI();
 
     if (mapId) {
         // Show loading indicator while fetching from Firestore

@@ -465,6 +465,7 @@ body {
     border: none;
     outline: none;
     resize: none;
+    overflow: hidden;
     font-family: inherit;
     cursor: text;
     caret-color: #134e4a;
@@ -581,6 +582,7 @@ body {
     background: transparent;
     border: none;
     outline: none;
+    overflow: hidden;
     font-family: inherit;
     font-size: 11px;
     font-weight: 600;
@@ -778,6 +780,7 @@ body {
     border: none;
     outline: none;
     resize: none;
+    overflow: hidden;
     font-family: inherit;
     font-size: 13px;
     font-weight: 500;
@@ -1612,6 +1615,7 @@ body {
 
     .board-name {
         order: 3;
+        flex: 0 0 100%; /* Reset flex and force full width */
         width: 100%;
         max-width: none;
         margin: 0;
@@ -1632,6 +1636,33 @@ body {
 
     .story-map {
         max-width: none;
+    }
+
+    /* Welcome screen mobile fixes */
+    .welcome-screen {
+        padding: 16px 12px 20px;
+    }
+
+    .welcome-content {
+        max-width: 100%;
+    }
+
+    .welcome-learn-links {
+        gap: 8px;
+    }
+
+    .welcome-learn-card {
+        padding: 8px 10px;
+        font-size: 11px;
+    }
+
+    .welcome-learn-icon {
+        width: 28px;
+        height: 28px;
+    }
+
+    .welcome-learn-book {
+        height: 38px;
     }
 
     .steps-row-spacer,
@@ -2274,7 +2305,9 @@ body {
     display: block;
 }
 
-.lock-menu-icon {
+.menu-icon,
+.lock-menu-icon,
+.cursor-toggle-icon {
     margin-right: 6px;
 }
 

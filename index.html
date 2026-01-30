@@ -24,6 +24,11 @@
     <meta name="twitter:description" content="Visualise your product backlog and plan releases with free collaborative story mapping.">
     <meta name="twitter:image" content="https://storymaps.io/resources/screenshot.png">
 
+    <!-- Preconnect to Firebase for faster loading -->
+    <link rel="preconnect" href="https://firestore.googleapis.com">
+    <link rel="preconnect" href="https://www.gstatic.com" crossorigin>
+    <link rel="preconnect" href="https://apis.google.com">
+
     <!-- Structured Data -->
     <script type="application/ld+json">
     {
@@ -81,10 +86,10 @@
             <div class="dropdown">
                 <button class="btn btn-secondary btn-icon" id="menuBtn" title="Menu" aria-label="Menu">&#9776;</button>
                 <div class="dropdown-menu" id="mainMenu">
-                    <button class="dropdown-item" id="newMapBtn">New</button>
-                    <button class="dropdown-item" id="copyExistingBtn">Copy existing</button>
+                    <button class="dropdown-item" id="newMapBtn"><span class="menu-icon">📄</span> New</button>
+                    <button class="dropdown-item" id="copyExistingBtn"><span class="menu-icon">📑</span> Copy this map</button>
                     <div class="dropdown-submenu">
-                        <button class="dropdown-item dropdown-submenu-trigger" id="samplesSubmenuTrigger">Samples</button>
+                        <button class="dropdown-item dropdown-submenu-trigger" id="samplesSubmenuTrigger"><span><span class="menu-icon">📚</span> Samples</span></button>
                         <div class="dropdown-submenu-content" id="samplesSubmenu">
                             <button class="dropdown-item" data-sample="tutorial">Learn User Story Mapping</button>
                             <button class="dropdown-item" data-sample="donation-form">Add Donation Form</button>
@@ -95,9 +100,13 @@
                         </div>
                     </div>
                     <div class="dropdown-divider"></div>
-                    <button class="dropdown-item" id="importMap">Import</button>
-                    <button class="dropdown-item" id="exportMap">Export</button>
-                    <button class="dropdown-item" id="printMap">Print</button>
+                    <button class="dropdown-item" id="importMap"><span class="menu-icon">📥</span> Import</button>
+                    <button class="dropdown-item" id="exportMap"><span class="menu-icon">📤</span> Export</button>
+                    <button class="dropdown-item" id="printMap"><span class="menu-icon">🖨️</span> Print</button>
+                    <div class="dropdown-divider"></div>
+                    <button class="dropdown-item" id="toggleCursorsBtn">
+                        <span class="cursor-toggle-icon">👁</span> <span id="toggleCursorsText">Hide External Cursors</span>
+                    </button>
                     <div class="dropdown-divider" id="lockDivider"></div>
                     <button class="dropdown-item" id="lockMapBtn">
                         <span class="lock-menu-icon">🔓</span> Lock Map
@@ -305,7 +314,7 @@
                     <label for="lockPasswordInput">Password</label>
                     <input type="password" id="lockPasswordInput" placeholder="Enter password" autocomplete="off">
                 </div>
-                <p class="lock-modal-note" id="lockModalNote">Keep your password safe — there's no recovery option. If you lose it, you can still use <strong>Menu → Copy existing</strong> to create a new editable copy of the map.</p>
+                <p class="lock-modal-note" id="lockModalNote">Keep your password safe — there's no recovery option. If you lose it, you can still use <strong>Menu → Copy this map</strong> to create a new editable copy.</p>
                 <div class="lock-modal-actions">
                     <button class="btn btn-secondary" id="lockModalCancel">Cancel</button>
                     <button class="btn" id="lockModalConfirm">Lock Map</button>
