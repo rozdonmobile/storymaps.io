@@ -71,6 +71,10 @@ const ensureAppCheck = async () => {
         const { initializeAppCheck, ReCaptchaV3Provider, getToken } = await import(
             'https://www.gstatic.com/firebasejs/12.8.0/firebase-app-check.js'
         );
+        // Use debug token for localhost development (register token in Firebase Console → App Check)
+        if (location.hostname === 'localhost') {
+            self.FIREBASE_APPCHECK_DEBUG_TOKEN = true;
+        }
         appCheckInstance = initializeAppCheck(firebaseApp, {
             provider: new ReCaptchaV3Provider(recaptchaSiteKey),
             isTokenAutoRefreshEnabled: true
@@ -157,6 +161,7 @@ const saveYjsToFirestore = async () => {
 
         await setDoc(doc(db, 'maps', state.mapId), {
             yjsState: base64State,
+            name: state.name || '',
             updatedAt: serverTimestamp(),
             updatedBy: getSessionId()
         }, { merge: true });
@@ -684,7 +689,8 @@ const trackCursor = (mapId) => {
             set(cursorRef, {
                 x: Math.round(x),
                 y: Math.round(y),
-                color: getCursorColor(sessionId)
+                color: getCursorColor(sessionId),
+                lastSeen: Date.now()
             });
 
             cursorThrottleTimeout = setTimeout(() => {
@@ -732,9 +738,12 @@ const trackCursor = (mapId) => {
         const mapOffsetTop = dom.storyMap.offsetTop;
 
         // Update/create cursors for active users
+        const now = Date.now();
+        const STALE_THRESHOLD_MS = 2 * 60 * 60 * 1000; // 2 hours
         for (const [sid, data] of Object.entries(cursors)) {
-            // Skip our own cursor
+            // Skip our own cursor, missing data, or stale cursors (onDisconnect failed)
             if (sid === sessionId || !data) continue;
+            if (!data.lastSeen || now - data.lastSeen > STALE_THRESHOLD_MS) continue;
 
             let cursorEl = cursorElements.get(sid);
 
@@ -893,7 +902,7 @@ const lockMap = async (password) => {
         updateEditability();
 
         // Show confirmation to the user who locked it
-        alert('Map locked. Others will need the password to edit, but you can continue editing in this session.');
+        alert('Map is now read-only. Others will need the password to edit, but you can continue editing in this session.');
     } catch (err) {
         console.error('Failed to lock map:', err);
         alert('Failed to lock map. Please try again.');
@@ -1046,7 +1055,7 @@ const updateLockUI = () => {
     } else {
         // Not locked - show lock option only
         dom.lockMapBtn.classList.add('visible');
-        dom.lockMapBtn.innerHTML = '<span class="lock-menu-icon">🔓</span> Lock Map';
+        dom.lockMapBtn.innerHTML = '<span class="lock-menu-icon">🔓</span> Lock Map (Read-only)';
         dom.relockBtn.classList.remove('visible');
         dom.updatePasswordBtn.classList.remove('visible');
         dom.removeLockBtn.classList.remove('visible');
@@ -1093,17 +1102,17 @@ const showLockModal = (mode) => {
 
     if (mode === 'lock') {
         dom.lockModalTitle.textContent = 'Lock This Map';
-        dom.lockModalDescription.textContent = 'Create a password to lock this map. Anyone with the password can unlock it to edit.';
+        dom.lockModalDescription.textContent = 'Create a password to make this map read-only. Anyone with the password can unlock it to edit.';
         dom.lockModalConfirm.textContent = 'Lock Map';
         if (noteEl) noteEl.style.display = 'block';
     } else if (mode === 'relock') {
-        dom.lockModalTitle.textContent = 'Re-lock With New Password';
-        dom.lockModalDescription.textContent = 'Set a new password for this map. The old password will no longer work.';
+        dom.lockModalTitle.textContent = 'Change Password';
+        dom.lockModalDescription.textContent = 'Set a new password for this read-only map. The old password will no longer work.';
         dom.lockModalConfirm.textContent = 'Set New Password';
         if (noteEl) noteEl.style.display = 'block';
     } else {
         dom.lockModalTitle.textContent = 'Unlock This Map';
-        dom.lockModalDescription.textContent = 'Enter the password to unlock this map and enable editing.';
+        dom.lockModalDescription.textContent = 'This map is read-only. Enter the password to unlock it and enable editing.';
         dom.lockModalConfirm.textContent = 'Unlock';
         if (noteEl) noteEl.style.display = 'none';
     }
@@ -1203,7 +1212,7 @@ const initLockListeners = () => {
     if (dom.removeLockBtn) {
         dom.removeLockBtn.addEventListener('click', () => {
             closeMainMenu();
-            if (confirm('Remove the lock from this map? Anyone will be able to edit it.')) {
+            if (confirm('Remove read-only lock? Anyone with the link will be able to edit this map.')) {
                 removeLock();
             }
         });
@@ -1263,18 +1272,25 @@ const isValidUrl = (url) => {
 };
 
 const CARD_COLORS = {
+    red: '#fca5a5',
+    rose: '#fecdd3',
+    orange: '#fdba74',
+    amber: '#fcd34d',
     yellow: '#fef08a',
+    lime: '#bef264',
     green: '#86efac',
     teal: '#5eead4',
+    cyan: '#a5f3fc',
     blue: '#93c5fd',
-    pink: '#fda4af',
+    indigo: '#a5b4fc',
     purple: '#d8b4fe',
-    orange: '#fed7aa'
+    fuchsia: '#f0abfc',
+    pink: '#f9a8d4'
 };
 
 // Default colors for card types (references CARD_COLORS values)
 const DEFAULT_CARD_COLORS = {
-    Users: '#fda4af',    // pink
+    Users: '#fca5a5',       // red
     Activities: '#93c5fd',  // blue
     story: '#fef08a'        // yellow
 };
@@ -1313,6 +1329,7 @@ const el = (tag, className, attrs = {}) => {
     });
     return element;
 };
+window.el = el;
 
 // =============================================================================
 // State
@@ -1324,6 +1341,7 @@ const state = {
     columns: [],
     slices: []
 };
+window.state = state;
 
 // Undo/Redo stack (in-memory, lost on refresh)
 const undoStack = [];
@@ -1459,9 +1477,9 @@ const initState = () => {
     state.name = '';
     state.columns = [column];
     state.slices = [
-        { id: generateId(), name: '', separator: false, rowType: 'Users', stories: { [column.id]: [createStory('User Type', '#fda4af')] } },
+        { id: generateId(), name: '', separator: false, rowType: 'Users', stories: { [column.id]: [createStory('User Type', '#fca5a5')] } },
         { id: generateId(), name: '', separator: false, rowType: 'Activities', stories: { [column.id]: [createStory('New Activity', '#93c5fd')] } },
-        { id: generateId(), name: '', separator: true, rowType: null, stories: { [column.id]: [createStory('New Task')] } }
+        { id: generateId(), name: '', separator: true, rowType: null, stories: { [column.id]: [createStory('New Task', '#fef08a')] } }
     ];
 };
 
@@ -1515,6 +1533,8 @@ const dom = {
     storyMapWrapper: document.getElementById('storyMapWrapper'),
     samplesSubmenuTrigger: document.getElementById('samplesSubmenuTrigger'),
     samplesSubmenu: document.getElementById('samplesSubmenu'),
+    exportSubmenuTrigger: document.getElementById('exportSubmenuTrigger'),
+    exportSubmenu: document.getElementById('exportSubmenu'),
     zoomControls: document.getElementById('zoomControls'),
     magnifierToggle: document.getElementById('magnifierToggle'),
     loadingIndicator: document.getElementById('loadingIndicator'),
@@ -1531,6 +1551,76 @@ const dom = {
     exportCopyBtn: document.getElementById('exportCopyBtn'),
     exportFilename: document.getElementById('exportFilename'),
     exportDownloadBtn: document.getElementById('exportDownloadBtn'),
+    // Jira export
+    exportJiraBtn: document.getElementById('exportJiraBtn'),
+    jiraExportModal: document.getElementById('jiraExportModal'),
+    jiraExportModalClose: document.getElementById('jiraExportModalClose'),
+    jiraProjectName: document.getElementById('jiraProjectName'),
+    jiraProjectKey: document.getElementById('jiraProjectKey'),
+    jiraProjectType: document.getElementById('jiraProjectType'),
+    jiraExportSlices: document.getElementById('jiraExportSlices'),
+    jiraExportEpics: document.getElementById('jiraExportEpics'),
+    jiraExportCount: document.getElementById('jiraExportCount'),
+    jiraExportCancel: document.getElementById('jiraExportCancel'),
+    jiraExportDownload: document.getElementById('jiraExportDownload'),
+    jiraStatusNone: document.getElementById('jiraStatusNone'),
+    jiraStatusDone: document.getElementById('jiraStatusDone'),
+    jiraStatusInProgress: document.getElementById('jiraStatusInProgress'),
+    jiraStatusPlanned: document.getElementById('jiraStatusPlanned'),
+    jiraFilterNone: document.getElementById('jiraFilterNone'),
+    jiraFilterPlanned: document.getElementById('jiraFilterPlanned'),
+    jiraFilterInProgress: document.getElementById('jiraFilterInProgress'),
+    jiraFilterDone: document.getElementById('jiraFilterDone'),
+    // Phabricator export
+    exportPhabBtn: document.getElementById('exportPhabBtn'),
+    phabExportModal: document.getElementById('phabExportModal'),
+    phabExportModalClose: document.getElementById('phabExportModalClose'),
+    phabExportTitle: document.getElementById('phabExportTitle'),
+    phabStage1: document.getElementById('phabStage1'),
+    phabStage2: document.getElementById('phabStage2'),
+    phabExportSlices: document.getElementById('phabExportSlices'),
+    phabExportEpics: document.getElementById('phabExportEpics'),
+    phabExportCount: document.getElementById('phabExportCount'),
+    phabFilterNone: document.getElementById('phabFilterNone'),
+    phabFilterPlanned: document.getElementById('phabFilterPlanned'),
+    phabFilterInProgress: document.getElementById('phabFilterInProgress'),
+    phabFilterDone: document.getElementById('phabFilterDone'),
+    phabExportCancel: document.getElementById('phabExportCancel'),
+    phabExportNext: document.getElementById('phabExportNext'),
+    phabExportBack: document.getElementById('phabExportBack'),
+    phabExportDone: document.getElementById('phabExportDone'),
+    phabInstanceUrl: document.getElementById('phabInstanceUrl'),
+    phabApiToken: document.getElementById('phabApiToken'),
+    phabTags: document.getElementById('phabTags'),
+    phabImportFunction: document.getElementById('phabImportFunction'),
+    phabImportCall: document.getElementById('phabImportCall'),
+    phabCopyFunction: document.getElementById('phabCopyFunction'),
+    phabCopyCall: document.getElementById('phabCopyCall'),
+    // Jira API export
+    exportJiraApiBtn: document.getElementById('exportJiraApiBtn'),
+    jiraApiExportModal: document.getElementById('jiraApiExportModal'),
+    jiraApiExportModalClose: document.getElementById('jiraApiExportModalClose'),
+    jiraApiExportTitle: document.getElementById('jiraApiExportTitle'),
+    jiraApiStage1: document.getElementById('jiraApiStage1'),
+    jiraApiStage2: document.getElementById('jiraApiStage2'),
+    jiraApiExportSlices: document.getElementById('jiraApiExportSlices'),
+    jiraApiExportEpics: document.getElementById('jiraApiExportEpics'),
+    jiraApiExportCount: document.getElementById('jiraApiExportCount'),
+    jiraApiFilterNone: document.getElementById('jiraApiFilterNone'),
+    jiraApiFilterPlanned: document.getElementById('jiraApiFilterPlanned'),
+    jiraApiFilterInProgress: document.getElementById('jiraApiFilterInProgress'),
+    jiraApiFilterDone: document.getElementById('jiraApiFilterDone'),
+    jiraApiExportCancel: document.getElementById('jiraApiExportCancel'),
+    jiraApiExportNext: document.getElementById('jiraApiExportNext'),
+    jiraApiExportBack: document.getElementById('jiraApiExportBack'),
+    jiraApiExportDone: document.getElementById('jiraApiExportDone'),
+    jiraApiEmail: document.getElementById('jiraApiEmail'),
+    jiraApiToken: document.getElementById('jiraApiToken'),
+    jiraApiProjectKey: document.getElementById('jiraApiProjectKey'),
+    jiraApiImportFunction: document.getElementById('jiraApiImportFunction'),
+    jiraApiImportCall: document.getElementById('jiraApiImportCall'),
+    jiraApiCopyFunction: document.getElementById('jiraApiCopyFunction'),
+    jiraApiCopyCall: document.getElementById('jiraApiCopyCall'),
     // Cursor toggle
     toggleCursorsBtn: document.getElementById('toggleCursorsBtn'),
     toggleCursorsText: document.getElementById('toggleCursorsText'),
@@ -1549,12 +1639,16 @@ const dom = {
     lockModalConfirm: document.getElementById('lockModalConfirm'),
     readOnlyBanner: document.getElementById('readOnlyBanner')
 };
+window.dom = dom;
 
 // Menu helpers
 const closeMainMenu = () => {
     dom.mainMenu.classList.remove('visible');
     dom.samplesSubmenu.classList.remove('visible');
     dom.samplesSubmenuTrigger.classList.remove('expanded');
+    dom.exportSubmenu.classList.remove('visible');
+    dom.exportSubmenuTrigger.classList.remove('expanded');
+    document.body.classList.remove('main-menu-open');
 };
 
 const closeAllOptionsMenus = () => {
@@ -1871,10 +1965,11 @@ const createOptionsMenu = (item, colors, onDelete, deleteMessage, onColorChange,
     const colorOption = el('div', 'options-item options-color');
     colorOption.appendChild(el('span', null, { text: 'Color' }));
     const colorSwatches = el('div', 'color-swatches');
+    const itemColor = item.color?.toLowerCase();
     Object.entries(colors).forEach(([name, hex]) => {
         const swatch = el('button', 'color-swatch', { title: name });
         swatch.style.backgroundColor = hex;
-        if (item.color === hex) swatch.classList.add('selected');
+        if (itemColor === hex.toLowerCase()) swatch.classList.add('selected');
         swatch.addEventListener('click', (e) => {
             e.stopPropagation();
             onColorChange(hex);
@@ -2108,24 +2203,7 @@ const createColumnCard = (column) => {
     return card;
 };
 
-const createStoryPlaceholder = (story) => {
-    const placeholder = el('div', 'story-placeholder', { dataStoryId: story.id, title: 'Click to show card' });
-
-    // Click to show the card
-    placeholder.addEventListener('click', () => {
-        story.hidden = false;
-        renderAndSave();
-    });
-
-    return placeholder;
-};
-
-const createStoryCard = (story, columnId, sliceId, isBackboneRow = false) => {
-    // Show placeholder for hidden stories in backbone rows
-    if (story.hidden && isBackboneRow) {
-        return createStoryPlaceholder(story);
-    }
-
+const createStoryCard = (story, columnId, sliceId, isBackboneRow = false, rowType = null) => {
     const card = el('div', 'story-card', {
         dataStoryId: story.id,
         dataColumnId: columnId,
@@ -2133,14 +2211,16 @@ const createStoryCard = (story, columnId, sliceId, isBackboneRow = false) => {
     });
     if (story.color) card.style.backgroundColor = story.color;
 
-    const placeholderText = isBackboneRow ? 'Card...' : 'Task...';
+    let placeholderText = 'Task...';
+    if (rowType === 'Users') {
+        placeholderText = 'e.g. admin, customer, client';
+    } else if (isBackboneRow) {
+        placeholderText = 'Card...';
+    }
     const textarea = createTextarea('story-text', placeholderText, story.name,
         (val) => story.name = val);
 
-    // For backbone rows, delete just hides; for regular slices, delete removes
-    const onDelete = isBackboneRow
-        ? () => { story.hidden = true; renderAndSave(); }
-        : () => deleteStory(columnId, sliceId, story.id);
+    const onDelete = () => deleteStory(columnId, sliceId, story.id);
     const deleteMessage = isBackboneRow
         ? `Delete "${story.name || 'this card'}"?`
         : `Delete "${story.name || 'this task'}"?`;
@@ -2192,7 +2272,7 @@ const createStoryColumn = (col, slice) => {
     if (!slice.stories[col.id]) slice.stories[col.id] = [];
 
     slice.stories[col.id].forEach(story => {
-        columnEl.appendChild(createStoryCard(story, col.id, slice.id, isBackboneRow));
+        columnEl.appendChild(createStoryCard(story, col.id, slice.id, isBackboneRow, slice.rowType));
     });
 
     // For backbone rows with no cards, make column clickable to add a card
@@ -2205,9 +2285,14 @@ const createStoryColumn = (col, slice) => {
         });
     }
 
-    const addBtn = el('button', 'btn-add-story', { text: '+' });
-    addBtn.addEventListener('click', () => addStory(col.id, slice.id));
-    columnEl.appendChild(addBtn);
+    const hasCards = slice.stories[col.id].length > 0;
+    if ((!isBackboneRow || hasCards) && slice.rowType !== 'Activities') {
+        let btnText = '+';
+        if (hasCards && slice.rowType === 'Users') btnText = '+ user';
+        const addBtn = el('button', 'btn-add-story', { text: btnText });
+        addBtn.addEventListener('click', () => addStory(col.id, slice.id));
+        columnEl.appendChild(addBtn);
+    }
 
     return columnEl;
 };
@@ -2373,12 +2458,14 @@ const createSliceContainer = (slice, index) => {
             labelContainer.appendChild(label);
         }
 
-        // Delete button for rows
-        const deleteBtn = createDeleteBtn(
-            () => deleteSlice(slice.id),
-            `Delete the ${slice.rowType || 'row'} row and all its cards?`
-        );
-        labelContainer.appendChild(deleteBtn);
+        // Delete button for rows (not for Users or Activities)
+        if (slice.rowType !== 'Users' && slice.rowType !== 'Activities') {
+            const deleteBtn = createDeleteBtn(
+                () => deleteSlice(slice.id),
+                `Delete the ${slice.rowType || 'row'} row and all its cards?`
+            );
+            labelContainer.appendChild(deleteBtn);
+        }
 
         container.appendChild(labelContainer);
     }
@@ -2737,11 +2824,12 @@ const addStory = (columnId, sliceId) => {
 
     pushUndo();
 
-    // Set default color based on row type
-    const defaultColor = slice.rowType ? DEFAULT_CARD_COLORS[slice.rowType] : null;
-
     slice.stories[columnId] = slice.stories[columnId] || [];
-    slice.stories[columnId].push(createStory('', defaultColor));
+
+    // Use default color based on row type (yellow for regular tasks)
+    const color = DEFAULT_CARD_COLORS[slice.rowType] || DEFAULT_CARD_COLORS.story;
+
+    slice.stories[columnId].push(createStory('', color));
     renderAndSave();
 
     // Scroll to new card after layout completes
@@ -3081,6 +3169,7 @@ const sanitizeFilename = (name) => {
         .substring(0, 200)                       // Limit length
         || 'story-map';                          // Fallback if empty
 };
+window.sanitizeFilename = sanitizeFilename;
 
 const showExportModal = () => {
     dom.exportModal.classList.add('visible');
@@ -3117,6 +3206,7 @@ const downloadExportFile = () => {
     URL.revokeObjectURL(url);
     hideExportModal();
 };
+
 
 const loadSample = async (name) => {
     // If on welcome screen (no map yet), use startWithSample instead
@@ -3257,7 +3347,10 @@ const initEventListeners = () => {
     });
     dom.printBtn.addEventListener('click', () => {
         closeMainMenu();
+        const originalTitle = document.title;
+        document.title = sanitizeFilename(state.name || 'story-map');
         window.print();
+        document.title = originalTitle;
     });
     dom.toggleCursorsBtn?.addEventListener('click', () => {
         closeMainMenu();
@@ -3266,7 +3359,7 @@ const initEventListeners = () => {
     dom.importBtn.addEventListener('click', () => {
         closeMainMenu();
         if (lockState.isLocked && !lockState.sessionUnlocked) {
-            alert('This map is locked. Unlock it first to import.');
+            alert('This map is read-only. Unlock it first to import.');
             return;
         }
         showImportModal();
@@ -3328,6 +3421,151 @@ const initEventListeners = () => {
     dom.exportCopyBtn.addEventListener('click', copyExportJson);
     dom.exportDownloadBtn.addEventListener('click', downloadExportFile);
 
+    // Jira Export Modal
+    dom.exportJiraBtn.addEventListener('click', () => {
+        closeMainMenu();
+        showJiraExportModal();
+    });
+    dom.jiraExportModalClose.addEventListener('click', confirmCloseJiraExportModal);
+    dom.jiraExportModal.addEventListener('click', (e) => {
+        if (e.target === dom.jiraExportModal) confirmCloseJiraExportModal();
+    });
+    dom.jiraExportCancel.addEventListener('click', confirmCloseJiraExportModal);
+    dom.jiraExportDownload.addEventListener('click', () => {
+        downloadJiraCsv();
+    });
+    // Update task statuses when mapping inputs change
+    [dom.jiraStatusNone, dom.jiraStatusPlanned, dom.jiraStatusInProgress, dom.jiraStatusDone].forEach(input => {
+        input.addEventListener('input', populateJiraExportEpics);
+    });
+    // Status filter checkboxes
+    const statusFilters = [
+        { el: dom.jiraFilterNone, status: 'none' },
+        { el: dom.jiraFilterPlanned, status: 'planned' },
+        { el: dom.jiraFilterInProgress, status: 'in-progress' },
+        { el: dom.jiraFilterDone, status: 'done' }
+    ];
+    statusFilters.forEach(({ el: checkbox, status }) => {
+        checkbox.addEventListener('change', (e) => {
+            const label = checkbox.closest('label');
+            if (e.target.checked) {
+                jiraExportState.selectedStatuses.add(status);
+                label.classList.add('checked');
+            } else {
+                jiraExportState.selectedStatuses.delete(status);
+                label.classList.remove('checked');
+            }
+            populateJiraExportEpics();
+        });
+    });
+
+    // Phabricator Export Modal
+    dom.exportPhabBtn.addEventListener('click', () => {
+        if (dom.exportPhabBtn.disabled) return;
+        closeMainMenu();
+        showPhabExportModal();
+    });
+    dom.phabExportModalClose.addEventListener('click', confirmClosePhabModal);
+    dom.phabExportModal.addEventListener('click', (e) => {
+        if (e.target === dom.phabExportModal) confirmClosePhabModal();
+    });
+    dom.phabExportCancel.addEventListener('click', confirmClosePhabModal);
+    dom.phabExportNext.addEventListener('click', showPhabStage2);
+    dom.phabExportBack.addEventListener('click', showPhabStage1);
+    dom.phabExportDone.addEventListener('click', hidePhabExportModal);
+    dom.phabCopyFunction.addEventListener('click', () => {
+        copyPhabCode(dom.phabImportFunction, dom.phabCopyFunction);
+    });
+    dom.phabCopyCall.addEventListener('click', () => {
+        copyPhabCode(dom.phabImportCall, dom.phabCopyCall);
+    });
+    document.getElementById('phabTokenHelpLink')?.addEventListener('click', (e) => {
+        e.preventDefault();
+        alert('To get your API token:\n\n1. Click your profile picture in Phabricator\n2. Go to Settings\n3. Click "Conduit API Tokens"\n4. Click "Generate Token"');
+    });
+    dom.phabInstanceUrl.addEventListener('input', () => {
+        // Update the function code when URL changes
+        dom.phabImportFunction.textContent = generatePhabImportFunction();
+    });
+    dom.phabApiToken.addEventListener('input', () => {
+        // Update the import call when token changes
+        dom.phabImportCall.textContent = generatePhabImportCall();
+    });
+    dom.phabTags.addEventListener('input', () => {
+        // Update the import call when tags change
+        dom.phabImportCall.textContent = generatePhabImportCall();
+    });
+    // Phabricator status filter checkboxes
+    const phabStatusFilters = [
+        { el: dom.phabFilterNone, status: 'none' },
+        { el: dom.phabFilterPlanned, status: 'planned' },
+        { el: dom.phabFilterInProgress, status: 'in-progress' },
+        { el: dom.phabFilterDone, status: 'done' }
+    ];
+    phabStatusFilters.forEach(({ el: checkbox, status }) => {
+        checkbox.addEventListener('change', (e) => {
+            const label = checkbox.closest('label');
+            if (e.target.checked) {
+                phabExportState.selectedStatuses.add(status);
+                label.classList.add('checked');
+            } else {
+                phabExportState.selectedStatuses.delete(status);
+                label.classList.remove('checked');
+            }
+            populatePhabExportEpics();
+        });
+    });
+
+    // Jira API Export Modal
+    dom.exportJiraApiBtn.addEventListener('click', () => {
+        if (dom.exportJiraApiBtn.disabled) return;
+        closeMainMenu();
+        showJiraApiExportModal();
+    });
+    dom.jiraApiExportModalClose.addEventListener('click', confirmCloseJiraApiModal);
+    dom.jiraApiExportModal.addEventListener('click', (e) => {
+        if (e.target === dom.jiraApiExportModal) confirmCloseJiraApiModal();
+    });
+    dom.jiraApiExportCancel.addEventListener('click', confirmCloseJiraApiModal);
+    dom.jiraApiExportNext.addEventListener('click', showJiraApiStage2);
+    dom.jiraApiExportBack.addEventListener('click', showJiraApiStage1);
+    dom.jiraApiExportDone.addEventListener('click', hideJiraApiExportModal);
+    dom.jiraApiCopyFunction.addEventListener('click', () => {
+        copyPhabCode(dom.jiraApiImportFunction, dom.jiraApiCopyFunction);
+    });
+    dom.jiraApiCopyCall.addEventListener('click', () => {
+        copyPhabCode(dom.jiraApiImportCall, dom.jiraApiCopyCall);
+    });
+    dom.jiraApiEmail.addEventListener('input', () => {
+        dom.jiraApiImportCall.textContent = generateJiraApiImportCall();
+    });
+    dom.jiraApiToken.addEventListener('input', () => {
+        dom.jiraApiImportCall.textContent = generateJiraApiImportCall();
+    });
+    dom.jiraApiProjectKey.addEventListener('input', () => {
+        dom.jiraApiImportCall.textContent = generateJiraApiImportCall();
+    });
+    // Jira API status filter checkboxes
+    const jiraApiStatusFilters = [
+        { el: dom.jiraApiFilterNone, status: 'none' },
+        { el: dom.jiraApiFilterPlanned, status: 'planned' },
+        { el: dom.jiraApiFilterInProgress, status: 'in-progress' },
+        { el: dom.jiraApiFilterDone, status: 'done' }
+    ];
+    jiraApiStatusFilters.forEach(({ el: checkbox, status }) => {
+        checkbox.addEventListener('change', (e) => {
+            const label = checkbox.closest('label');
+            if (e.target.checked) {
+                jiraApiExportState.selectedStatuses.add(status);
+                label.classList.add('checked');
+            } else {
+                jiraApiExportState.selectedStatuses.delete(status);
+                label.classList.remove('checked');
+            }
+            populateJiraApiExportEpics();
+        });
+    });
+
     // Share button - copy URL to clipboard
     dom.shareBtn.addEventListener('click', async () => {
         const url = window.location.href;
@@ -3363,10 +3601,11 @@ const initEventListeners = () => {
     dom.menuBtn.addEventListener('click', (e) => {
         e.stopPropagation();
         dom.mainMenu.classList.toggle('visible');
+        document.body.classList.toggle('main-menu-open', dom.mainMenu.classList.contains('visible'));
         // Disable certain options when on welcome screen (no map loaded)
         const onMap = !dom.welcomeScreen.classList.contains('visible');
         dom.copyExistingBtn.disabled = !onMap;
-        dom.exportBtn.disabled = !onMap;
+        dom.exportSubmenuTrigger.disabled = !onMap;
         dom.printBtn.disabled = !onMap;
     });
 
@@ -3375,6 +3614,19 @@ const initEventListeners = () => {
         e.stopPropagation();
         dom.samplesSubmenuTrigger.classList.toggle('expanded');
         dom.samplesSubmenu.classList.toggle('visible');
+        // Close export submenu when opening samples
+        dom.exportSubmenu.classList.remove('visible');
+        dom.exportSubmenuTrigger.classList.remove('expanded');
+    });
+
+    // Export submenu toggle
+    dom.exportSubmenuTrigger.addEventListener('click', (e) => {
+        e.stopPropagation();
+        dom.exportSubmenuTrigger.classList.toggle('expanded');
+        dom.exportSubmenu.classList.toggle('visible');
+        // Close samples submenu when opening export
+        dom.samplesSubmenu.classList.remove('visible');
+        dom.samplesSubmenuTrigger.classList.remove('expanded');
     });
 
     // Handle clicks on sample items in main menu
@@ -3382,7 +3634,7 @@ const initEventListeners = () => {
         const item = e.target.closest('.dropdown-item');
         if (item?.dataset.sample) {
             if (lockState.isLocked && !lockState.sessionUnlocked) {
-                alert('This map is locked. Unlock it first to load a sample.');
+                alert('This map is read-only. Unlock it first to load a sample.');
                 closeMainMenu();
                 return;
             }
@@ -3415,6 +3667,8 @@ const initEventListeners = () => {
             closeAllOptionsMenus();
             hideImportModal();
             hideExportModal();
+            hideJiraExportModal();
+            hidePhabExportModal();
             if (magnifierEnabled) {
                 magnifierEnabled = false;
                 dom.magnifierToggle.innerHTML = '&#128269;';

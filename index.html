@@ -101,7 +101,15 @@
                     </div>
                     <div class="dropdown-divider"></div>
                     <button class="dropdown-item" id="importMap"><span class="menu-icon">📥</span> Import</button>
-                    <button class="dropdown-item" id="exportMap"><span class="menu-icon">📤</span> Export</button>
+                    <div class="dropdown-submenu">
+                        <button class="dropdown-item dropdown-submenu-trigger" id="exportSubmenuTrigger"><span><span class="menu-icon">📤</span> Export</span></button>
+                        <div class="dropdown-submenu-content" id="exportSubmenu">
+                            <button class="dropdown-item" id="exportMap"><span class="menu-icon">{ }</span> To JSON</button>
+                            <button class="dropdown-item" id="exportJiraApiBtn"><span class="menu-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="#0052CC" style="vertical-align: -2px;"><path d="M11.571 11.513H0a5.218 5.218 0 0 0 5.232 5.215h2.13v2.057A5.215 5.215 0 0 0 12.575 24V12.518a1.005 1.005 0 0 0-1.005-1.005zm5.723-5.756H5.736a5.215 5.215 0 0 0 5.215 5.214h2.129v2.058a5.218 5.218 0 0 0 5.215 5.214V6.758a1.001 1.001 0 0 0-1.001-1.001zM23.013 0H11.455a5.215 5.215 0 0 0 5.215 5.215h2.129v2.057A5.215 5.215 0 0 0 24 12.483V1.005A1.005 1.005 0 0 0 23.013 0z"/></svg></span> To Jira Simple API <span class="menu-badge">New</span></button>
+                            <button class="dropdown-item" id="exportJiraBtn"><span class="menu-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="#0052CC" style="vertical-align: -2px;"><path d="M11.571 11.513H0a5.218 5.218 0 0 0 5.232 5.215h2.13v2.057A5.215 5.215 0 0 0 12.575 24V12.518a1.005 1.005 0 0 0-1.005-1.005zm5.723-5.756H5.736a5.215 5.215 0 0 0 5.215 5.214h2.129v2.058a5.218 5.218 0 0 0 5.215 5.214V6.758a1.001 1.001 0 0 0-1.001-1.001zM23.013 0H11.455a5.215 5.215 0 0 0 5.215 5.215h2.129v2.057A5.215 5.215 0 0 0 24 12.483V1.005A1.005 1.005 0 0 0 23.013 0z"/></svg></span> To Jira CSV <span class="menu-badge">New</span></button>
+                            <button class="dropdown-item" id="exportPhabBtn"><span class="menu-icon"><svg width="14" height="14" viewBox="0 0 592 592" style="vertical-align: -2px;"><path fill="#069" d="M592.2,51.8V0H329.5C329.2,181.6,181.9,328.8.2,328.9V592h52l6.7-116.3a475.94,475.94,0,0,0,69-13.7l50.4,104.4,96.5-40-38-109.6a489.27,489.27,0,0,0,58.3-39l86.6,77.3,73.9-73.9-77.1-86.8a477.47,477.47,0,0,0,39-58.3L527,274.3l40-96.5L462.6,127.2a486.82,486.82,0,0,0,13.6-68.8Z"/><path fill="#900" d="M0,0V199.8c110.4,0,200-89.4,200.2-199.8Z"/></svg></span> To Phabricator</button>
+                        </div>
+                    </div>
                     <button class="dropdown-item" id="printMap"><span class="menu-icon">🖨️</span> Print</button>
                     <div class="dropdown-divider"></div>
                     <button class="dropdown-item" id="toggleCursorsBtn">
@@ -109,13 +117,13 @@
                     </button>
                     <div class="dropdown-divider" id="lockDivider"></div>
                     <button class="dropdown-item" id="lockMapBtn">
-                        <span class="lock-menu-icon">🔓</span> Lock Map
+                        <span class="lock-menu-icon">🔓</span> Lock Map (Read-only)
                     </button>
                     <button class="dropdown-item" id="relockBtn">
-                        <span class="lock-menu-icon">🔒</span> Re-lock
+                        <span class="lock-menu-icon">🔒</span> Re-lock Map
                     </button>
                     <button class="dropdown-item" id="updatePasswordBtn">
-                        <span class="lock-menu-icon">🔑</span> Update Password
+                        <span class="lock-menu-icon">🔑</span> Change Password
                     </button>
                     <button class="dropdown-item" id="removeLockBtn">
                         <span class="lock-menu-icon">❌</span> Remove Lock
@@ -128,7 +136,7 @@
     <div class="welcome-screen" id="welcomeScreen">
         <div class="welcome-content">
             <h1>Welcome to Storymaps.io</h1>
-            <p>Create, share, and collaborate on user story maps in real-time</p>
+            <p class="welcome-subtitle">Create and collaborate on user story maps in real-time.<br>Export as epics and stories to <svg class="inline-logo" viewBox="0 0 24 24" fill="#0052CC"><path d="M11.571 11.513H0a5.218 5.218 0 0 0 5.232 5.215h2.13v2.057A5.215 5.215 0 0 0 12.575 24V12.518a1.005 1.005 0 0 0-1.005-1.005zm5.723-5.756H5.736a5.215 5.215 0 0 0 5.215 5.214h2.129v2.058a5.218 5.218 0 0 0 5.215 5.214V6.758a1.001 1.001 0 0 0-1.001-1.001zM23.013 0H11.455a5.215 5.215 0 0 0 5.215 5.215h2.129v2.057A5.215 5.215 0 0 0 24 12.483V1.005A1.005 1.005 0 0 0 23.013 0z"/></svg>&nbsp;Jira or <svg class="inline-logo" viewBox="0 0 592 592"><path fill="#069" d="M592.2,51.8V0H329.5C329.2,181.6,181.9,328.8.2,328.9V592h52l6.7-116.3a475.94,475.94,0,0,0,69-13.7l50.4,104.4,96.5-40-38-109.6a489.27,489.27,0,0,0,58.3-39l86.6,77.3,73.9-73.9-77.1-86.8a477.47,477.47,0,0,0,39-58.3L527,274.3l40-96.5L462.6,127.2a486.82,486.82,0,0,0,13.6-68.8Z"/><path fill="#900" d="M0,0V199.8c110.4,0,200-89.4,200.2-199.8Z"/></svg>&nbsp;Phabricator.</p>
             <div class="welcome-actions">
                 <button class="btn btn-large" id="welcomeNewBtn">New Story Map</button>
                 <div class="welcome-divider">or</div>
@@ -189,8 +197,7 @@
                 Thanks to Jeff Patton for pioneering user story mapping. <a href="https://jpattonassociates.com/story-mapping/" target="_blank" rel="noopener">Learn more</a>
             </div>
             <div class="footer-support">
-                <script src="https://cn-stage-1.wmcloud.org/extensions/FundraisingWidgets/resources/embed.js"></script>
-                <div class="frw-embed" data-widget="button" data-size="medium" data-text="Support Wikipedia" data-color="yellow"></div>
+                <script type="text/javascript" src="https://cdnjs.buymeacoffee.com/1.0.0/button.prod.min.js" data-name="bmc-button" data-slug="jackgleeson" data-color="#FFDD00" data-emoji="" data-font="Cookie" data-text="Buy me a coffee" data-outline-color="#000000" data-font-color="#000000" data-coffee-color="#ffffff"></script>
             </div>
         </footer>
     </div>
@@ -206,8 +213,7 @@
                 Thanks to Jeff Patton for pioneering user story mapping. <a href="https://jpattonassociates.com/story-mapping/" target="_blank" rel="noopener">Learn more</a>
             </div>
             <div class="footer-support">
-                <script src="https://cn-stage-1.wmcloud.org/extensions/FundraisingWidgets/resources/embed.js"></script>
-                <div class="frw-embed" data-widget="button" data-size="medium" data-text="Support Wikipedia" data-color="yellow"></div>
+                <script type="text/javascript" src="https://cdnjs.buymeacoffee.com/1.0.0/button.prod.min.js" data-name="bmc-button" data-slug="jackgleeson" data-color="#FFDD00" data-emoji="" data-font="Cookie" data-text="Buy me a coffee" data-outline-color="#000000" data-font-color="#000000" data-coffee-color="#ffffff"></script>
             </div>
         </footer>
     </div>
@@ -220,7 +226,7 @@
     </div>
 
     <div class="read-only-banner" id="readOnlyBanner">
-        <span class="read-only-banner-text">🔒 This map is locked.</span>
+        <span class="read-only-banner-text">🔒 This map is read-only. Unlock from the menu to edit.</span>
     </div>
 
     <div class="loading-indicator" id="loadingIndicator">
@@ -302,6 +308,342 @@
         </div>
     </div>
 
+    <div class="modal-overlay" id="jiraExportModal">
+        <div class="modal jira-export-modal">
+            <div class="modal-header">
+                <h2>Export to Jira CSV <a href="https://support.atlassian.com/jira-cloud-administration/docs/import-data-from-a-csv-file/" target="_blank" rel="noopener" class="jira-export-help-link">(How to import)</a></h2>
+                <button class="modal-close" id="jiraExportModalClose">&times;</button>
+            </div>
+            <div class="modal-body jira-export-modal-body">
+                <!-- Warning Notice -->
+                <div class="jira-csv-warning">
+                    <strong>⚠️ Limitation:</strong> Jira CSV imports currently do not support automatically linking Epics to Stories due to a <a href="https://community.atlassian.com/forums/Jira-questions/Trouble-importing-csv/qaq-p/2960795" target="_blank" rel="noopener">bug in Jira</a>. If Epic-Story linking is required, use the <strong>Simple API</strong> export option instead.
+                </div>
+                <!-- Project Settings -->
+                <div class="jira-export-section">
+                    <div class="jira-project-row">
+                        <label for="jiraProjectName" class="jira-project-label">Project Name</label>
+                        <input type="text" class="jira-project-input" id="jiraProjectName" placeholder="e.g. My Project" spellcheck="false">
+                        <label for="jiraProjectKey" class="jira-project-label">Project Key</label>
+                        <input type="text" class="jira-project-input jira-project-key" id="jiraProjectKey" placeholder="e.g. PROJ" spellcheck="false">
+                        <label for="jiraProjectType" class="jira-project-label">Project Type</label>
+                        <select class="jira-project-input" id="jiraProjectType">
+                            <option value="software">Software</option>
+                            <option value="business">Business</option>
+                        </select>
+                    </div>
+                    <p class="jira-export-section-desc">Required to import into an existing Jira project. Leave blank to choose during import.</p>
+                </div>
+
+                <!-- Global Settings -->
+                <div class="jira-export-filters">
+                    <div class="jira-export-filter-group">
+                        <h3 class="jira-export-section-title">Releases</h3>
+                        <div class="jira-export-slices" id="jiraExportSlices">
+                            <!-- Slice checkboxes populated here -->
+                        </div>
+                    </div>
+                    <div class="jira-export-filter-group">
+                        <h3 class="jira-export-section-title">Status</h3>
+                        <div class="jira-export-statuses" id="jiraExportStatuses">
+                            <label class="jira-slice-checkbox checked">
+                                <input type="checkbox" id="jiraFilterNone" checked>
+                                <span class="jira-slice-name">No Status</span>
+                            </label>
+                            <label class="jira-slice-checkbox checked">
+                                <input type="checkbox" id="jiraFilterPlanned" checked>
+                                <span class="jira-slice-name">Planned</span>
+                            </label>
+                            <label class="jira-slice-checkbox checked">
+                                <input type="checkbox" id="jiraFilterInProgress" checked>
+                                <span class="jira-slice-name">In Progress</span>
+                            </label>
+                            <label class="jira-slice-checkbox checked">
+                                <input type="checkbox" id="jiraFilterDone" checked>
+                                <span class="jira-slice-name">Done</span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="jira-export-section">
+                    <h3 class="jira-export-section-title">Status Mapping</h3>
+                    <div class="jira-export-status-mapping">
+                        <div class="jira-status-row">
+                            <span class="jira-status-label">No Status →</span>
+                            <input type="text" class="jira-status-input" id="jiraStatusNone" value="To Do" placeholder="Jira status">
+                        </div>
+                        <div class="jira-status-row">
+                            <span class="jira-status-label">Planned →</span>
+                            <input type="text" class="jira-status-input" id="jiraStatusPlanned" value="To Do" placeholder="Jira status">
+                        </div>
+                        <div class="jira-status-row">
+                            <span class="jira-status-label">In Progress →</span>
+                            <input type="text" class="jira-status-input" id="jiraStatusInProgress" value="In Progress" placeholder="Jira status">
+                        </div>
+                        <div class="jira-status-row">
+                            <span class="jira-status-label">Done →</span>
+                            <input type="text" class="jira-status-input" id="jiraStatusDone" value="Done" placeholder="Jira status">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Epics Section -->
+                <div class="jira-export-section">
+                    <h3 class="jira-export-section-title">Epics & Tasks <span class="jira-export-count" id="jiraExportCount"></span></h3>
+                    <div class="jira-export-epics" id="jiraExportEpics">
+                        <!-- Epics will be populated here -->
+                    </div>
+                </div>
+
+                <div class="jira-export-actions">
+                    <button class="btn btn-secondary" id="jiraExportCancel">Cancel</button>
+                    <button class="btn" id="jiraExportDownload">Download CSV</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="phabExportModal">
+        <div class="modal phab-export-modal">
+            <div class="modal-header">
+                <h2 id="phabExportTitle">Export to Phabricator</h2>
+                <button class="modal-close" id="phabExportModalClose">&times;</button>
+            </div>
+            <div class="modal-body phab-export-modal-body">
+                <!-- Stage 1: Selection -->
+                <div class="phab-export-stage" id="phabStage1">
+                    <!-- Filters -->
+                    <div class="phab-export-filters">
+                        <div class="phab-export-filter-group">
+                            <h3 class="phab-export-section-title">Releases</h3>
+                            <div class="phab-export-slices" id="phabExportSlices">
+                                <!-- Slice checkboxes populated here -->
+                            </div>
+                        </div>
+                        <div class="phab-export-filter-group">
+                            <h3 class="phab-export-section-title">Status</h3>
+                            <div class="phab-export-statuses" id="phabExportStatuses">
+                                <label class="phab-slice-checkbox checked">
+                                    <input type="checkbox" id="phabFilterNone" checked>
+                                    <span class="phab-slice-name">No Status</span>
+                                </label>
+                                <label class="phab-slice-checkbox checked">
+                                    <input type="checkbox" id="phabFilterPlanned" checked>
+                                    <span class="phab-slice-name">Planned</span>
+                                </label>
+                                <label class="phab-slice-checkbox checked">
+                                    <input type="checkbox" id="phabFilterInProgress" checked>
+                                    <span class="phab-slice-name">In Progress</span>
+                                </label>
+                                <label class="phab-slice-checkbox checked">
+                                    <input type="checkbox" id="phabFilterDone" checked>
+                                    <span class="phab-slice-name">Done</span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Epics Section -->
+                    <div class="phab-export-section">
+                        <h3 class="phab-export-section-title">Epics & Tasks <span class="phab-export-count" id="phabExportCount"></span></h3>
+                        <div class="phab-export-epics" id="phabExportEpics">
+                            <!-- Epics will be populated here -->
+                        </div>
+                    </div>
+
+                    <div class="phab-export-actions">
+                        <button class="btn btn-secondary" id="phabExportCancel">Cancel</button>
+                        <button class="btn" id="phabExportNext">Step 2: Import →</button>
+                    </div>
+                </div>
+
+                <!-- Stage 2: Instructions -->
+                <div class="phab-export-stage hidden" id="phabStage2">
+                    <div class="phab-instructions">
+                        <div class="phab-step">
+                            <div class="phab-step-header">
+                                <span class="phab-step-number">1</span>
+                                <span class="phab-step-title">Enter your Phabricator details</span>
+                            </div>
+                            <div class="phab-step-content">
+                                <div class="phab-fields-row">
+                                    <div class="phab-field">
+                                        <label class="phab-field-label">Instance URL</label>
+                                        <input type="text" id="phabInstanceUrl" class="phab-field-input" placeholder="phabricator.example.com" spellcheck="false">
+                                    </div>
+                                    <div class="phab-field">
+                                        <label class="phab-field-label">API Token <span class="phab-token-help">— <a href="#" id="phabTokenHelpLink">How do I get this?</a></span></label>
+                                        <input type="text" id="phabApiToken" class="phab-field-input" placeholder="api-abc123..." spellcheck="false" autocomplete="off">
+                                    </div>
+                                </div>
+                                <div class="phab-field phab-field-tags">
+                                    <label class="phab-field-label">Project Tags <span class="phab-field-recommended">(recommended)</span></label>
+                                    <input type="text" id="phabTags" class="phab-field-input" placeholder="project-tag-1, project-tag-2" spellcheck="false">
+                                    <span class="phab-field-hint">Link tasks to existing Phabricator projects by entering their tags</span>
+                                </div>
+                                <div class="phab-info-banner">
+                                    <svg class="phab-info-icon" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/></svg>
+                                    <span>Your API token is never stored or sent to our servers</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="phab-step">
+                            <div class="phab-step-header">
+                                <span class="phab-step-number">2</span>
+                                <span class="phab-step-title">Paste temporary import function into browser console</span>
+                            </div>
+                            <p class="phab-step-desc">Open your Phabricator site, press F12 to open DevTools, go to Console tab, paste this code and press Enter:</p>
+                            <div class="phab-code-block">
+                                <pre id="phabImportFunction"></pre>
+                                <button class="btn btn-secondary phab-copy-btn" id="phabCopyFunction">Copy</button>
+                            </div>
+                        </div>
+
+                        <div class="phab-step">
+                            <div class="phab-step-header">
+                                <span class="phab-step-number">3</span>
+                                <span class="phab-step-title">Run the import</span>
+                            </div>
+                            <p class="phab-step-desc">Still in the console, paste this code and press Enter:</p>
+                            <div class="phab-code-block">
+                                <pre id="phabImportCall"></pre>
+                                <button class="btn btn-secondary phab-copy-btn" id="phabCopyCall">Copy</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="phab-export-actions">
+                        <button class="btn btn-secondary" id="phabExportBack">← Step 1: Select Tasks</button>
+                        <button class="btn" id="phabExportDone">Done</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Jira API Export Modal -->
+    <div class="modal-overlay" id="jiraApiExportModal">
+        <div class="modal phab-export-modal">
+            <div class="modal-header">
+                <h2 id="jiraApiExportTitle">Export to Jira</h2>
+                <button class="modal-close" id="jiraApiExportModalClose">&times;</button>
+            </div>
+            <div class="modal-body phab-export-modal-body">
+                <!-- Stage 1: Selection -->
+                <div class="phab-export-stage" id="jiraApiStage1">
+                    <!-- Filters -->
+                    <div class="phab-export-filters">
+                        <div class="phab-export-filter-group">
+                            <h3 class="phab-export-section-title">Releases</h3>
+                            <div class="phab-export-slices" id="jiraApiExportSlices">
+                                <!-- Slice checkboxes populated here -->
+                            </div>
+                        </div>
+                        <div class="phab-export-filter-group">
+                            <h3 class="phab-export-section-title">Status</h3>
+                            <div class="phab-export-statuses" id="jiraApiExportStatuses">
+                                <label class="phab-slice-checkbox checked">
+                                    <input type="checkbox" id="jiraApiFilterNone" checked>
+                                    <span class="phab-slice-name">No Status</span>
+                                </label>
+                                <label class="phab-slice-checkbox checked">
+                                    <input type="checkbox" id="jiraApiFilterPlanned" checked>
+                                    <span class="phab-slice-name">Planned</span>
+                                </label>
+                                <label class="phab-slice-checkbox checked">
+                                    <input type="checkbox" id="jiraApiFilterInProgress" checked>
+                                    <span class="phab-slice-name">In Progress</span>
+                                </label>
+                                <label class="phab-slice-checkbox checked">
+                                    <input type="checkbox" id="jiraApiFilterDone" checked>
+                                    <span class="phab-slice-name">Done</span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Epics Section -->
+                    <div class="phab-export-section">
+                        <h3 class="phab-export-section-title">Epics & Stories <span class="phab-export-count" id="jiraApiExportCount"></span></h3>
+                        <div class="phab-export-epics" id="jiraApiExportEpics">
+                            <!-- Epics will be populated here -->
+                        </div>
+                    </div>
+
+                    <div class="phab-export-actions">
+                        <button class="btn btn-secondary" id="jiraApiExportCancel">Cancel</button>
+                        <button class="btn" id="jiraApiExportNext">Step 2: Import →</button>
+                    </div>
+                </div>
+
+                <!-- Stage 2: Instructions -->
+                <div class="phab-export-stage hidden" id="jiraApiStage2">
+                    <div class="phab-instructions">
+                        <div class="phab-step">
+                            <div class="phab-step-header">
+                                <span class="phab-step-number">1</span>
+                                <span class="phab-step-title">Enter your Jira details</span>
+                            </div>
+                            <div class="phab-step-content">
+                                <div class="phab-fields-row">
+                                    <div class="phab-field">
+                                        <label class="phab-field-label">Email</label>
+                                        <input type="email" id="jiraApiEmail" class="phab-field-input" placeholder="you@company.com" spellcheck="false">
+                                    </div>
+                                    <div class="phab-field">
+                                        <label class="phab-field-label">API Token <span class="phab-token-help">— <a href="https://id.atlassian.com/manage-profile/security/api-tokens" target="_blank">Get token</a></span></label>
+                                        <input type="text" id="jiraApiToken" class="phab-field-input" placeholder="your-api-token" spellcheck="false" autocomplete="off">
+                                    </div>
+                                </div>
+                                <div class="phab-fields-row">
+                                    <div class="phab-field">
+                                        <label class="phab-field-label">Project Key</label>
+                                        <input type="text" id="jiraApiProjectKey" class="phab-field-input" placeholder="PROJ" spellcheck="false" style="width: 120px; text-transform: uppercase;">
+                                    </div>
+                                </div>
+                                <div class="phab-info-banner">
+                                    <svg class="phab-info-icon" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/></svg>
+                                    <span>Your credentials are never stored or sent to our servers</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="phab-step">
+                            <div class="phab-step-header">
+                                <span class="phab-step-number">2</span>
+                                <span class="phab-step-title">Paste temporary import function into browser console</span>
+                            </div>
+                            <p class="phab-step-desc">Open your Jira project, press F12 to open DevTools, go to Console tab, paste this code and press Enter:</p>
+                            <div class="phab-code-block">
+                                <pre id="jiraApiImportFunction"></pre>
+                                <button class="btn btn-secondary phab-copy-btn" id="jiraApiCopyFunction">Copy</button>
+                            </div>
+                        </div>
+
+                        <div class="phab-step">
+                            <div class="phab-step-header">
+                                <span class="phab-step-number">3</span>
+                                <span class="phab-step-title">Run the import</span>
+                            </div>
+                            <p class="phab-step-desc">Still in the console, paste this code and press Enter:</p>
+                            <div class="phab-code-block">
+                                <pre id="jiraApiImportCall"></pre>
+                                <button class="btn btn-secondary phab-copy-btn" id="jiraApiCopyCall">Copy</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="phab-export-actions">
+                        <button class="btn btn-secondary" id="jiraApiExportBack">← Step 1: Select Tasks</button>
+                        <button class="btn" id="jiraApiExportDone">Done</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div class="modal-overlay" id="lockModal">
         <div class="modal lock-modal">
             <div class="modal-header">
@@ -323,6 +665,7 @@
         </div>
     </div>
 
+    <script src="exports.js"></script>
     <script type="module" src="app.js"></script>
 </body>
 </html>

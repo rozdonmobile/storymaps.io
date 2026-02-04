@@ -27,6 +27,7 @@ Alternatively, with User Story Mapping, everyone is in the room during the mappi
 
 ## App Features
 - **Real-time Collaboration** - Multiple users can edit the same map simultaneously with conflict-free merging powered by Yjs CRDTs
+- **Live Cursors** - See other users' cursors and selections in real-time
 - **Live Viewer Count** - See how many people are viewing the map in real-time
 - **Shareable URLs** - Each map gets a unique URL for easy sharing
 - **Users** - Add context rows showing who does what
@@ -40,7 +41,9 @@ Alternatively, with User Story Mapping, everyone is in the room during the mappi
 - **Undo/Redo** - Ctrl+Z/Ctrl+Y to undo and redo changes
 - **Zoom Controls** - Zoom out to see the full board, zoom in for detail
 - **Print / PDF** - Print your story map or save as PDF
-- **Import/Export** - Save and load story maps as JSON files
+- **Export to Jira** - Export your map as epics and stories to Jira via CSV import or the REST API
+- **Export to Phabricator** - Export your map as tasks and subtasks to Phabricator via the Maniphest API
+- **Import/Export JSON** - Save and load story maps as JSON files
 - **Local Storage** - Automatically saves your work
 - **Samples** - Load example story maps to learn the framework
 
@@ -70,7 +73,8 @@ Note: Data is always saved to local storage. Real-time collaboration and cloud s
 9. Use **Menu → Lock Map** to password-protect the map from edits
 10. Use **Ctrl+Z** / **Ctrl+Y** to undo and redo changes
 11. Use zoom controls (bottom-right) to zoom in/out
-12. Use **Print** to save as PDF, **Export** to save as JSON
+12. Use **Menu → Export** to save as JSON or export to Jira/Phabricator
+13. Use **Print** to save as PDF
 
 ## Support
 If you find this tool useful, consider [buying me a coffee](https://buymeacoffee.com/jackgleeson). Donations help cover Firebase hosting costs to keep the real-time collaboration features running.
