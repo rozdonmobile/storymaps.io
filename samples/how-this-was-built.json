@@ -1,218 +1,168 @@
 {
   "app": "storymap",
   "v": 1,
-  "exported": "2026-01-29T10:00:00.000Z",
-  "name": "How This App Was Built",
-  "a": [{
-    "n": "Watch User Story Mapping video",
-    "c": "#86efac",
-    "u": "https://www.youtube.com/watch?v=AorAgSrHjKM"
-  }, {
-    "n": "Read Jeff's book",
-    "c": "#86efac",
-    "u": "https://jpattonassociates.com/story-mapping/"
-  }, {
-    "n": "Features",
-    "c": "#86efac"
-  }, {
-    "n": "Persistence & Sharing",
-    "c": "#86efac"
-  }, {
-    "n": "Polish",
-    "c": "#86efac"
-  }],
-  "s": [{
-    "n": "",
-    "t": [
-      [{
-        "n": "User Story Mapping Fan",
-        "c": "#fda4af"
-      }],
-      [],
-      [],
-      [],
-      []
-    ],
-    "sep": false,
-    "rt": "Users"
-  }, {
-    "n": "",
-    "t": [
-      [{
-        "n": "Learn the framework",
-        "c": "#93c5fd"
-      }],
-      [],
-      [{
-        "n": "Build a User Story Mapping Tool",
-        "c": "#93c5fd"
-      }],
-      [],
-      []
-    ],
-    "sep": false,
-    "rt": "Activities"
-  }, {
-    "n": "Basics",
-    "t": [
-      [{
-        "n": "Understand concept",
-        "st": "done"
-      }, {
-        "n": "Understand Activities, Steps and Stories",
-        "st": "done"
-      }],
-      [{
-        "n": "Understand Users",
-        "st": "done"
-      }, {
-        "n": "Understand release slices",
-        "st": "done"
-      }],
-      [{
-        "n": "Editable cards",
-        "st": "done"
-      }, {
-        "n": "Add & delete buttons",
-        "st": "done"
-      }],
-      [{
-        "n": "Export to JSON",
-        "st": "done"
-      }, {
-        "n": "Import from JSON",
-        "st": "done"
-      }],
-      [{
-        "n": "Basic layout CSS",
-        "st": "done"
-      }]
-    ]
-  }, {
-    "n": "Better",
-    "t": [
-      [{
-        "n": "Realise this fixes Agile's flat backlog problem",
-        "st": "done"
-      }],
-      [{
-        "n": "Test out with sticky notes",
-        "st": "done"
-      }],
-      [{
-        "n": "Drag & drop",
-        "st": "done"
-      }, {
-        "n": "Options menu",
-        "st": "done"
-      }, {
-        "n": "Color picker",
-        "st": "done"
-      }, {
-        "n": "Sample maps",
-        "st": "done"
-      }, {
-        "n": "Welcome screen",
-        "st": "done"
-      }, {
-        "n": "Sample buttons on welcome",
-        "st": "done"
-      }],
-      [{
-        "n": "LocalStorage auto-save",
-        "st": "done"
-      }, {
-        "n": "Navigation confirmations",
-        "st": "done"
-      }, {
-        "n": "Back button support",
-        "st": "done"
-      }],
-      [{
-        "n": "Post-it styling",
-        "st": "done"
-      }, {
-        "n": "Status indicators",
-        "st": "done"
-      }, {
-        "n": "Hamburger menu",
-        "st": "done"
-      }, {
-        "n": "Samples submenu",
-        "st": "done"
-      }]
-    ]
-  }, {
-    "n": "Sharing",
-    "t": [
-      [],
-      [],
-      [{
-        "n": "Undo/Redo (in-memory)",
-        "st": "done"
-      }, {
-        "n": "Auto-resize textareas",
-        "st": "done"
-      }],
-      [{
-        "n": "Firestore integration",
-        "st": "done"
-      }, {
-        "n": "Shareable URLs",
-        "st": "done"
-      }, {
-        "n": "Real-time sync",
-        "st": "done"
-      }, {
-        "n": "Share button",
-        "st": "done"
-      }],
-      [{
-        "n": "Firebase App Check",
-        "st": "done"
-      }, {
-        "n": "Print view",
-        "st": "done"
-      }, {
-        "n": "Zoom controls",
-        "st": "done"
-      }, {
-        "n": "Magnifier for zoomed view",
-        "st": "done"
-      }, {
-        "n": "Copy existing map",
-        "st": "done"
-      }, {
-        "n": "Import/Export modals",
-        "st": "done"
-      }, {
-        "n": "Password-protected maps",
-        "st": "done"
-      }, {
-        "n": "Live cursor presence",
-        "st": "done"
-      }]
-    ]
-  }, {
-    "n": "Later",
-    "t": [
-      [],
-      [],
-      [{
-        "n": "Offline support",
-        "st": "planned"
-      }],
-      [{
-        "n": "User logins",
-        "st": "planned"
-      }],
-      [{
-        "n": "Themes",
-        "st": "planned"
-      }, {
-        "n": "Mobile app",
-        "st": "planned"
-      }]
-    ]
-  }]
+  "exported": "2026-02-04T12:00:00.000Z",
+  "name": "How Storymaps.io Was Built",
+  "a": [
+    { "n": "Research" },
+    { "n": "Prototype" },
+    { "n": "Core Editing" },
+    { "n": "Organisation" },
+    { "n": "Persistence" },
+    { "n": "Collaboration" },
+    { "n": "Integrations" },
+    { "n": "Polish" }
+  ],
+  "s": [
+    {
+      "n": "",
+      "t": [
+        [{ "n": "Developer", "c": "#fda4af" }],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        []
+      ],
+      "sep": false,
+      "rt": "Users"
+    },
+    {
+      "n": "",
+      "t": [
+        [{ "n": "Understand story mapping methodology", "c": "#93c5fd" }],
+        [{ "n": "Get something working quickly", "c": "#93c5fd" }],
+        [{ "n": "Build the card editing experience", "c": "#93c5fd" }],
+        [{ "n": "Structure maps into releases", "c": "#93c5fd" }],
+        [{ "n": "Save and load maps", "c": "#93c5fd" }],
+        [{ "n": "Enable real-time teamwork", "c": "#93c5fd" }],
+        [{ "n": "Connect to external tools", "c": "#93c5fd" }],
+        [{ "n": "Refine the experience", "c": "#93c5fd" }]
+      ],
+      "sep": false,
+      "rt": "Activities"
+    },
+    {
+      "n": "MVP",
+      "t": [
+        [
+          { "n": "Watch Jeff Patton's video", "st": "done", "u": "https://www.youtube.com/watch?v=AorAgSrHjKM" },
+          { "n": "Read about activities, steps, stories", "st": "done" },
+          { "n": "Understand release slices", "st": "done" }
+        ],
+        [
+          { "n": "Basic HTML structure", "st": "done" },
+          { "n": "CSS grid layout", "st": "done" },
+          { "n": "Vanilla JS (no framework)", "st": "done" }
+        ],
+        [
+          { "n": "Add/remove columns", "st": "done" },
+          { "n": "Editable column headers", "st": "done" },
+          { "n": "Add task cards", "st": "done" },
+          { "n": "Inline text editing", "st": "done" },
+          { "n": "Delete cards", "st": "done" }
+        ],
+        [
+          { "n": "Add release slices", "st": "done" },
+          { "n": "Editable slice names", "st": "done" },
+          { "n": "Users context row", "st": "done" },
+          { "n": "Activities context row", "st": "done" }
+        ],
+        [
+          { "n": "LocalStorage auto-save", "st": "done" },
+          { "n": "Export to JSON", "st": "done" },
+          { "n": "Import from JSON", "st": "done" }
+        ],
+        [],
+        [],
+        [
+          { "n": "Auto-resize textareas", "st": "done" },
+          { "n": "Confirm before overwriting", "st": "done" }
+        ]
+      ]
+    },
+    {
+      "n": "v1.0 - Collaboration",
+      "t": [
+        [],
+        [
+          { "n": "Welcome screen", "st": "done" },
+          { "n": "Sample maps", "st": "done" },
+          { "n": "Learning resources", "st": "done" }
+        ],
+        [
+          { "n": "Card colour picker", "st": "done" },
+          { "n": "Status indicators", "st": "done" },
+          { "n": "External URL links", "st": "done" },
+          { "n": "Drag & drop cards", "st": "done" }
+        ],
+        [
+          { "n": "Drag & drop slices", "st": "done" },
+          { "n": "Slice separators", "st": "done" }
+        ],
+        [
+          { "n": "Firestore cloud storage", "st": "done" },
+          { "n": "Unique shareable URLs", "st": "done" },
+          { "n": "Copy map to new URL", "st": "done" }
+        ],
+        [
+          { "n": "Real-time sync (Yjs CRDTs)", "st": "done" },
+          { "n": "Live viewer count", "st": "done" },
+          { "n": "Live cursor presence", "st": "done" },
+          { "n": "Share button", "st": "done" }
+        ],
+        [],
+        [
+          { "n": "Undo/Redo", "st": "done" },
+          { "n": "Zoom controls", "st": "done" },
+          { "n": "Print view", "st": "done" },
+          { "n": "Password protection", "st": "done" },
+          { "n": "Firebase App Check", "st": "done" }
+        ]
+      ]
+    },
+    {
+      "n": "v1.1 - Integrations",
+      "t": [
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [
+          { "n": "Export to Jira CSV", "st": "done" },
+          { "n": "Export to Jira API", "st": "done" },
+          { "n": "Export to Phabricator", "st": "done" },
+          { "n": "Filter by slice", "st": "done" },
+          { "n": "Filter by status", "st": "done" }
+        ],
+        [
+          { "n": "Toggle cursors", "st": "done" },
+          { "n": "Magnifier on zoom", "st": "done" }
+        ]
+      ]
+    },
+    {
+      "n": "Future",
+      "t": [
+        [],
+        [],
+        [],
+        [],
+        [],
+        [
+          { "n": "User accounts", "st": "planned" }
+        ],
+        [],
+        [
+          { "n": "Dark mode", "st": "planned" },
+          { "n": "Offline support", "st": "planned" },
+          { "n": "Mobile app", "st": "planned" }
+        ]
+      ]
+    }
+  ]
 }
