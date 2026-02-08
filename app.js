@@ -125,6 +125,7 @@ const ensureSortable = () => {
 
 let ydoc = null;
 let ymap = null;
+let ytext = null;
 let yjsUnsubscribe = null;
 let isSyncingFromRemote = false;
 
@@ -136,6 +137,15 @@ const createYjsDoc = async () => {
     }
     ydoc = new Y.Doc();
     ymap = ydoc.getMap('storymap');
+    ytext = ydoc.getText('notes');
+
+    // Observe remote Y.Text changes → update state + textarea
+    ytext.observe((event) => {
+        if (event.transaction.origin === 'remote') {
+            state.notes = stripHtmlTags(ytext.toString());
+            renderNotes();
+        }
+    });
 
     // Observe local changes to sync to Firestore
     ydoc.on('update', (update, origin) => {
@@ -302,6 +312,20 @@ const createYStory = createYCard;
 const updateYColumn = updateYCard;
 const updateYStory = updateYCard;
 
+// Legend entry Yjs helpers
+const createYLegendEntry = (entry) => {
+    const yMap = new Y.Map();
+    yMap.set('id', entry.id);
+    yMap.set('color', entry.color);
+    yMap.set('label', entry.label || '');
+    return yMap;
+};
+
+const updateYLegendEntry = (yMap, entry) => {
+    if (yMap.get('color') !== entry.color) yMap.set('color', entry.color);
+    if (yMap.get('label') !== (entry.label || '')) yMap.set('label', entry.label || '');
+};
+
 // Create a Y.Map from a slice object with nested stories structure
 const createYSlice = (slice, columns) => {
     const ySlice = new Y.Map();
@@ -369,6 +393,29 @@ const syncFromYjs = () => {
             });
         }
     }
+
+    // Read legend
+    const yLegend = ymap.get('legend');
+    if (yLegend) {
+        const legendData = typeof yLegend.toJSON === 'function' ? yLegend.toJSON() : yLegend;
+        if (Array.isArray(legendData)) {
+            state.legend = legendData.map(entry => ({
+                id: entry.id,
+                color: entry.color || CARD_COLORS.yellow,
+                label: entry.label || ''
+            }));
+        }
+    } else {
+        state.legend = [];
+    }
+
+    // Migrate old string-based notes into Y.Text if needed
+    const legacyNotes = ymap.get('notes');
+    if (typeof legacyNotes === 'string' && legacyNotes && ytext.length === 0) {
+        ytext.insert(0, legacyNotes);
+        ymap.delete('notes');
+    }
+    state.notes = stripHtmlTags(ytext.toString());
 
     if (dom.boardName) dom.boardName.value = state.name;
 };
@@ -508,6 +555,35 @@ const syncToYjs = () => {
                 ySlices.push([createYSlice(slice, state.columns)]);
             });
         }
+
+        // Sync legend incrementally
+        let yLegend = ymap.get('legend');
+        if (!yLegend || typeof yLegend.toArray !== 'function') {
+            yLegend = new Y.Array();
+            ymap.set('legend', yLegend);
+        }
+        syncYArray(
+            yLegend,
+            state.legend,
+            entry => entry.id,
+            createYLegendEntry,
+            updateYLegendEntry
+        );
+
+        // Sync notes via Y.Text diff
+        const current = ytext.toString();
+        if (current !== state.notes) {
+            // Find common prefix
+            let start = 0;
+            while (start < current.length && start < state.notes.length && current[start] === state.notes[start]) start++;
+            // Find common suffix (don't overlap with prefix)
+            let endOld = current.length;
+            let endNew = state.notes.length;
+            while (endOld > start && endNew > start && current[endOld - 1] === state.notes[endNew - 1]) { endOld--; endNew--; }
+            // Apply delete + insert
+            if (endOld > start) ytext.delete(start, endOld - start);
+            if (endNew > start) ytext.insert(start, state.notes.slice(start, endNew));
+        }
     }, 'local');
 };
 
@@ -521,6 +597,7 @@ const destroyYjs = () => {
         ydoc.destroy();
         ydoc = null;
         ymap = null;
+        ytext = null;
     }
 };
 
@@ -751,9 +828,10 @@ const trackCursor = (mapId) => {
                 // Create new cursor element with hand pointer shape
                 cursorEl = document.createElement('div');
                 cursorEl.className = 'remote-cursor';
+                const color = /^#[0-9a-fA-F]{3,6}$/.test(data.color) ? data.color : '#888';
                 cursorEl.innerHTML = `
                     <svg viewBox="0 0 32 32" width="24" height="24">
-                        <path d="${CURSOR_SVG_PATH}" fill="${data.color}" stroke="#fff" stroke-width="1.5"/>
+                        <path d="${CURSOR_SVG_PATH}" fill="${color}" stroke="#fff" stroke-width="1.5"/>
                     </svg>
                 `;
                 cursorOverlay.appendChild(cursorEl);
@@ -1090,6 +1168,8 @@ const updateEditability = () => {
     if (editable !== wasEditable) {
         wasEditable = editable;
         initSortable();
+        renderLegend();
+        renderNotes();
     }
 };
 
@@ -1339,7 +1419,9 @@ const state = {
     mapId: null,
     name: '',
     columns: [],
-    slices: []
+    slices: [],
+    legend: [],
+    notes: ''
 };
 window.state = state;
 
@@ -1476,6 +1558,13 @@ const initState = () => {
     const column = createColumn('New Step', null, null, false);
     state.name = '';
     state.columns = [column];
+    state.legend = [
+        { id: generateId(), color: CARD_COLORS.yellow, label: 'Tasks' },
+        { id: generateId(), color: CARD_COLORS.cyan, label: 'Notes' },
+        { id: generateId(), color: CARD_COLORS.lime, label: 'Questions' },
+        { id: generateId(), color: CARD_COLORS.rose, label: 'Edge cases' },
+    ];
+    state.notes = '';
     state.slices = [
         { id: generateId(), name: '', separator: false, rowType: 'Users', stories: { [column.id]: [createStory('User Type', '#fca5a5')] } },
         { id: generateId(), name: '', separator: false, rowType: 'Activities', stories: { [column.id]: [createStory('New Activity', '#93c5fd')] } },
@@ -1638,7 +1727,17 @@ const dom = {
     lockPasswordInput: document.getElementById('lockPasswordInput'),
     lockModalCancel: document.getElementById('lockModalCancel'),
     lockModalConfirm: document.getElementById('lockModalConfirm'),
-    readOnlyBanner: document.getElementById('readOnlyBanner')
+    readOnlyBanner: document.getElementById('readOnlyBanner'),
+    legendPanel: document.getElementById('legendPanel'),
+    legendToggle: document.getElementById('legendToggle'),
+    legendBody: document.getElementById('legendBody'),
+    legendEntries: document.getElementById('legendEntries'),
+    legendAddBtn: document.getElementById('legendAddBtn'),
+    controlsRight: document.getElementById('controlsRight'),
+    notesPanel: document.getElementById('notesPanel'),
+    notesToggle: document.getElementById('notesToggle'),
+    notesTextarea: document.getElementById('notesTextarea'),
+    notesClose: document.getElementById('notesClose')
 };
 window.dom = dom;
 
@@ -2343,8 +2442,10 @@ const getSliceProgress = (slice) => {
     let done = 0;
     Object.values(slice.stories || {}).forEach(stories => {
         stories.forEach(story => {
-            total++;
-            if (story.status === 'done') done++;
+            if (!story.color || story.color === DEFAULT_CARD_COLORS.story) {
+                total++;
+                if (story.status === 'done') done++;
+            }
         });
     });
     return { total, done, percent: total > 0 ? Math.round((done / total) * 100) : 0 };
@@ -2490,6 +2591,125 @@ const createSliceContainer = (slice, index) => {
 };
 
 // =============================================================================
+// Legend
+// =============================================================================
+
+const renderLegend = () => {
+    if (!dom.legendEntries) return;
+    dom.legendEntries.innerHTML = '';
+    const editable = isMapEditable();
+
+    state.legend.forEach(entry => {
+        const row = el('div', 'legend-entry', { 'data-legend-id': entry.id });
+
+        const swatch = el('button', 'legend-swatch', { title: 'Change color' });
+        swatch.style.backgroundColor = entry.color;
+        if (editable) {
+            swatch.addEventListener('click', (e) => {
+                e.stopPropagation();
+                showLegendColorPicker(entry, swatch);
+            });
+        }
+        row.appendChild(swatch);
+
+        const input = el('input', 'legend-label');
+        input.type = 'text';
+        input.value = entry.label;
+        input.placeholder = 'Label...';
+        input.readOnly = !editable;
+        if (editable) {
+            input.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    input.blur();
+                }
+            });
+            input.addEventListener('blur', () => {
+                if (entry.label !== input.value) {
+                    pushUndo();
+                    entry.label = input.value;
+                    saveToStorage();
+                }
+            });
+        }
+        row.appendChild(input);
+
+        if (editable) {
+            const removeBtn = el('button', 'legend-remove', { text: '\u00d7', title: 'Remove' });
+            removeBtn.addEventListener('click', () => {
+                pushUndo();
+                state.legend = state.legend.filter(e => e.id !== entry.id);
+                renderAndSave();
+            });
+            row.appendChild(removeBtn);
+        }
+
+        dom.legendEntries.appendChild(row);
+    });
+
+    const maxReached = state.legend.length >= Object.keys(CARD_COLORS).length;
+    dom.legendAddBtn.style.display = editable && !maxReached ? '' : 'none';
+    dom.legendPanel.classList.toggle('has-entries', state.legend.length > 0);
+};
+
+const stripHtmlTags = (text) => text.replace(/<[^>]*>/g, '');
+
+const NOTEPAD_MIN_LINES = 30;
+const padNotes = (text) => {
+    const lines = text.split('\n').length;
+    return lines < NOTEPAD_MIN_LINES ? text + '\n'.repeat(NOTEPAD_MIN_LINES - lines) : text;
+};
+
+const renderNotes = () => {
+    if (!dom.notesTextarea) return;
+    const editable = isMapEditable();
+    dom.notesTextarea.disabled = !editable;
+    const padded = padNotes(state.notes);
+    if (dom.notesTextarea.value !== padded) {
+        const start = dom.notesTextarea.selectionStart;
+        const end = dom.notesTextarea.selectionEnd;
+        dom.notesTextarea.value = padded;
+        if (document.activeElement === dom.notesTextarea) {
+            dom.notesTextarea.selectionStart = Math.min(start, padded.length);
+            dom.notesTextarea.selectionEnd = Math.min(end, padded.length);
+        }
+    }
+};
+
+const showLegendColorPicker = (entry, anchorEl) => {
+    // Remove any existing legend color picker
+    document.querySelector('.legend-color-picker')?.remove();
+
+    const picker = el('div', 'legend-color-picker');
+    const swatches = el('div', 'color-swatches');
+    Object.entries(CARD_COLORS).forEach(([name, hex]) => {
+        const swatch = el('button', 'color-swatch', { title: name });
+        swatch.style.backgroundColor = hex;
+        if (entry.color?.toLowerCase() === hex.toLowerCase()) swatch.classList.add('selected');
+        swatch.addEventListener('click', (e) => {
+            e.stopPropagation();
+            pushUndo();
+            entry.color = hex;
+            renderAndSave();
+            picker.remove();
+        });
+        swatches.appendChild(swatch);
+    });
+    picker.appendChild(swatches);
+
+    dom.legendBody.appendChild(picker);
+
+    // Close when clicking outside
+    const close = (e) => {
+        if (!picker.contains(e.target) && e.target !== anchorEl) {
+            picker.remove();
+            document.removeEventListener('click', close);
+        }
+    };
+    setTimeout(() => document.addEventListener('click', close), 0);
+};
+
+// =============================================================================
 // Rendering
 // =============================================================================
 
@@ -2600,6 +2820,9 @@ const render = () => {
             textarea.setSelectionRange(selStart, selEnd);
         }
     }
+
+    renderLegend();
+    renderNotes();
 };
 
 // Store Sortable instances to destroy on re-render
@@ -2622,6 +2845,7 @@ const initSortable = async () => {
         const sortable = Sortable.create(column, {
             group: 'stories',
             animation: 150,
+            forceFallback: isSafari,
             ghostClass: 'sortable-ghost',
             chosenClass: 'sortable-chosen',
             dragClass: 'sortable-drag',
@@ -3028,7 +3252,11 @@ const serialize = () => ({
         if (slice.rowType) obj.rt = slice.rowType;
         if (slice.collapsed) obj.col = true;
         return obj;
-    })
+    }),
+    ...(state.legend.length > 0 && {
+        l: state.legend.map(entry => ({ c: entry.color, n: entry.label }))
+    }),
+    ...(state.notes && { notes: state.notes })
 });
 
 const deserialize = (data) => {
@@ -3060,6 +3288,12 @@ const deserialize = (data) => {
         });
         return newSlice;
     });
+    state.legend = Array.isArray(data.l) ? data.l.map(entry => ({
+        id: generateId(),
+        color: entry.c || CARD_COLORS.yellow,
+        label: entry.n || ''
+    })) : [];
+    state.notes = data.notes || '';
     dom.boardName.value = state.name;
 };
 
@@ -3585,6 +3819,52 @@ const initEventListeners = () => {
     dom.undoBtn.addEventListener('click', undo);
     dom.redoBtn.addEventListener('click', redo);
 
+    // Legend controls
+    dom.legendToggle?.addEventListener('click', () => {
+        dom.legendPanel.classList.toggle('open');
+    });
+    dom.legendAddBtn?.addEventListener('click', () => {
+        if (state.legend.length >= Object.keys(CARD_COLORS).length) return;
+        pushUndo();
+        state.legend.push({
+            id: generateId(),
+            color: CARD_COLORS.yellow,
+            label: ''
+        });
+        renderAndSave();
+        // Focus the newly added input
+        const inputs = dom.legendEntries.querySelectorAll('.legend-label');
+        if (inputs.length) inputs[inputs.length - 1].focus();
+    });
+
+    // Notes controls
+    dom.notesToggle?.addEventListener('click', () => {
+        dom.notesPanel.classList.toggle('open');
+    });
+    dom.notesTextarea?.addEventListener('input', () => {
+        const newVal = stripHtmlTags(dom.notesTextarea.value.replace(/\n+$/, ''));
+        if (ytext && state.mapId) {
+            const current = ytext.toString();
+            if (current !== newVal) {
+                let start = 0;
+                while (start < current.length && start < newVal.length && current[start] === newVal[start]) start++;
+                let endOld = current.length;
+                let endNew = newVal.length;
+                while (endOld > start && endNew > start && current[endOld - 1] === newVal[endNew - 1]) { endOld--; endNew--; }
+                ydoc.transact(() => {
+                    if (endOld > start) ytext.delete(start, endOld - start);
+                    if (endNew > start) ytext.insert(start, newVal.slice(start, endNew));
+                }, 'local');
+            }
+        }
+        state.notes = newVal;
+        renderNotes();
+        saveToStorage();
+    });
+    dom.notesClose?.addEventListener('click', () => {
+        dom.notesPanel.classList.remove('open');
+    });
+
     // Zoom controls
     dom.zoomIn.addEventListener('click', () => {
         zoomLevel = Math.min(ZOOM_MAX, zoomLevel + ZOOM_STEP);
@@ -3810,6 +4090,7 @@ const showWelcomeScreen = () => {
     dom.storyMapWrapper.classList.remove('visible');
     dom.boardName.classList.add('hidden');
     dom.zoomControls.classList.add('hidden');
+    dom.controlsRight?.classList.add('hidden');
     clearPresence();
     clearCursors();
     clearLockSubscription();
@@ -3823,6 +4104,7 @@ const hideWelcomeScreen = () => {
     dom.storyMapWrapper.classList.add('visible');
     dom.boardName.classList.remove('hidden');
     dom.zoomControls.classList.remove('hidden');
+    dom.controlsRight?.classList.remove('hidden');
     unsubscribeFromCounter();
 
     // Initialize magnifier on first map view (deferred from startup)
@@ -3891,6 +4173,16 @@ const init = async () => {
 
     initEventListeners();
     updateCursorsVisibilityUI();
+
+    // Populate browser-specific DevTools instructions
+    const devtoolsHint = isSafari
+        ? 'first enable via Safari &gt; Settings &gt; Advanced &gt; <em>Show features for web developers</em>, then press <strong>Cmd+Option+I</strong>'
+        : /Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent)
+            ? 'press <strong>Cmd+Option+I</strong>'
+            : 'press <strong>F12</strong>';
+    document.querySelectorAll('.devtools-instructions').forEach(el => {
+        el.innerHTML = devtoolsHint;
+    });
 
     if (mapId) {
         // Show loading indicator while fetching from Firestore

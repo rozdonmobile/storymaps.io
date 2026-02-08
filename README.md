@@ -26,26 +26,34 @@ Alternatively, with User Story Mapping, everyone is in the room during the mappi
 - **Slices** - Horizontal groupings for releases (MVP, v1, v2, etc.)
 
 ## App Features
-- **Real-time Collaboration** - Multiple users can edit the same map simultaneously with conflict-free merging powered by Yjs CRDTs
-- **Live Cursors** - See other users' cursors and selections in real-time
-- **Live Viewer Count** - See how many people are viewing the map in real-time
-- **Shareable URLs** - Each map gets a unique URL for easy sharing
+
+### Story Mapping
 - **Users** - Add context rows showing who does what
-- **Activities & Steps (Backbone)** - Define activities & steps representing the user journey left-to-right
+- **Activities & Steps (Backbone)** - Define activities and steps representing the user journey left-to-right
 - **Tasks** - Add task cards under each step to break down the work
-- **Release Slices** - Group tasks horizontally into releases or priorities
-- **Status Indicators** - Mark tasks as done, in-progress, or planned
+- **Release Slices** - Group tasks horizontally into releases or priorities (MVP, V1, V2, etc.)
+- **Status Indicators** - Mark tasks as done, in-progress, or planned with progress tracking per slice
+- **Legend** - Define colour-coded card categories (e.g. Tasks, Notes, Questions, Edge cases)
 - **Colours & Links** - Customise card colours and add external URLs to your existing task management tools
 - **Drag & Drop** - Reorder cards and slices
+
+### Collaboration
+- **Real-time Collaboration** - Multiple users can edit the same map simultaneously with conflict-free merging powered by Yjs CRDTs
+- **Collaborative Notepad** - Shared notepad for team notes, decisions, and questions that syncs in real-time
+- **Live Cursors** - See other users' cursors and selections in real-time
+- **Live Viewer Count** - See how many people are viewing the map
+- **Shareable URLs** - Each map gets a unique URL for easy sharing
 - **Lock Maps** - Password-protect maps to prevent edits; unlock anytime to resume editing
-- **Undo/Redo** - Ctrl+Z/Ctrl+Y to undo and redo changes
-- **Zoom Controls** - Zoom out to see the full board, zoom in for detail
-- **Print / PDF** - Print your story map or save as PDF
+
+### Tools
 - **Export to Jira** - Export your map as epics and stories to Jira via CSV import or the REST API
 - **Export to Phabricator** - Export your map as tasks and subtasks to Phabricator via the Maniphest API
 - **Import/Export JSON** - Save and load story maps as JSON files
+- **Print / PDF** - Print your story map or save as PDF
+- **Undo/Redo** - Ctrl+Z / Ctrl+Y to undo and redo changes
+- **Zoom Controls** - Zoom out to see the full board, zoom in for detail
 - **Local Storage** - Automatically saves your work
-- **Samples** - Load example story maps to learn the framework
+- **Samples** - Load example story maps to learn the methodology
 
 ## Self-Hosting Setup
 
@@ -69,15 +77,17 @@ Note: Data is always saved to local storage. Real-time collaboration and cloud s
 5. Click **+ Add Slice** to create release groupings
 6. Click the **...** menu on cards to set colours, status, or links
 7. Drag tasks to reorder or move between columns
-8. Click **Share** to copy the URL and collaborate with others
-9. Use **Menu → Lock Map** to password-protect the map from edits
-10. Use **Ctrl+Z** / **Ctrl+Y** to undo and redo changes
-11. Use zoom controls (bottom-right) to zoom in/out
-12. Use **Menu → Export** to save as JSON or export to Jira/Phabricator
-13. Use **Print** to save as PDF
+8. Use the **Legend** to define card categories and colour-code your map
+9. Use the **Notepad** to capture team notes and decisions
+10. Click **Share** to copy the URL and collaborate with others
+11. Use **Menu → Lock Map** to password-protect the map from edits
+12. Use **Ctrl+Z** / **Ctrl+Y** to undo and redo changes
+13. Use zoom controls (bottom-right) to zoom in/out
+14. Use **Menu → Export** to save as JSON or export to Jira/Phabricator
+15. Use **Print** to save as PDF
 
 ## Support
-If you find this tool useful, consider [buying me a coffee](https://buymeacoffee.com/jackgleeson). Donations help cover Firebase hosting costs to keep the real-time collaboration features running.
+If you find this tool useful, consider [buying me a coffee](https://buymeacoffee.com/jackgleeson).
 
 ## Credits
 - Thanks to Jeff Patton for pioneering user story mapping. Learn more: [Jeff Patton's Story Mapping](https://jpattonassociates.com/story-mapping/)
@@ -85,4 +95,4 @@ If you find this tool useful, consider [buying me a coffee](https://buymeacoffee
 - Drag and drop powered by [SortableJS](https://sortablejs.github.io/Sortable/)
 
 ## License
-MIT
+AGPL-3.0 — see [LICENSE](LICENSE) for details.

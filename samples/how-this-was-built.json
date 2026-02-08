@@ -3,22 +3,27 @@
   "v": 1,
   "exported": "2026-02-04T12:00:00.000Z",
   "name": "How Storymaps.io Was Built",
+  "notes": "JG: No framework - keep the bundle size zero\n\nJG: Firebase free tier is enough for now, revisit if usage spikes\n\nMR: Yjs awareness handles presence, no need for a separate system",
+  "l": [
+    {"c": "#fef08a", "n": "Tasks"},
+    {"c": "#a5f3fc", "n": "Notes"},
+    {"c": "#bef264", "n": "Questions"},
+    {"c": "#fecdd3", "n": "Edge cases"}
+  ],
   "a": [
-    { "n": "Research" },
-    { "n": "Prototype" },
-    { "n": "Core Editing" },
-    { "n": "Organisation" },
-    { "n": "Persistence" },
-    { "n": "Collaboration" },
-    { "n": "Integrations" },
-    { "n": "Polish" }
+    { "n": "Get Started" },
+    { "n": "Create Map" },
+    { "n": "Edit Cards" },
+    { "n": "Organise Releases" },
+    { "n": "Save & Share" },
+    { "n": "Collaborate" },
+    { "n": "Export" }
   ],
   "s": [
     {
       "n": "",
       "t": [
-        [{ "n": "Developer", "c": "#fda4af" }],
-        [],
+        [{ "n": "Product Team", "c": "#fda4af" }],
         [],
         [],
         [],
@@ -32,14 +37,13 @@
     {
       "n": "",
       "t": [
-        [{ "n": "Understand story mapping methodology", "c": "#93c5fd" }],
-        [{ "n": "Get something working quickly", "c": "#93c5fd" }],
-        [{ "n": "Build the card editing experience", "c": "#93c5fd" }],
-        [{ "n": "Structure maps into releases", "c": "#93c5fd" }],
-        [{ "n": "Save and load maps", "c": "#93c5fd" }],
-        [{ "n": "Enable real-time teamwork", "c": "#93c5fd" }],
-        [{ "n": "Connect to external tools", "c": "#93c5fd" }],
-        [{ "n": "Refine the experience", "c": "#93c5fd" }]
+        [{ "n": "Plan a product with story mapping", "c": "#93c5fd" }],
+        [],
+        [],
+        [],
+        [],
+        [],
+        []
       ],
       "sep": false,
       "rt": "Activities"
@@ -48,21 +52,22 @@
       "n": "MVP",
       "t": [
         [
-          { "n": "Watch Jeff Patton's video", "st": "done", "u": "https://www.youtube.com/watch?v=AorAgSrHjKM" },
-          { "n": "Read about activities, steps, stories", "st": "done" },
-          { "n": "Understand release slices", "st": "done" }
+          { "n": "Welcome screen", "st": "done" },
+          { "n": "Based on Jeff Patton's methodology", "c": "#a5f3fc", "u": "https://www.youtube.com/watch?v=AorAgSrHjKM" }
         ],
         [
           { "n": "Basic HTML structure", "st": "done" },
           { "n": "CSS grid layout", "st": "done" },
-          { "n": "Vanilla JS (no framework)", "st": "done" }
+          { "n": "Vanilla JS (no framework)", "st": "done" },
+          { "n": "Framework vs vanilla JS trade-off?", "c": "#bef264" }
         ],
         [
           { "n": "Add/remove columns", "st": "done" },
           { "n": "Editable column headers", "st": "done" },
           { "n": "Add task cards", "st": "done" },
           { "n": "Inline text editing", "st": "done" },
-          { "n": "Delete cards", "st": "done" }
+          { "n": "Delete cards", "st": "done" },
+          { "n": "Auto-resize textareas", "st": "done" }
         ],
         [
           { "n": "Add release slices", "st": "done" },
@@ -73,30 +78,29 @@
         [
           { "n": "LocalStorage auto-save", "st": "done" },
           { "n": "Export to JSON", "st": "done" },
-          { "n": "Import from JSON", "st": "done" }
+          { "n": "Import from JSON", "st": "done" },
+          { "n": "Confirm before overwriting", "st": "done" },
+          { "n": "LocalStorage has a 5MB limit", "c": "#a5f3fc" }
         ],
         [],
-        [],
-        [
-          { "n": "Auto-resize textareas", "st": "done" },
-          { "n": "Confirm before overwriting", "st": "done" }
-        ]
+        []
       ]
     },
     {
-      "n": "v1.0 - Collaboration",
+      "n": "V1.0",
       "t": [
-        [],
         [
-          { "n": "Welcome screen", "st": "done" },
           { "n": "Sample maps", "st": "done" },
           { "n": "Learning resources", "st": "done" }
         ],
+        [],
         [
           { "n": "Card colour picker", "st": "done" },
           { "n": "Status indicators", "st": "done" },
           { "n": "External URL links", "st": "done" },
-          { "n": "Drag & drop cards", "st": "done" }
+          { "n": "Drag & drop cards", "st": "done" },
+          { "n": "Undo/Redo", "st": "done" },
+          { "n": "Zoom controls", "st": "done" }
         ],
         [
           { "n": "Drag & drop slices", "st": "done" },
@@ -105,62 +109,68 @@
         [
           { "n": "Firestore cloud storage", "st": "done" },
           { "n": "Unique shareable URLs", "st": "done" },
-          { "n": "Copy map to new URL", "st": "done" }
+          { "n": "Copy map to new URL", "st": "done" },
+          { "n": "Password protection", "st": "done" },
+          { "n": "Firebase App Check", "st": "done" },
+          { "n": "URL collision on short IDs?", "c": "#fecdd3" }
         ],
         [
           { "n": "Real-time sync (Yjs CRDTs)", "st": "done" },
           { "n": "Live viewer count", "st": "done" },
           { "n": "Live cursor presence", "st": "done" },
-          { "n": "Share button", "st": "done" }
+          { "n": "Share button", "st": "done" },
+          { "n": "Concurrent edits on same card", "c": "#fecdd3" },
+          { "n": "CRDTs handle merge conflicts automatically", "c": "#a5f3fc" }
         ],
-        [],
         [
-          { "n": "Undo/Redo", "st": "done" },
-          { "n": "Zoom controls", "st": "done" },
-          { "n": "Print view", "st": "done" },
-          { "n": "Password protection", "st": "done" },
-          { "n": "Firebase App Check", "st": "done" }
+          { "n": "Print view", "st": "done" }
         ]
       ]
     },
     {
-      "n": "v1.1 - Integrations",
+      "n": "V1.1",
       "t": [
         [],
         [],
+        [
+          { "n": "Legend & card colours", "st": "done" },
+          { "n": "Magnifier on zoom", "st": "done" }
+        ],
         [],
         [],
-        [],
-        [],
+        [
+          { "n": "Toggle cursors", "st": "done" },
+          { "n": "Collaborative notepad", "st": "done" }
+        ],
         [
           { "n": "Export to Jira CSV", "st": "done" },
           { "n": "Export to Jira API", "st": "done" },
-          { "n": "Export to Phabricator", "st": "done" },
-          { "n": "Filter by slice", "st": "done" },
-          { "n": "Filter by status", "st": "done" }
-        ],
-        [
-          { "n": "Toggle cursors", "st": "done" },
-          { "n": "Magnifier on zoom", "st": "done" }
+          { "n": "Export to Phabricator", "st": "done" }
         ]
       ]
     },
     {
-      "n": "Future",
+      "n": "V2",
       "t": [
         [],
+        [
+          { "n": "Dark mode", "st": "planned" }
+        ],
         [],
         [],
-        [],
-        [],
+        [
+          { "n": "Replace Firebase with y-websocket", "st": "planned" },
+          { "n": "Self-hosted server (Node.js)", "st": "planned" },
+          { "n": "LevelDB persistence", "st": "planned" },
+          { "n": "Docker Compose + Caddy", "st": "planned" },
+          { "n": "Offline support", "st": "planned" }
+        ],
         [
           { "n": "User accounts", "st": "planned" }
         ],
-        [],
         [
-          { "n": "Dark mode", "st": "planned" },
-          { "n": "Offline support", "st": "planned" },
-          { "n": "Mobile app", "st": "planned" }
+          { "n": "Filter by slice", "st": "planned" },
+          { "n": "Filter by status", "st": "planned" }
         ]
       ]
     }

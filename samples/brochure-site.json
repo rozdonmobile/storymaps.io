@@ -2,6 +2,13 @@
   "app": "storymap",
   "v": 1,
   "name": "Build Brochure Site",
+  "notes": "JG: Client wants to launch before the trade show on March 15\n\nLM: Stock photos are placeholder - real shoot booked for next week\n\nJG: Keep V1 ideas parked, focus on getting MVP live",
+  "l": [
+    {"c": "#fef08a", "n": "Tasks"},
+    {"c": "#a5f3fc", "n": "Notes"},
+    {"c": "#bef264", "n": "Questions"},
+    {"c": "#fecdd3", "n": "Edge cases"}
+  ],
   "a": [
     {"n": "Land on Site", "c": "#86efac"},
     {"n": "Learn About Company", "c": "#86efac"},
@@ -34,9 +41,9 @@
   }, {
     "n": "MVP",
     "t": [
-      [{"n": "Hero section", "st": "done"}, {"n": "Navigation menu", "st": "done"}, {"n": "Clear value proposition", "st": "done"}],
+      [{"n": "Hero section", "st": "done"}, {"n": "Navigation menu", "st": "done"}, {"n": "Clear value proposition", "st": "done"}, {"n": "Need brand guidelines from client", "c": "#a5f3fc"}],
       [{"n": "Company intro", "st": "done"}, {"n": "Mission statement", "st": "done"}],
-      [{"n": "Service list", "st": "done"}, {"n": "Basic descriptions", "st": "done"}],
+      [{"n": "Service list", "st": "done"}, {"n": "Basic descriptions", "st": "done"}, {"n": "SEO metadata for each service?", "c": "#bef264"}],
       [{"n": "Client logos", "st": "done"}],
       [{"n": "Contact form", "st": "done"}, {"n": "Email address", "st": "done"}, {"n": "Phone number", "st": "done"}]
     ]
@@ -46,14 +53,14 @@
       [{"n": "Animated hero", "st": "in-progress"}, {"n": "Call to action button", "st": "done"}],
       [{"n": "Team photos", "st": "in-progress"}, {"n": "Company history", "st": "planned"}],
       [{"n": "Service detail pages", "st": "in-progress"}, {"n": "Pricing info", "st": "planned"}],
-      [{"n": "Written testimonials", "st": "in-progress"}, {"n": "Case studies", "st": "planned"}],
-      [{"n": "Location map", "st": "done"}, {"n": "Social media links", "st": "in-progress"}]
+      [{"n": "Written testimonials", "st": "in-progress"}, {"n": "Case studies", "st": "planned"}, {"n": "Who provides testimonial copy?", "c": "#bef264"}],
+      [{"n": "Location map", "st": "done"}, {"n": "Social media links", "st": "in-progress"}, {"n": "Form submission when offline", "c": "#fecdd3"}]
     ]
   }, {
     "n": "V2",
     "t": [
       [{"n": "Video background", "st": "planned"}, {"n": "Live chat widget", "st": "planned"}],
-      [{"n": "Blog section", "st": "planned"}, {"n": "News/updates", "st": "planned"}],
+      [{"n": "Blog section", "st": "planned"}, {"n": "News/updates", "st": "planned"}, {"n": "Who writes the blog content?", "c": "#bef264"}],
       [{"n": "Service comparison table", "st": "planned"}, {"n": "FAQ section", "st": "planned"}],
       [{"n": "Video testimonials", "st": "planned"}, {"n": "Awards & certifications", "st": "planned"}],
       [{"n": "Booking calendar", "st": "planned"}, {"n": "Newsletter signup", "st": "planned"}]

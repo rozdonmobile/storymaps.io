@@ -2,6 +2,13 @@
   "app": "storymap",
   "v": 1,
   "name": "Upgrade Application Logging",
+  "notes": "JG: V1 must ship before the next on-call rotation\n\nDK: Log format needs to match the existing Splunk parsers\n\nJG: Get budget approval before committing to Datadog",
+  "l": [
+    {"c": "#fef08a", "n": "Tasks"},
+    {"c": "#a5f3fc", "n": "Notes"},
+    {"c": "#bef264", "n": "Questions"},
+    {"c": "#fecdd3", "n": "Edge cases"}
+  ],
   "a": [
     {"n": "Add Log Statements", "c": "#86efac"},
     {"n": "Collect Logs", "c": "#86efac"},
@@ -35,32 +42,32 @@
       [{"n": "Respond to Incidents", "c": "#93c5fd"}]
     ]
   }, {
-    "n": "R1",
+    "n": "V1",
     "t": [
       [{"n": "Choose logging library", "st": "done"}, {"n": "Define log levels", "st": "done"}, {"n": "Add error logging", "st": "done"}],
       [{"n": "Capture stdout/stderr", "st": "done"}, {"n": "Request logging", "st": "done"}],
-      [{"n": "Write to files", "st": "done"}, {"n": "Log rotation", "st": "done"}],
+      [{"n": "Write to files", "st": "done"}, {"n": "Log rotation", "st": "done"}, {"n": "Disk full during log write", "c": "#fecdd3"}],
       [{"n": "Grep log files", "st": "done"}, {"n": "Tail -f for live view", "st": "done"}],
       [{"n": "Basic log viewer", "st": "done"}],
-      [{"n": "Email on errors", "st": "done"}]
+      [{"n": "Email on errors", "st": "done"}, {"n": "Alert fatigue if thresholds too low", "c": "#fecdd3"}]
     ]
   }, {
-    "n": "R2",
+    "n": "V2",
     "t": [
       [{"n": "Structured JSON logs", "st": "in-progress"}, {"n": "Correlation IDs", "st": "in-progress"}, {"n": "Context fields", "st": "planned"}],
-      [{"n": "Async log shipping", "st": "done"}, {"n": "Log sampling", "st": "planned"}],
-      [{"n": "Centralized storage", "st": "in-progress"}, {"n": "Retention policies", "st": "done"}, {"n": "Index optimization", "st": "planned"}],
+      [{"n": "Async log shipping", "st": "done"}, {"n": "Log sampling", "st": "planned"}, {"n": "ELK stack vs Datadog \u2014 decision pending", "c": "#a5f3fc"}],
+      [{"n": "Centralized storage", "st": "in-progress"}, {"n": "Retention policies", "st": "done"}, {"n": "Index optimization", "st": "planned"}, {"n": "Retention period for compliance?", "c": "#bef264"}],
       [{"n": "Full-text search", "st": "in-progress"}, {"n": "Filter by service", "st": "done"}, {"n": "Time range queries", "st": "done"}],
       [{"n": "Error rate charts", "st": "in-progress"}, {"n": "Request latency graphs", "st": "planned"}],
       [{"n": "Threshold alerts", "st": "planned"}, {"n": "PagerDuty integration", "st": "planned", "u": "https://developer.pagerduty.com/docs/"}]
     ]
   }, {
-    "n": "R3",
+    "n": "V3",
     "t": [
       [{"n": "Distributed tracing", "st": "planned"}, {"n": "Performance profiling", "st": "planned"}],
       [{"n": "Multi-region collection", "st": "planned"}, {"n": "Edge buffering", "st": "planned"}],
       [{"n": "Long-term archival", "st": "planned"}, {"n": "Compliance exports", "st": "planned"}],
-      [{"n": "Saved searches", "st": "planned"}, {"n": "Query templates", "st": "planned"}, {"n": "Log anomaly detection", "st": "planned"}],
+      [{"n": "Saved searches", "st": "planned"}, {"n": "Query templates", "st": "planned"}, {"n": "Log anomaly detection", "st": "planned"}, {"n": "OpenTelemetry vs vendor-specific?", "c": "#bef264"}],
       [{"n": "Custom dashboards", "st": "planned"}, {"n": "SLO tracking", "st": "planned"}],
       [{"n": "Runbook automation", "st": "planned"}, {"n": "Incident timeline", "st": "planned"}]
     ]
