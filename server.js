@@ -1,3 +1,4 @@
+// Storymaps.io — AGPL-3.0 — see LICENSE for details
 import { createServer } from 'node:http';
 import { readFile } from 'node:fs/promises';
 import { extname, join, dirname } from 'node:path';

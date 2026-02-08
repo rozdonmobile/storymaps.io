@@ -13,7 +13,7 @@
     "agile"
   ],
   "author": "",
-  "license": "ISC",
+  "license": "AGPL-3.0-only",
   "dependencies": {
     "open": "^11.0.0"
   }

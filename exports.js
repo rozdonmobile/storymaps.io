@@ -1,3 +1,4 @@
+// Storymaps.io — AGPL-3.0 — see LICENSE for details
 // Export Modules
 // Requires: dom, state, el, sanitizeFilename from app.js
 
