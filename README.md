@@ -1,22 +1,33 @@
 # Storymaps.io
 
-A simple, interactive user story mapping tool built with vanilla JavaScript.
+A free, open-source user story mapping tool with real-time collaboration.
 
-![Screenshot](resources/screenshot.png)
+![Screenshot](public/resources/welcome-img.png)
 
 ## What is User Story Mapping?
-User story mapping is a technique for organising user stories into a visual map that helps teams understand the big picture of a software project, feature, or product. More importantly, it helps teams agree on what the product should do and how it should be built. It acts as a canonical source of information for the team that can be referenced throughout the project.
 
-It's not a replacement for Jira, Trello, Phabricator, or any other project management tool. Instead, it's used alongside them to visualise the big picture of the work being done, track progress, and keep everyone aligned on the value being delivered.
+User story mapping is a technique for organising stories into a visual map that shows the entire product life cycle at a glance. It helps teams build a shared understanding of what a product does, who it serves, how it delivers value, how it was built, and where it's going next. It's essentially a comprehension tool which shows you the product vision and evolution in a single diagram. 
 
-### The Power of the Big Picture
-User story mapping transforms a flat agile backlog into a living visual narrative that helps your team never lose sight of the user's journey. While traditional tools are excellent for tracking individual tasks, they often obscure the "why" behind the work.
+If a sprint shows you the tree, a story map shows you the forest.
 
-By mapping out the user journey upfront, you can instantly spot functional gaps. For example, let's say you're building an online store for a local sign shop that makes custom signs. You'd presumably plan out steps including "Browse Designs" → "Customise Text" → "Confirm Dimensions" → "Approve" → "Checkout". That seems like a sensible linear flow in your scrum backlog.
 
-You then start the implementation, and you work through the first three stages, all good, until you hit "Approve", and then you realise that in your planning, you forgot to account for the revision cycle needed if the customer's design isn't approved. Implementation then stops due to a new discussion being needed. After discussing it with stakeholders, you settle on a new additional flow of "Revise Design" → "Revise Dimensions" → "Re-approve". This discovery increases your workload from five steps to eight and forces a mid-sprint halt for stakeholder discussions. Encountering this kind of "hidden" work can happen many times during a project, sometimes surfacing complexities you never anticipated in the original design, leading to frustration, scope creep, and late deliveries.
+It's not a replacement for Jira, Trello, Phabricator, or any other project management tool. It's the missing layer that sits alongside them. Your issue tracker tells you what work needs doing. Your story map tells you why it matters and where it fits.
 
-Alternatively, with User Story Mapping, everyone is in the room during the mapping session, so the question "What happens if they don't approve?" inevitably surfaces early, revealing the missing path in the customer's journey upfront. You have the conversation before the implementation starts, capture it in the map, and reduce disruptions to the project during implementation while building shared understanding across stakeholders and the technical team. **Flat backlogs hide complexity; User Story Maps expose it.**
+### Why It Matters
+
+Agile is great at showing you what you're building right now. It's not great at showing you what you're adding it to. Every long-running project follows the same pattern: it starts with vision and shared understanding, and six months later that's been replaced by an infinite backlog. You can look at 400 tickets and know exactly what needs doing without having any idea what the product actually does. The backlog shows you work. It doesn't show you value.
+
+A story map fixes that. One diagram that shows who the users are, what journey they take, what features support each step, and what's been delivered versus what's planned. You can point at a section and say "this flow is way too complex, we should simplify it" or "we could combine these three steps into one." You can draw a line and say "everything above this is our next release."
+
+### Flat Backlogs Hide Complexity. Story Maps Expose It.
+
+By mapping out the user journey upfront, you can instantly spot functional gaps. For example, say you're building an online store for a local sign shop. You plan out steps: "Browse Designs" → "Customise Text" → "Confirm Dimensions" → "Approve" → "Checkout". That seems like a sensible linear flow in your backlog.
+
+You start implementation, work through the first three stages, and hit "Approve", only to realise you forgot to account for what happens if the customer's design isn't approved. Implementation pauses. After discussing it with stakeholders, you add "Revise Design" → "Revise Dimensions" → "Re-approve". Your workload just went from five steps to eight, mid-sprint, with unplanned stakeholder discussions.
+
+This kind of hidden complexity surfaces repeatedly on projects, leading to frustration, scope creep, and late deliveries.
+
+With story mapping, everyone is in the room during the mapping session. The question "What happens if they don't approve?" surfaces early because the team is walking through the user's journey together, step by step. You have the conversation before implementation starts, capture it in the map, and reduce disruptions while building shared understanding across the team.
 
 ### User Story Mapping Structure:
 - **Users** - Who are the users? e.g. first-time shopper
@@ -35,12 +46,12 @@ Alternatively, with User Story Mapping, everyone is in the room during the mappi
 - **Status Indicators** - Mark tasks as done, in-progress, or planned with progress tracking per slice
 - **Legend** - Define colour-coded card categories (e.g. Tasks, Notes, Questions, Edge cases)
 - **Colours & Links** - Customise card colours and add external URLs to your existing task management tools
-- **Drag & Drop** - Reorder cards and slices
+- **Drag & Drop** - Reorder cards, columns, and slices
 
 ### Collaboration
 - **Real-time Collaboration** - Multiple users can edit the same map simultaneously with conflict-free merging powered by Yjs CRDTs
 - **Collaborative Notepad** - Shared notepad for team notes, decisions, and questions that syncs in real-time
-- **Live Cursors** - See other users' cursors and selections in real-time
+- **Live Cursors** - See other users' cursors and drag operations in real-time
 - **Live Viewer Count** - See how many people are viewing the map
 - **Shareable URLs** - Each map gets a unique URL for easy sharing
 - **Lock Maps** - Password-protect maps to prevent edits; unlock anytime to resume editing
@@ -51,28 +62,62 @@ Alternatively, with User Story Mapping, everyone is in the room during the mappi
 - **Import/Export JSON** - Save and load story maps as JSON files
 - **Print / PDF** - Print your story map or save as PDF
 - **Undo/Redo** - Ctrl+Z / Ctrl+Y to undo and redo changes
-- **Zoom Controls** - Zoom out to see the full board, zoom in for detail
+- **Infinite Canvas** - Ctrl+scroll to zoom, right-click drag to pan
 - **Local Storage** - Automatically saves your work
 - **Samples** - Load example story maps to learn the methodology
 
-## Self-Hosting Setup
+## Architecture
 
-This app uses Firebase for real-time collaboration and cloud storage. To run your own instance:
+The app is a single Node.js server (`server.js`) that handles:
+- **WebSocket** - Real-time collaboration via y-websocket
+- **Static files** - Serves the client app from `public/` and `src/`
+- **REST API** - Lock state (`/api/lock/:mapId`) and stats (`/api/stats`)
 
-1. Create a Firebase project at [console.firebase.google.com](https://console.firebase.google.com/)
-2. Enable Firestore Database in your project
-3. Enable Realtime Database in your project (for live viewer count)
-4. Set up App Check with reCAPTCHA v3 at [console.cloud.google.com/security/recaptcha](https://console.cloud.google.com/security/recaptcha)
-5. Copy `config.example.js` to `config.js`
-6. Add your Firebase credentials, database URL, and reCAPTCHA site key to `config.js`
-7. Serve the files with any static web server
+### Data Storage
+- **LevelDB** - Yjs document persistence in `yjs-data/`
+- **SQLite** - Map index with names and timestamps (`yjs-data/maps.db`)
+- **JSON files** - Lock state (`yjs-data/locks.json`) and counters (`yjs-data/stats.json`)
 
-Note: Data is always saved to local storage. Real-time collaboration and cloud sync require Firebase.
+### Client
+The client has no build step — ES modules are loaded directly from `src/`, with Yjs and y-websocket fetched from esm.sh at runtime.
 
-This project is licensed under AGPL-3.0. If you modify and deploy it as a network service, you must make your source code available.
+## Self-Hosting
+
+### Prerequisites
+- Docker and Docker Compose
+- A domain with DNS pointing to your server
+
+### Quick Start
+
+1. Clone the repo
+2. Build the Docker image:
+   ```bash
+   docker compose build
+   ```
+3. Edit the `Caddyfile` with your domain:
+   ```
+   yourdomain.com {
+       reverse_proxy app:8080
+   }
+   ```
+4. Start the services:
+   ```bash
+   docker compose up -d
+   ```
+
+Caddy automatically provisions HTTPS certificates via Let's Encrypt. Data persists in the `yjs-data/` host-mounted volume.
+
+### Running Locally (Development)
+
+```bash
+npm install
+npm start
+```
+
+The server starts on `http://localhost:8080`.
 
 ## Usage
-1. Visit [storymaps.io](https://storymaps.io) or run locally with `npx serve -s` (SPA mode for client-side routing)
+1. Visit [storymaps.io](https://storymaps.io) or self-host your own instance
 2. Click **New Story Map** or try a sample to get started
 3. Click **+** to add steps (columns) to the backbone
 4. Click **+** in a column to add tasks
@@ -84,17 +129,18 @@ This project is licensed under AGPL-3.0. If you modify and deploy it as a networ
 10. Click **Share** to copy the URL and collaborate with others
 11. Use **Menu → Lock Map** to password-protect the map from edits
 12. Use **Ctrl+Z** / **Ctrl+Y** to undo and redo changes
-13. Use zoom controls (bottom-right) to zoom in/out
+13. Use **Ctrl+scroll** to zoom, **right-click drag** to pan
 14. Use **Menu → Export** to save as JSON or export to Jira/Phabricator
 15. Use **Print** to save as PDF
 
 ## Support
-If you find this tool useful, consider [buying me a coffee](https://buymeacoffee.com/jackgleeson).
+If you find this tool useful, consider [buying me a coffee](https://buymeacoffee.com/jackgleeson). It goes towards server costs and helps me keep the app running.
 
 ## Credits
 - Thanks to Jeff Patton for pioneering user story mapping. Learn more: [Jeff Patton's Story Mapping](https://jpattonassociates.com/story-mapping/)
 - Real-time collaboration powered by [Yjs](https://yjs.dev/) CRDTs
 - Drag and drop powered by [SortableJS](https://sortablejs.github.io/Sortable/)
+- Code editor powered by [CodeMirror 6](https://codemirror.net/)
 
 ## License
-AGPL-3.0 — see [LICENSE](LICENSE) for details.
+AGPL-3.0 — see [LICENCE](LICENCE) for details.

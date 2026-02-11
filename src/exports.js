@@ -1,26 +1,36 @@
-// Storymaps.io — AGPL-3.0 — see LICENSE for details
-// Export Modules
-// Requires: dom, state, el, sanitizeFilename from app.js
+// Storymaps.io — AGPL-3.0 — see LICENCE for details
+// Export Modules — Jira CSV, Jira API, Phabricator
+
+import { el } from '/src/constants.js';
+import { state } from '/src/state.js';
+
+let dom = null;
+let sanitizeFilename = null;
+
+export const init = (deps) => {
+    dom = deps.dom;
+    sanitizeFilename = deps.sanitizeFilename;
+};
 
 // ==================== Jira CSV Export ====================
 
-const jiraExportState = {
+export const jiraExportState = {
     selectedSlices: new Set(),
     selectedStatuses: new Set(['none', 'planned', 'in-progress', 'done']),
     epicData: []
 };
 
-const showJiraExportModal = () => {
+export const showJiraExportModal = () => {
     populateJiraExportSlices();
     populateJiraExportEpics();
     dom.jiraExportModal.classList.add('visible');
 };
 
-const hideJiraExportModal = () => {
+export const hideJiraExportModal = () => {
     dom.jiraExportModal.classList.remove('visible');
 };
 
-const confirmCloseJiraExportModal = () => {
+export const confirmCloseJiraExportModal = () => {
     if (confirm('Close export dialog?')) {
         hideJiraExportModal();
     }
@@ -67,7 +77,7 @@ const populateJiraExportSlices = () => {
     }
 };
 
-const populateJiraExportEpics = () => {
+export const populateJiraExportEpics = () => {
     dom.jiraExportEpics.innerHTML = '';
     jiraExportState.epicData = [];
 
@@ -258,7 +268,7 @@ const generateJiraCsv = () => {
     return rows.join('\n');
 };
 
-const downloadJiraCsv = () => {
+export const downloadJiraCsv = () => {
     const csv = generateJiraCsv();
     const filename = sanitizeFilename(state.name || 'story-map') + '-jira.csv';
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
@@ -271,13 +281,13 @@ const downloadJiraCsv = () => {
 
 // ==================== Phabricator Export ====================
 
-const phabExportState = {
+export const phabExportState = {
     selectedSlices: new Set(),
     selectedStatuses: new Set(['none', 'planned', 'in-progress', 'done']),
     epicData: []
 };
 
-const showPhabExportModal = () => {
+export const showPhabExportModal = () => {
     populatePhabExportSlices();
     populatePhabExportEpics();
     dom.phabStage1.classList.remove('hidden');
@@ -286,11 +296,11 @@ const showPhabExportModal = () => {
     dom.phabExportModal.classList.add('visible');
 };
 
-const hidePhabExportModal = () => {
+export const hidePhabExportModal = () => {
     dom.phabExportModal.classList.remove('visible');
 };
 
-const confirmClosePhabModal = () => {
+export const confirmClosePhabModal = () => {
     if (confirm('Close export dialog?')) {
         hidePhabExportModal();
     }
@@ -337,7 +347,7 @@ const populatePhabExportSlices = () => {
     }
 };
 
-const populatePhabExportEpics = () => {
+export const populatePhabExportEpics = () => {
     dom.phabExportEpics.innerHTML = '';
     phabExportState.epicData = [];
 
@@ -457,7 +467,7 @@ const populatePhabExportEpics = () => {
     }
 };
 
-const generatePhabImportFunction = () => {
+export const generatePhabImportFunction = () => {
     return `async function importTasks(token, items, tags) {
   const url = '${getPhabBaseUrl()}/api/maniphest.edit';
   async function createTask(t, parentId, itemTags) {
@@ -506,7 +516,7 @@ const getPhabBaseUrl = () => {
     return input;
 };
 
-const generatePhabImportCall = () => {
+export const generatePhabImportCall = () => {
     const epics = [];
     const epicEls = dom.phabExportEpics.querySelectorAll('.phab-export-epic');
 
@@ -550,7 +560,7 @@ const generatePhabImportCall = () => {
     return `importTasks('${token}', ${JSON.stringify(epics, null, 2)}, ${JSON.stringify(tags)});`;
 };
 
-const showPhabStage2 = () => {
+export const showPhabStage2 = () => {
     dom.phabStage1.classList.add('hidden');
     dom.phabStage2.classList.remove('hidden');
     dom.phabExportTitle.textContent = 'Step 2: Import';
@@ -559,13 +569,13 @@ const showPhabStage2 = () => {
     dom.phabImportCall.textContent = generatePhabImportCall();
 };
 
-const showPhabStage1 = () => {
+export const showPhabStage1 = () => {
     dom.phabStage1.classList.remove('hidden');
     dom.phabStage2.classList.add('hidden');
     dom.phabExportTitle.textContent = 'Step 1: Select Tasks';
 };
 
-const copyPhabCode = async (element, button) => {
+export const copyPhabCode = async (element, button) => {
     const text = element.textContent;
     try {
         await navigator.clipboard.writeText(text);
@@ -587,13 +597,13 @@ const copyPhabCode = async (element, button) => {
 
 // ==================== Jira API Export ====================
 
-const jiraApiExportState = {
+export const jiraApiExportState = {
     selectedSlices: new Set(),
     selectedStatuses: new Set(['none', 'planned', 'in-progress', 'done']),
     epicData: []
 };
 
-const showJiraApiExportModal = () => {
+export const showJiraApiExportModal = () => {
     populateJiraApiExportSlices();
     populateJiraApiExportEpics();
     dom.jiraApiStage1.classList.remove('hidden');
@@ -602,11 +612,11 @@ const showJiraApiExportModal = () => {
     dom.jiraApiExportModal.classList.add('visible');
 };
 
-const hideJiraApiExportModal = () => {
+export const hideJiraApiExportModal = () => {
     dom.jiraApiExportModal.classList.remove('visible');
 };
 
-const confirmCloseJiraApiModal = () => {
+export const confirmCloseJiraApiModal = () => {
     if (confirm('Close export dialog?')) {
         hideJiraApiExportModal();
     }
@@ -649,7 +659,7 @@ const populateJiraApiExportSlices = () => {
     });
 };
 
-const populateJiraApiExportEpics = () => {
+export const populateJiraApiExportEpics = () => {
     dom.jiraApiExportEpics.innerHTML = '';
     jiraApiExportState.epicData = [];
 
@@ -760,7 +770,7 @@ const populateJiraApiExportEpics = () => {
     }
 };
 
-const generateJiraApiImportFunction = () => {
+export const generateJiraApiImportFunction = () => {
     return `async function importToJira(email, token, projectKey, epics) {
   const auth = btoa(email + ':' + token);
   const headers = {
@@ -815,7 +825,7 @@ const generateJiraApiImportFunction = () => {
 }`;
 };
 
-const generateJiraApiImportCall = () => {
+export const generateJiraApiImportCall = () => {
     const epics = [];
     const epicEls = dom.jiraApiExportEpics.querySelectorAll('.phab-export-epic');
 
@@ -855,7 +865,7 @@ const generateJiraApiImportCall = () => {
     return `importToJira('${email}', '${token}', '${projectKey}', ${JSON.stringify(epics, null, 2)});`;
 };
 
-const showJiraApiStage2 = () => {
+export const showJiraApiStage2 = () => {
     dom.jiraApiStage1.classList.add('hidden');
     dom.jiraApiStage2.classList.remove('hidden');
     dom.jiraApiExportTitle.textContent = 'Step 2: Import';
@@ -864,7 +874,7 @@ const showJiraApiStage2 = () => {
     dom.jiraApiImportCall.textContent = generateJiraApiImportCall();
 };
 
-const showJiraApiStage1 = () => {
+export const showJiraApiStage1 = () => {
     dom.jiraApiStage1.classList.remove('hidden');
     dom.jiraApiStage2.classList.add('hidden');
     dom.jiraApiExportTitle.textContent = 'Step 1: Select Stories';

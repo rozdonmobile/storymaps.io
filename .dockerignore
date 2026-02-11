@@ -1,0 +1,8 @@
+node_modules/
+.git/
+builds/
+yjs-data/
+yjs-data-migration/
+*.md
+.dockerignore
+.gitignore

@@ -1,0 +1,11 @@
+storymaps.io {
+    reverse_proxy app:8080
+}
+
+www.storymaps.io {
+    redir https://storymaps.io{uri} permanent
+}
+
+new.storymaps.io {
+    redir https://storymaps.io{uri} permanent
+}
