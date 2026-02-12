@@ -15,19 +15,19 @@ It's not a replacement for Jira, Trello, Phabricator, or any other project manag
 
 ### Why It Matters
 
-Agile is great at showing you what you're building right now. It's not great at showing you what you're adding it to. Every long-running project follows the same pattern: it starts with vision and shared understanding, and six months later that's been replaced by an infinite backlog. You can look at 400 tickets and know exactly what needs doing without having any idea what the product actually does. The backlog shows you work. It doesn't show you value.
+Agile workflows like Scrum and Kanban are great at showing you what you're building right now. They're not always great at showing you how it connects to everything else. Long-running projects often follow the same pattern: they start with energy, vision and shared understanding, and six months later that coherent picture of the product has been replaced by a giant backlog. Everyone knows what their tickets are. Nobody can point to a single place that shows how all that work fits together as a product. The vision that started the project isn't lost because people forgot it. It's lost because nothing in the workflow preserves it.
 
-A story map fixes that. One diagram that shows who the users are, what journey they take, what features support each step, and what's been delivered versus what's planned. You can point at a section and say "this flow is way too complex, we should simplify it" or "we could combine these three steps into one." You can draw a line and say "everything above this is our next release."
+A story map preserves it. One diagram that shows who the users are, what journey they take, what features support each step, and what's been delivered versus what's planned. You can point at a section and say 'we've got the same approval flow duplicated across three journeys, let's consolidate it' or 'there's nothing between checkout and delivery, we're missing the order confirmation step.' You can draw a line across the map and say 'everything above this is V1, let's push biometrics and reporting to V2.' The product vision stays visible, not as a document nobody reads, but as a living artifact the team works from, refers back to, and can update as the product evolves.
 
-### Flat Backlogs Hide Complexity. Story Maps Expose It.
+###   Agile Backlogs Hide Complexity. Story Maps Expose It.
 
 By mapping out the user journey upfront, you can instantly spot functional gaps. For example, say you're building an online store for a local sign shop. You plan out steps: "Browse Designs" → "Customise Text" → "Confirm Dimensions" → "Approve" → "Checkout". That seems like a sensible linear flow in your backlog.
 
-You start implementation, work through the first three stages, and hit "Approve", only to realise you forgot to account for what happens if the customer's design isn't approved. Implementation pauses. After discussing it with stakeholders, you add "Revise Design" → "Revise Dimensions" → "Re-approve". Your workload just went from five steps to eight, mid-sprint, with unplanned stakeholder discussions.
+You start implementation, work through the first three stages, and hit "Approve", only to realise you forgot to account for what happens if the customer's design isn't approved. Implementation pauses. After discussing it with stakeholders, you add "Revise Design" → "Revise Dimensions" → "Re-approve". Your workload just went from five steps to eight, mid-sprint, sound familiar?.
 
-This kind of hidden complexity surfaces repeatedly on projects, leading to frustration, scope creep, and late deliveries.
+This kind of hidden complexity surfaces repeatedly in projects. It's nobody's fault, but it impacts everyone: scope creep, late deliveries, and uncomfortable conversations about why things are taking longer than expected.
 
-With story mapping, everyone is in the room during the mapping session. The question "What happens if they don't approve?" surfaces early because the team is walking through the user's journey together, step by step. You have the conversation before implementation starts, capture it in the map, and reduce disruptions while building shared understanding across the team.
+With story mapping, everyone is in the room during the mapping session. The question "What happens if they don't approve?" surfaces early because the team is walking through the user's journey together, step by step. You have the conversation before implementation starts, capture it in the map, and reduce disruptions while building shared understanding across the team.  Flat Backlogs Hide Complexity. Story Maps Expose It.
 
 ### User Story Mapping Structure:
 - **Users** - Who are the users? e.g. first-time shopper
@@ -43,7 +43,7 @@ With story mapping, everyone is in the room during the mapping session. The ques
 - **Activities & Steps (Backbone)** - Define activities and steps representing the user journey left-to-right
 - **Tasks** - Add task cards under each step to break down the work
 - **Release Slices** - Group tasks horizontally into releases or priorities (MVP, V1, V2, etc.)
-- **Status Indicators** - Mark tasks as done, in-progress, or planned with progress tracking per slice
+- **Status Indicators** - Mark tasks as done, in-progress, planned, or blocked with progress tracking per slice
 - **Legend** - Define colour-coded card categories (e.g. Tasks, Notes, Questions, Edge cases)
 - **Colours & Links** - Customise card colours and add external URLs to your existing task management tools
 - **Drag & Drop** - Reorder cards, columns, and slices
@@ -79,7 +79,7 @@ The app is a single Node.js server (`server.js`) that handles:
 - **JSON files** - Lock state (`yjs-data/locks.json`) and counters (`yjs-data/stats.json`)
 
 ### Client
-The client has no build step — ES modules are loaded directly from `src/`, with Yjs and y-websocket fetched from esm.sh at runtime.
+The client has no build step — ES modules are loaded directly from `src/`. Third-party libraries (Yjs, CodeMirror) are vendored as pre-built bundles in `public/vendor/`.
 
 ## Self-Hosting
 
@@ -140,7 +140,7 @@ If you find this tool useful, consider [buying me a coffee](https://buymeacoffee
 - Thanks to Jeff Patton for pioneering user story mapping. Learn more: [Jeff Patton's Story Mapping](https://jpattonassociates.com/story-mapping/)
 - Real-time collaboration powered by [Yjs](https://yjs.dev/) CRDTs
 - Drag and drop powered by [SortableJS](https://sortablejs.github.io/Sortable/)
-- Code editor powered by [CodeMirror 6](https://codemirror.net/)
+- Collaborative notepad powered by [CodeMirror 6](https://codemirror.net/)
 
 ## License
 AGPL-3.0 — see [LICENCE](LICENCE) for details.

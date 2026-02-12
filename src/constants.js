@@ -47,7 +47,8 @@ export const DEFAULT_CARD_COLORS = {
 export const STATUS_OPTIONS = {
     done: { label: 'Done', color: '#22c55e' },
     'in-progress': { label: 'In Progress', color: '#eab308' },
-    planned: { label: 'Planned', color: '#f97316' }
+    planned: { label: 'Planned', color: '#3b82f6' },
+    blocked: { label: 'Blocked', color: '#ef4444' }
 };
 
 export const ZOOM_LEVELS = [1, 0.75, 0.5, 0.25, 0.1];
