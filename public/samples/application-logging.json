@@ -2,74 +2,490 @@
   "app": "storymap",
   "v": 1,
   "name": "Upgrade Application Logging",
-  "notes": "JG: V1 must ship before the next on-call rotation\n\nDK: Log format needs to match the existing Splunk parsers\n\nJG: Get budget approval before committing to Datadog",
+  "notes": "RB: V1 must ship before next on-call rotation starts March 3\n\nDK: Log format must match existing Splunk parsers, don't break current dashboards\n\nRB: No Datadog commitment until budget approved, ELK for the PoC\n\nTN: Running ELK vs Datadog proof of concept this sprint",
   "l": [
-    {"c": "#fef08a", "n": "Tasks"},
-    {"c": "#a5f3fc", "n": "Notes"},
-    {"c": "#bef264", "n": "Questions"},
-    {"c": "#fecdd3", "n": "Edge cases"}
+    {
+      "c": "#fef08a",
+      "n": "Tasks"
+    },
+    {
+      "c": "#a5f3fc",
+      "n": "Notes"
+    },
+    {
+      "c": "#bef264",
+      "n": "Questions"
+    },
+    {
+      "c": "#fecdd3",
+      "n": "Edge cases"
+    }
   ],
   "a": [
-    {"n": "Add Log Statements", "c": "#86efac"},
-    {"n": "Collect Logs", "c": "#86efac"},
-    {"n": "Store Logs", "c": "#86efac"},
-    {"n": "Search Logs", "c": "#86efac"},
-    {"n": "View Dashboards", "c": "#86efac"},
-    {"n": "Get Alerts", "c": "#86efac"}
+    {
+      "n": "Add Log Statements",
+      "c": "#86efac"
+    },
+    {
+      "n": "Collect Logs",
+      "c": "#86efac"
+    },
+    {
+      "n": "Store Logs",
+      "c": "#86efac"
+    },
+    {
+      "n": "Search Logs",
+      "c": "#86efac"
+    },
+    {
+      "n": "View Dashboards",
+      "c": "#86efac"
+    },
+    {
+      "n": "",
+      "c": "#e5e7eb",
+      "h": true
+    },
+    {
+      "n": "Get Alerts",
+      "c": "#86efac"
+    }
   ],
-  "s": [{
-    "sep": false,
-    "rt": "Users",
-    "n": "",
-    "t": [
-      [{"n": "Developer", "c": "#fda4af"}],
-      [],
-      [],
-      [],
-      [],
-      [{"n": "On-Call Engineer", "c": "#fda4af"}]
-    ]
-  }, {
-    "sep": false,
-    "rt": "Activities",
-    "n": "",
-    "t": [
-      [{"n": "Debug Issues", "c": "#93c5fd"}],
-      [],
-      [],
-      [],
-      [],
-      [{"n": "Respond to Incidents", "c": "#93c5fd"}]
-    ]
-  }, {
-    "n": "V1",
-    "t": [
-      [{"n": "Choose logging library", "st": "done"}, {"n": "Define log levels", "st": "done"}, {"n": "Add error logging", "st": "done"}],
-      [{"n": "Capture stdout/stderr", "st": "done"}, {"n": "Request logging", "st": "done"}],
-      [{"n": "Write to files", "st": "done"}, {"n": "Log rotation", "st": "done"}, {"n": "Disk full during log write", "c": "#fecdd3"}],
-      [{"n": "Grep log files", "st": "done"}, {"n": "Tail -f for live view", "st": "done"}],
-      [{"n": "Basic log viewer", "st": "done"}],
-      [{"n": "Email on errors", "st": "done"}, {"n": "Alert fatigue if thresholds too low", "c": "#fecdd3"}]
-    ]
-  }, {
-    "n": "V2",
-    "t": [
-      [{"n": "Structured JSON logs", "st": "in-progress"}, {"n": "Correlation IDs", "st": "in-progress"}, {"n": "Context fields", "st": "planned"}],
-      [{"n": "Async log shipping", "st": "done"}, {"n": "Log sampling", "st": "planned"}, {"n": "ELK stack vs Datadog \u2014 decision pending", "c": "#a5f3fc"}],
-      [{"n": "Centralized storage", "st": "in-progress"}, {"n": "Retention policies", "st": "done"}, {"n": "Index optimization", "st": "planned"}, {"n": "Retention period for compliance?", "c": "#bef264"}],
-      [{"n": "Full-text search", "st": "in-progress"}, {"n": "Filter by service", "st": "done"}, {"n": "Time range queries", "st": "done"}],
-      [{"n": "Error rate charts", "st": "in-progress"}, {"n": "Request latency graphs", "st": "planned"}],
-      [{"n": "Threshold alerts", "st": "planned"}, {"n": "PagerDuty integration", "st": "planned", "u": "https://developer.pagerduty.com/docs/"}]
-    ]
-  }, {
-    "n": "V3",
-    "t": [
-      [{"n": "Distributed tracing", "st": "planned"}, {"n": "Performance profiling", "st": "planned"}],
-      [{"n": "Multi-region collection", "st": "planned"}, {"n": "Edge buffering", "st": "planned"}],
-      [{"n": "Long-term archival", "st": "planned"}, {"n": "Compliance exports", "st": "planned"}],
-      [{"n": "Saved searches", "st": "planned"}, {"n": "Query templates", "st": "planned"}, {"n": "Log anomaly detection", "st": "planned"}, {"n": "OpenTelemetry vs vendor-specific?", "c": "#bef264"}],
-      [{"n": "Custom dashboards", "st": "planned"}, {"n": "SLO tracking", "st": "planned"}],
-      [{"n": "Runbook automation", "st": "planned"}, {"n": "Incident timeline", "st": "planned"}]
-    ]
-  }]
+  "s": [
+    {
+      "n": "",
+      "sep": false,
+      "rt": "Users",
+      "t": [
+        [
+          {
+            "n": "Developer",
+            "c": "#fda4af"
+          }
+        ],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [
+          {
+            "n": "On-Call Engineer",
+            "c": "#fda4af"
+          }
+        ]
+      ]
+    },
+    {
+      "n": "",
+      "sep": false,
+      "rt": "Activities",
+      "t": [
+        [
+          {
+            "n": "Debug Issues",
+            "c": "#93c5fd"
+          }
+        ],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [
+          {
+            "n": "Respond to Incidents",
+            "c": "#93c5fd"
+          }
+        ]
+      ]
+    },
+    {
+      "n": "V1",
+      "t": [
+        [
+          {
+            "n": "Choose logging library",
+            "st": "done",
+            "sp": 2,
+            "tg": [
+              "backend"
+            ]
+          },
+          {
+            "n": "Define log levels",
+            "st": "done",
+            "sp": 1,
+            "tg": [
+              "backend"
+            ]
+          },
+          {
+            "n": "Add error logging",
+            "st": "done",
+            "sp": 3,
+            "tg": [
+              "backend"
+            ]
+          }
+        ],
+        [
+          {
+            "n": "Capture stdout/stderr",
+            "st": "done",
+            "sp": 2,
+            "tg": [
+              "infra"
+            ]
+          },
+          {
+            "n": "Request logging",
+            "st": "done",
+            "sp": 2,
+            "tg": [
+              "backend"
+            ]
+          }
+        ],
+        [
+          {
+            "n": "Write to files",
+            "st": "done",
+            "sp": 2,
+            "tg": [
+              "infra"
+            ]
+          },
+          {
+            "n": "Log rotation",
+            "st": "done",
+            "sp": 2,
+            "tg": [
+              "devops"
+            ]
+          },
+          {
+            "n": "Disk full during log write",
+            "c": "#fecdd3"
+          }
+        ],
+        [
+          {
+            "n": "Search logs via CLI",
+            "st": "done",
+            "sp": 1,
+            "tg": [
+              "devops"
+            ]
+          },
+          {
+            "n": "Live log tailing",
+            "st": "done",
+            "sp": 1,
+            "tg": [
+              "devops"
+            ]
+          }
+        ],
+        [
+          {
+            "n": "Web-based log viewer",
+            "st": "done",
+            "sp": 3,
+            "tg": [
+              "backend",
+              "monitoring"
+            ]
+          }
+        ],
+        [],
+        [
+          {
+            "n": "Email on errors",
+            "st": "done",
+            "sp": 2,
+            "tg": [
+              "monitoring"
+            ]
+          },
+          {
+            "n": "Alert fatigue if thresholds too low",
+            "c": "#fecdd3"
+          }
+        ]
+      ]
+    },
+    {
+      "n": "V2",
+      "t": [
+        [
+          {
+            "n": "Structured JSON logs",
+            "st": "in-progress",
+            "tg": [
+              "backend"
+            ]
+          },
+          {
+            "n": "Correlation IDs",
+            "st": "in-progress",
+            "tg": [
+              "backend",
+              "infra"
+            ]
+          },
+          {
+            "n": "Context fields",
+            "st": "planned",
+            "tg": [
+              "backend"
+            ]
+          }
+        ],
+        [
+          {
+            "n": "Async log shipping",
+            "st": "done",
+            "sp": 3,
+            "tg": [
+              "infra",
+              "devops"
+            ]
+          },
+          {
+            "n": "Log sampling",
+            "st": "planned",
+            "tg": [
+              "infra"
+            ]
+          },
+          {
+            "n": "Evaluate ELK vs Datadog",
+            "st": "in-progress",
+            "tg": [
+              "vendor",
+              "infra"
+            ],
+            "u": "https://www.elastic.co/guide/en/elasticsearch/reference/current/index.html"
+          }
+        ],
+        [
+          {
+            "n": "Centralized storage",
+            "st": "in-progress",
+            "tg": [
+              "infra"
+            ]
+          },
+          {
+            "n": "Retention policies",
+            "st": "done",
+            "sp": 2,
+            "tg": [
+              "security",
+              "devops"
+            ]
+          },
+          {
+            "n": "Index optimization",
+            "st": "planned",
+            "tg": [
+              "infra"
+            ]
+          },
+          {
+            "n": "Retention period for compliance?",
+            "c": "#bef264"
+          }
+        ],
+        [
+          {
+            "n": "Full-text search",
+            "st": "in-progress",
+            "tg": [
+              "backend",
+              "infra"
+            ]
+          },
+          {
+            "n": "Filter by service",
+            "st": "done",
+            "sp": 2,
+            "tg": [
+              "backend"
+            ]
+          },
+          {
+            "n": "Time range queries",
+            "st": "done",
+            "sp": 2,
+            "tg": [
+              "backend"
+            ]
+          }
+        ],
+        [
+          {
+            "n": "Error rate charts",
+            "st": "in-progress",
+            "tg": [
+              "monitoring"
+            ]
+          },
+          {
+            "n": "Request latency graphs",
+            "st": "planned",
+            "tg": [
+              "monitoring"
+            ]
+          }
+        ],
+        [],
+        [
+          {
+            "n": "Threshold alerts",
+            "st": "planned",
+            "tg": [
+              "monitoring"
+            ]
+          },
+          {
+            "n": "PagerDuty integration",
+            "st": "planned",
+            "tg": [
+              "vendor",
+              "monitoring"
+            ],
+            "u": "https://developer.pagerduty.com/docs/"
+          }
+        ]
+      ]
+    },
+    {
+      "n": "V3",
+      "t": [
+        [
+          {
+            "n": "Distributed tracing",
+            "st": "planned",
+            "tg": [
+              "infra",
+              "backend"
+            ],
+            "u": "https://opentelemetry.io/docs/"
+          },
+          {
+            "n": "Performance profiling",
+            "st": "planned",
+            "tg": [
+              "backend"
+            ]
+          }
+        ],
+        [
+          {
+            "n": "Multi-region collection",
+            "st": "planned",
+            "tg": [
+              "infra",
+              "devops"
+            ]
+          },
+          {
+            "n": "Edge buffering",
+            "st": "planned",
+            "tg": [
+              "infra"
+            ]
+          }
+        ],
+        [
+          {
+            "n": "Long-term archival",
+            "st": "planned",
+            "tg": [
+              "infra",
+              "security"
+            ]
+          },
+          {
+            "n": "Compliance exports",
+            "st": "planned",
+            "tg": [
+              "security"
+            ]
+          }
+        ],
+        [
+          {
+            "n": "Saved searches",
+            "st": "planned",
+            "tg": [
+              "backend"
+            ]
+          },
+          {
+            "n": "Query templates",
+            "st": "planned",
+            "tg": [
+              "backend"
+            ]
+          },
+          {
+            "n": "Log anomaly detection",
+            "st": "planned",
+            "tg": [
+              "monitoring",
+              "backend"
+            ]
+          },
+          {
+            "n": "OpenTelemetry vs vendor-specific?",
+            "c": "#bef264"
+          }
+        ],
+        [
+          {
+            "n": "Custom dashboards",
+            "st": "planned",
+            "tg": [
+              "monitoring"
+            ]
+          },
+          {
+            "n": "SLO tracking",
+            "st": "planned",
+            "tg": [
+              "monitoring"
+            ]
+          }
+        ],
+        [],
+        [
+          {
+            "n": "Datadog contract",
+            "st": "blocked",
+            "tg": [
+              "vendor"
+            ]
+          },
+          {
+            "n": "Runbook automation",
+            "st": "planned",
+            "tg": [
+              "devops"
+            ]
+          },
+          {
+            "n": "Incident timeline",
+            "st": "planned",
+            "tg": [
+              "monitoring"
+            ]
+          }
+        ]
+      ]
+    }
+  ]
 }

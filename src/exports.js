@@ -1,5 +1,5 @@
 // Storymaps.io — AGPL-3.0 — see LICENCE for details
-// Export Modules — Jira CSV, Jira API, Phabricator
+// Export Modules — Jira CSV, Jira API, Phabricator, Asana
 
 import { el } from '/src/constants.js';
 import { state } from '/src/state.js';
@@ -53,7 +53,7 @@ const populateJiraExportSlices = () => {
             storyCount += stories.filter(s => s.name.trim()).length;
         });
 
-        const label = el('label', 'jira-slice-checkbox checked');
+        const label = el('label', 'export-slice-checkbox checked');
         const checkbox = el('input', null, { type: 'checkbox', checked: true });
         checkbox.dataset.sliceId = slice.id;
         checkbox.addEventListener('change', (e) => {
@@ -66,8 +66,8 @@ const populateJiraExportSlices = () => {
             }
             populateJiraExportEpics();
         });
-        const nameSpan = el('span', 'jira-slice-name', { text: sliceName });
-        const countSpan = el('span', 'jira-slice-count', { text: `(${storyCount})` });
+        const nameSpan = el('span', 'export-slice-name', { text: sliceName });
+        const countSpan = el('span', 'export-slice-count', { text: `(${storyCount})` });
         label.append(checkbox, nameSpan, countSpan);
         container.append(label);
     });
@@ -323,7 +323,7 @@ const populatePhabExportSlices = () => {
             storyCount += stories.filter(s => s.name.trim()).length;
         });
 
-        const label = el('label', 'phab-slice-checkbox checked');
+        const label = el('label', 'export-slice-checkbox checked');
         const checkbox = el('input', null, { type: 'checkbox', checked: true });
         checkbox.dataset.sliceId = slice.id;
         checkbox.addEventListener('change', (e) => {
@@ -336,8 +336,8 @@ const populatePhabExportSlices = () => {
             }
             populatePhabExportEpics();
         });
-        const nameSpan = el('span', 'phab-slice-name', { text: sliceName });
-        const countSpan = el('span', 'phab-slice-count', { text: `(${storyCount})` });
+        const nameSpan = el('span', 'export-slice-name', { text: sliceName });
+        const countSpan = el('span', 'export-slice-count', { text: `(${storyCount})` });
         label.append(checkbox, nameSpan, countSpan);
         container.append(label);
     });
@@ -384,18 +384,18 @@ export const populatePhabExportEpics = () => {
         };
         phabExportState.epicData.push(epicData);
 
-        const epicDiv = el('div', 'phab-export-epic');
+        const epicDiv = el('div', 'export-epic');
         epicDiv.dataset.columnId = column.id;
 
-        const header = el('div', 'phab-export-epic-header');
+        const header = el('div', 'export-epic-header');
 
-        const checkbox = el('input', 'phab-export-epic-checkbox', { type: 'checkbox', checked: true });
+        const checkbox = el('input', 'export-epic-checkbox', { type: 'checkbox', checked: true });
         checkbox.addEventListener('change', (e) => {
             epicData.included = e.target.checked;
             epicDiv.classList.toggle('excluded', !e.target.checked);
         });
 
-        const nameInput = el('input', 'phab-export-epic-name', {
+        const nameInput = el('input', 'export-epic-name', {
             type: 'text',
             value: epicData.name,
             placeholder: 'Epic name'
@@ -404,7 +404,7 @@ export const populatePhabExportEpics = () => {
             epicData.name = e.target.value;
         });
 
-        const typeSelect = el('select', 'phab-export-epic-type');
+        const typeSelect = el('select', 'export-epic-type');
         const epicOption = el('option', null, { value: 'epic', text: 'Epic' });
         const taskOption = el('option', null, { value: 'task', text: 'Task' });
         typeSelect.append(epicOption, taskOption);
@@ -414,7 +414,7 @@ export const populatePhabExportEpics = () => {
 
         header.append(checkbox, nameInput, typeSelect);
 
-        const description = el('textarea', 'phab-export-epic-description', {
+        const description = el('textarea', 'export-epic-description', {
             placeholder: 'Optional description for this epic...',
             rows: 2
         });
@@ -422,19 +422,19 @@ export const populatePhabExportEpics = () => {
             epicData.description = e.target.value;
         });
 
-        const tasksList = el('div', 'phab-export-tasks');
+        const tasksList = el('div', 'export-tasks');
         tasks.forEach((task) => {
-            const taskEl = el('label', 'phab-export-task');
+            const taskEl = el('label', 'export-task');
             taskEl.dataset.status = task.status || 'none';
 
-            const taskCheckbox = el('input', 'phab-export-task-checkbox', { type: 'checkbox', checked: true });
+            const taskCheckbox = el('input', 'export-task-checkbox', { type: 'checkbox', checked: true });
             taskCheckbox.addEventListener('change', (e) => {
                 task.included = e.target.checked;
                 taskEl.classList.toggle('excluded', !e.target.checked);
             });
             taskEl.append(taskCheckbox);
 
-            const nameSpan = el('span', 'phab-export-task-name', { text: task.name });
+            const nameSpan = el('span', 'export-task-name', { text: task.name });
             taskEl.append(nameSpan);
 
             const statusClass = task.status === 'done' ? 'done' :
@@ -443,7 +443,7 @@ export const populatePhabExportEpics = () => {
             const statusText = task.status === 'done' ? 'Done' :
                 task.status === 'in-progress' ? 'In Progress' :
                 task.status === 'planned' ? 'Planned' : 'No Status';
-            const statusBadge = el('span', `phab-export-task-status ${statusClass}`, { text: statusText });
+            const statusBadge = el('span', `export-task-status ${statusClass}`, { text: statusText });
             taskEl.append(statusBadge);
             tasksList.append(taskEl);
         });
@@ -518,15 +518,15 @@ const getPhabBaseUrl = () => {
 
 export const generatePhabImportCall = () => {
     const epics = [];
-    const epicEls = dom.phabExportEpics.querySelectorAll('.phab-export-epic');
+    const epicEls = dom.phabExportEpics.querySelectorAll('.export-epic');
 
     epicEls.forEach((epicEl) => {
-        const checkbox = epicEl.querySelector('.phab-export-epic-checkbox');
+        const checkbox = epicEl.querySelector('.export-epic-checkbox');
         if (!checkbox.checked) return;
 
-        const nameInput = epicEl.querySelector('.phab-export-epic-name');
-        const descTextarea = epicEl.querySelector('.phab-export-epic-description');
-        const typeSelect = epicEl.querySelector('.phab-export-epic-type');
+        const nameInput = epicEl.querySelector('.export-epic-name');
+        const descTextarea = epicEl.querySelector('.export-epic-description');
+        const typeSelect = epicEl.querySelector('.export-epic-type');
 
         const epicName = nameInput.value || 'Untitled Epic';
         const epicDesc = descTextarea.value || '';
@@ -534,12 +534,12 @@ export const generatePhabImportCall = () => {
 
         const subtasks = [];
         const phabStatusMap = {none: 'open', planned: 'open', 'in-progress': 'progress', done: 'resolved'};
-        const taskEls = epicEl.querySelectorAll('.phab-export-task');
+        const taskEls = epicEl.querySelectorAll('.export-task');
         taskEls.forEach((taskEl) => {
-            const taskCheckbox = taskEl.querySelector('.phab-export-task-checkbox');
+            const taskCheckbox = taskEl.querySelector('.export-task-checkbox');
             if (!taskCheckbox.checked) return;
 
-            const taskName = taskEl.querySelector('.phab-export-task-name')?.textContent || '';
+            const taskName = taskEl.querySelector('.export-task-name')?.textContent || '';
             const taskStatus = phabStatusMap[taskEl.dataset.status] || 'open';
             subtasks.push({ title: taskName, description: 'Imported from Storymaps.io', status: taskStatus });
         });
@@ -639,7 +639,7 @@ const populateJiraApiExportSlices = () => {
             storyCount += stories.filter(s => s.name.trim()).length;
         });
 
-        const label = el('label', 'phab-slice-checkbox checked');
+        const label = el('label', 'export-slice-checkbox checked');
         const checkbox = el('input', null, { type: 'checkbox', checked: true });
         checkbox.dataset.sliceId = slice.id;
         checkbox.addEventListener('change', (e) => {
@@ -652,8 +652,8 @@ const populateJiraApiExportSlices = () => {
             }
             populateJiraApiExportEpics();
         });
-        const nameSpan = el('span', 'phab-slice-name', { text: sliceName });
-        const countSpan = el('span', 'phab-slice-count', { text: `(${storyCount})` });
+        const nameSpan = el('span', 'export-slice-name', { text: sliceName });
+        const countSpan = el('span', 'export-slice-count', { text: `(${storyCount})` });
         label.append(checkbox, nameSpan, countSpan);
         container.append(label);
     });
@@ -695,18 +695,18 @@ export const populateJiraApiExportEpics = () => {
         };
         jiraApiExportState.epicData.push(epicData);
 
-        const epicDiv = el('div', 'phab-export-epic');
+        const epicDiv = el('div', 'export-epic');
         epicDiv.dataset.columnId = column.id;
 
-        const header = el('div', 'phab-export-epic-header');
+        const header = el('div', 'export-epic-header');
 
-        const checkbox = el('input', 'phab-export-epic-checkbox', { type: 'checkbox', checked: true });
+        const checkbox = el('input', 'export-epic-checkbox', { type: 'checkbox', checked: true });
         checkbox.addEventListener('change', (e) => {
             epicData.included = e.target.checked;
             epicDiv.classList.toggle('excluded', !e.target.checked);
         });
 
-        const nameInput = el('input', 'phab-export-epic-name', {
+        const nameInput = el('input', 'export-epic-name', {
             type: 'text',
             value: epicData.name,
             placeholder: 'Epic name'
@@ -717,7 +717,7 @@ export const populateJiraApiExportEpics = () => {
 
         header.append(checkbox, nameInput);
 
-        const description = el('textarea', 'phab-export-epic-description', {
+        const description = el('textarea', 'export-epic-description', {
             placeholder: 'Epic description (optional)',
             rows: 2
         });
@@ -725,19 +725,19 @@ export const populateJiraApiExportEpics = () => {
             epicData.description = e.target.value;
         });
 
-        const tasksList = el('div', 'phab-export-tasks');
+        const tasksList = el('div', 'export-tasks');
         tasks.forEach((task) => {
-            const taskEl = el('label', 'phab-export-task');
+            const taskEl = el('label', 'export-task');
             taskEl.dataset.status = task.status || 'none';
 
-            const taskCheckbox = el('input', 'phab-export-task-checkbox', { type: 'checkbox', checked: true });
+            const taskCheckbox = el('input', 'export-task-checkbox', { type: 'checkbox', checked: true });
             taskCheckbox.addEventListener('change', (e) => {
                 task.included = e.target.checked;
                 taskEl.classList.toggle('excluded', !e.target.checked);
             });
             taskEl.append(taskCheckbox);
 
-            const nameSpan = el('span', 'phab-export-task-name', { text: task.name });
+            const nameSpan = el('span', 'export-task-name', { text: task.name });
             taskEl.append(nameSpan);
 
             const statusClass = task.status === 'done' ? 'done' :
@@ -746,7 +746,7 @@ export const populateJiraApiExportEpics = () => {
             const statusText = task.status === 'done' ? 'Done' :
                 task.status === 'in-progress' ? 'In Progress' :
                 task.status === 'planned' ? 'Planned' : 'No Status';
-            const statusBadge = el('span', `phab-export-task-status ${statusClass}`, { text: statusText });
+            const statusBadge = el('span', `export-task-status ${statusClass}`, { text: statusText });
             taskEl.append(statusBadge);
             tasksList.append(taskEl);
         });
@@ -827,25 +827,25 @@ export const generateJiraApiImportFunction = () => {
 
 export const generateJiraApiImportCall = () => {
     const epics = [];
-    const epicEls = dom.jiraApiExportEpics.querySelectorAll('.phab-export-epic');
+    const epicEls = dom.jiraApiExportEpics.querySelectorAll('.export-epic');
 
     epicEls.forEach((epicEl) => {
-        const checkbox = epicEl.querySelector('.phab-export-epic-checkbox');
+        const checkbox = epicEl.querySelector('.export-epic-checkbox');
         if (!checkbox.checked) return;
 
-        const nameInput = epicEl.querySelector('.phab-export-epic-name');
-        const descTextarea = epicEl.querySelector('.phab-export-epic-description');
+        const nameInput = epicEl.querySelector('.export-epic-name');
+        const descTextarea = epicEl.querySelector('.export-epic-description');
 
         const epicName = nameInput.value || 'Untitled Epic';
         const epicDesc = descTextarea.value || '';
 
         const stories = [];
-        const taskEls = epicEl.querySelectorAll('.phab-export-task');
+        const taskEls = epicEl.querySelectorAll('.export-task');
         taskEls.forEach((taskEl) => {
-            const taskCheckbox = taskEl.querySelector('.phab-export-task-checkbox');
+            const taskCheckbox = taskEl.querySelector('.export-task-checkbox');
             if (!taskCheckbox.checked) return;
 
-            const taskName = taskEl.querySelector('.phab-export-task-name')?.textContent || '';
+            const taskName = taskEl.querySelector('.export-task-name')?.textContent || '';
             stories.push({ summary: taskName });
         });
 
@@ -878,4 +878,547 @@ export const showJiraApiStage1 = () => {
     dom.jiraApiStage1.classList.remove('hidden');
     dom.jiraApiStage2.classList.add('hidden');
     dom.jiraApiExportTitle.textContent = 'Step 1: Select Stories';
+};
+
+// ==================== Asana Export ====================
+
+export const asanaExportState = {
+    selectedSlices: new Set(),
+    selectedStatuses: new Set(['none', 'planned', 'in-progress', 'done']),
+    epicData: []
+};
+
+export const showAsanaExportModal = () => {
+    populateAsanaExportSlices();
+    populateAsanaExportEpics();
+    dom.asanaStage1.classList.remove('hidden');
+    dom.asanaStage2.classList.add('hidden');
+    dom.asanaExportTitle.textContent = 'Step 1: Select Tasks';
+    dom.asanaExportModal.classList.add('visible');
+};
+
+export const hideAsanaExportModal = () => {
+    dom.asanaExportModal.classList.remove('visible');
+};
+
+export const confirmCloseAsanaModal = () => {
+    if (confirm('Close export dialog?')) {
+        hideAsanaExportModal();
+    }
+};
+
+const populateAsanaExportSlices = () => {
+    const container = dom.asanaExportSlices;
+    container.innerHTML = '';
+    asanaExportState.selectedSlices.clear();
+
+    const slices = state.slices.filter(s => s.rowType !== 'Users' && s.rowType !== 'Activities');
+
+    slices.forEach(slice => {
+        const sliceName = slice.name || 'Unnamed Release';
+        asanaExportState.selectedSlices.add(slice.id);
+
+        let storyCount = 0;
+        state.columns.forEach(column => {
+            const stories = slice.stories[column.id] || [];
+            storyCount += stories.filter(s => s.name.trim()).length;
+        });
+
+        const label = el('label', 'export-slice-checkbox checked');
+        const checkbox = el('input', null, { type: 'checkbox', checked: true });
+        checkbox.dataset.sliceId = slice.id;
+        checkbox.addEventListener('change', (e) => {
+            if (e.target.checked) {
+                asanaExportState.selectedSlices.add(slice.id);
+                label.classList.add('checked');
+            } else {
+                asanaExportState.selectedSlices.delete(slice.id);
+                label.classList.remove('checked');
+            }
+            populateAsanaExportEpics();
+        });
+        const nameSpan = el('span', 'export-slice-name', { text: sliceName });
+        const countSpan = el('span', 'export-slice-count', { text: `(${storyCount})` });
+        label.append(checkbox, nameSpan, countSpan);
+        container.append(label);
+    });
+
+    if (slices.length === 0) {
+        container.innerHTML = '<span style="color: #666; font-size: 13px;">No releases found</span>';
+    }
+};
+
+const updateAsanaExportCount = () => {
+    if (!dom.asanaExportCount) return;
+    const epicCount = asanaExportState.epicData.filter(e => e.included).length;
+    const taskCount = asanaExportState.epicData.reduce(
+        (sum, epic) => epic.included ? sum + epic.tasks.filter(t => t.included).length : sum, 0
+    );
+    dom.asanaExportCount.textContent = epicCount > 0 ? `(${epicCount} parent tasks, ${taskCount} subtasks)` : '';
+};
+
+export const populateAsanaExportEpics = () => {
+    dom.asanaExportEpics.innerHTML = '';
+    asanaExportState.epicData = [];
+
+    state.columns.forEach((column, colIndex) => {
+        const tasks = [];
+        state.slices.forEach(slice => {
+            if (slice.rowType === 'Users' || slice.rowType === 'Activities') return;
+            if (!asanaExportState.selectedSlices.has(slice.id)) return;
+
+            const sliceStories = slice.stories[column.id] || [];
+            sliceStories.forEach(story => {
+                if (story.name.trim()) {
+                    const storyStatus = story.status || 'none';
+                    if (!asanaExportState.selectedStatuses.has(storyStatus)) return;
+
+                    tasks.push({
+                        name: story.name,
+                        status: story.status || null,
+                        included: true
+                    });
+                }
+            });
+        });
+
+        if (tasks.length === 0) return;
+
+        const epicData = {
+            columnId: column.id,
+            name: column.name || `Activity ${colIndex + 1}`,
+            description: '',
+            included: true,
+            tasks
+        };
+        asanaExportState.epicData.push(epicData);
+
+        const epicDiv = el('div', 'export-epic');
+        epicDiv.dataset.columnId = column.id;
+
+        const header = el('div', 'export-epic-header');
+
+        const checkbox = el('input', 'export-epic-checkbox', { type: 'checkbox', checked: true });
+        checkbox.addEventListener('change', (e) => {
+            epicData.included = e.target.checked;
+            epicDiv.classList.toggle('excluded', !e.target.checked);
+            updateAsanaExportCount();
+        });
+
+        const nameInput = el('input', 'export-epic-name', {
+            type: 'text',
+            value: epicData.name,
+            placeholder: 'Parent task name'
+        });
+        nameInput.addEventListener('input', (e) => {
+            epicData.name = e.target.value;
+        });
+
+        header.append(checkbox, nameInput);
+
+        const description = el('textarea', 'export-epic-description', {
+            placeholder: 'Task description (optional)',
+            rows: 2
+        });
+        description.addEventListener('input', (e) => {
+            epicData.description = e.target.value;
+        });
+
+        const tasksList = el('div', 'export-tasks');
+        tasks.forEach((task) => {
+            const taskEl = el('label', 'export-task');
+            taskEl.dataset.status = task.status || 'none';
+
+            const taskCheckbox = el('input', 'export-task-checkbox', { type: 'checkbox', checked: true });
+            taskCheckbox.addEventListener('change', (e) => {
+                task.included = e.target.checked;
+                taskEl.classList.toggle('excluded', !e.target.checked);
+                updateAsanaExportCount();
+            });
+            taskEl.append(taskCheckbox);
+
+            const nameSpan = el('span', 'export-task-name', { text: task.name });
+            taskEl.append(nameSpan);
+
+            const statusClass = task.status === 'done' ? 'done' :
+                task.status === 'in-progress' ? 'in-progress' :
+                task.status === 'planned' ? 'planned' : 'none';
+            const statusText = task.status === 'done' ? 'Done' :
+                task.status === 'in-progress' ? 'In Progress' :
+                task.status === 'planned' ? 'Planned' : 'No Status';
+            const statusBadge = el('span', `export-task-status ${statusClass}`, { text: statusText });
+            taskEl.append(statusBadge);
+            tasksList.append(taskEl);
+        });
+
+        epicDiv.append(header, description, tasksList);
+        dom.asanaExportEpics.append(epicDiv);
+    });
+
+    if (dom.asanaExportEpics.children.length === 0) {
+        const emptyMsg = el('p', null, {
+            style: 'color: #666; text-align: center; padding: 20px;',
+            text: 'No stories to export. Add some stories to your map first, or select more releases above.'
+        });
+        dom.asanaExportEpics.append(emptyMsg);
+    }
+
+    updateAsanaExportCount();
+};
+
+export const generateAsanaImportFunction = () => {
+    const withSections = dom.asanaCreateSections.checked;
+    return `async function importToAsana(token, projectGid, items) {
+  const baseUrl = 'https://app.asana.com/api/1.0';
+  const headers = {
+    'Authorization': 'Bearer ' + token,
+    'Content-Type': 'application/json'
+  };
+${withSections ? `
+  async function createSection(name) {
+    const res = await fetch(baseUrl + '/projects/' + projectGid + '/sections', {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({ data: { name: name } })
+    });
+    const data = await res.json();
+    if (data.errors) {
+      console.log('\\u2717 Section failed: ' + JSON.stringify(data.errors));
+      return null;
+    }
+    console.log('\\u2713 Created section: ' + name);
+    return data.data.gid;
+  }
+` : ''}
+  for (const item of items) {${withSections ? `
+    const sectionGid = await createSection(item.name);` : ''}
+    console.log('Creating task: ' + item.name);
+    const res = await fetch(baseUrl + '/tasks', {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({
+        data: {
+          name: item.name,
+          notes: item.notes || 'Imported from Storymaps.io',
+          projects: [projectGid],${withSections ? `
+          memberships: [{ project: projectGid, section: sectionGid }],` : ''}
+          completed: item.completed || false
+        }
+      })
+    });
+    const data = await res.json();
+    if (data.errors) {
+      console.log('\\u2717 Task failed: ' + JSON.stringify(data.errors));
+      continue;
+    }
+    const parentGid = data.data.gid;
+    console.log('\\u2713 Created: ' + item.name + ' (' + parentGid + ')');
+
+    if (item.subtasks) {
+      for (const sub of item.subtasks) {
+        const subRes = await fetch(baseUrl + '/tasks/' + parentGid + '/subtasks', {
+          method: 'POST',
+          headers,
+          body: JSON.stringify({
+            data: {
+              name: sub.name,
+              notes: sub.notes || 'Imported from Storymaps.io',
+              completed: sub.completed || false
+            }
+          })
+        });
+        const subData = await subRes.json();
+        if (subData.errors) {
+          console.log('  \\u2717 Subtask failed: ' + JSON.stringify(subData.errors));
+        } else {
+          console.log('  \\u2713 Created subtask: ' + sub.name);
+        }
+      }
+    }
+  }
+  console.log('\\nImport complete!');
+}`;
+};
+
+const extractAsanaProjectGid = (input) => {
+    if (!input) return '';
+    // New-style URL: app.asana.com/1/.../project/PROJECT_GID/...
+    const projectMatch = input.match(/\/project\/(\d+)/);
+    if (projectMatch) return projectMatch[1];
+    // Old-style URL: app.asana.com/0/PROJECT_GID/...
+    const legacyMatch = input.match(/app\.asana\.com\/0\/(\d+)/);
+    if (legacyMatch) return legacyMatch[1];
+    // Bare GID number
+    if (/^\d+$/.test(input)) return input;
+    return '';
+};
+
+export const generateAsanaImportCall = () => {
+    const items = [];
+    const epicEls = dom.asanaExportEpics.querySelectorAll('.export-epic');
+
+    epicEls.forEach((epicEl) => {
+        const checkbox = epicEl.querySelector('.export-epic-checkbox');
+        if (!checkbox.checked) return;
+
+        const nameInput = epicEl.querySelector('.export-epic-name');
+        const descTextarea = epicEl.querySelector('.export-epic-description');
+
+        const epicName = nameInput.value || 'Untitled Task';
+        const epicDesc = descTextarea.value || '';
+
+        const subtasks = [];
+        const taskEls = epicEl.querySelectorAll('.export-task');
+        taskEls.forEach((taskEl) => {
+            const taskCheckbox = taskEl.querySelector('.export-task-checkbox');
+            if (!taskCheckbox.checked) return;
+
+            const taskName = taskEl.querySelector('.export-task-name')?.textContent || '';
+            const taskStatus = taskEl.dataset.status;
+            subtasks.push({
+                name: taskName,
+                notes: 'Imported from Storymaps.io',
+                completed: taskStatus === 'done'
+            });
+        });
+
+        if (subtasks.length > 0) {
+            items.push({
+                name: epicName,
+                notes: epicDesc || 'Imported from Storymaps.io',
+                completed: false,
+                subtasks
+            });
+        }
+    });
+
+    const token = dom.asanaApiToken.value.trim() || '<enter token above>';
+    const projectGid = extractAsanaProjectGid(dom.asanaProjectUrl.value.trim()) || '<paste project page URL above>';
+    return `importToAsana('${token}', '${projectGid}', ${JSON.stringify(items, null, 2)});`;
+};
+
+export const showAsanaStage2 = () => {
+    dom.asanaStage1.classList.add('hidden');
+    dom.asanaStage2.classList.remove('hidden');
+    dom.asanaExportTitle.textContent = 'Step 2: Import';
+
+    dom.asanaImportFunction.textContent = generateAsanaImportFunction();
+    dom.asanaImportCall.textContent = generateAsanaImportCall();
+};
+
+export const showAsanaStage1 = () => {
+    dom.asanaStage1.classList.remove('hidden');
+    dom.asanaStage2.classList.add('hidden');
+    dom.asanaExportTitle.textContent = 'Step 1: Select Tasks';
+};
+
+// ==================== Asana CSV Export ====================
+
+export const asanaCsvExportState = {
+    selectedSlices: new Set(),
+    selectedStatuses: new Set(['none', 'planned', 'in-progress', 'done']),
+    epicData: []
+};
+
+export const showAsanaCsvExportModal = () => {
+    populateAsanaCsvExportSlices();
+    populateAsanaCsvExportEpics();
+    dom.asanaCsvExportModal.classList.add('visible');
+};
+
+export const hideAsanaCsvExportModal = () => {
+    dom.asanaCsvExportModal.classList.remove('visible');
+};
+
+export const confirmCloseAsanaCsvModal = () => {
+    if (confirm('Close export dialog?')) {
+        hideAsanaCsvExportModal();
+    }
+};
+
+const populateAsanaCsvExportSlices = () => {
+    const container = dom.asanaCsvExportSlices;
+    container.innerHTML = '';
+    asanaCsvExportState.selectedSlices.clear();
+
+    const slices = state.slices.filter(s => s.rowType !== 'Users' && s.rowType !== 'Activities');
+
+    slices.forEach(slice => {
+        const sliceName = slice.name || 'Unnamed Release';
+        asanaCsvExportState.selectedSlices.add(slice.id);
+
+        let storyCount = 0;
+        state.columns.forEach(column => {
+            const stories = slice.stories[column.id] || [];
+            storyCount += stories.filter(s => s.name.trim()).length;
+        });
+
+        const label = el('label', 'export-slice-checkbox checked');
+        const checkbox = el('input', null, { type: 'checkbox', checked: true });
+        checkbox.dataset.sliceId = slice.id;
+        checkbox.addEventListener('change', (e) => {
+            if (e.target.checked) {
+                asanaCsvExportState.selectedSlices.add(slice.id);
+                label.classList.add('checked');
+            } else {
+                asanaCsvExportState.selectedSlices.delete(slice.id);
+                label.classList.remove('checked');
+            }
+            populateAsanaCsvExportEpics();
+        });
+        const nameSpan = el('span', 'export-slice-name', { text: sliceName });
+        const countSpan = el('span', 'export-slice-count', { text: `(${storyCount})` });
+        label.append(checkbox, nameSpan, countSpan);
+        container.append(label);
+    });
+
+    if (slices.length === 0) {
+        container.innerHTML = '<span style="color: #666; font-size: 13px;">No releases found</span>';
+    }
+};
+
+const updateAsanaCsvExportCount = () => {
+    if (!dom.asanaCsvExportCount) return;
+    const sectionCount = asanaCsvExportState.epicData.filter(e => e.included).length;
+    const taskCount = asanaCsvExportState.epicData.reduce(
+        (sum, epic) => epic.included ? sum + epic.tasks.filter(t => t.included).length : sum, 0
+    );
+    dom.asanaCsvExportCount.textContent = sectionCount > 0 ? `(${sectionCount} parent tasks, ${taskCount} subtasks)` : '';
+};
+
+export const populateAsanaCsvExportEpics = () => {
+    dom.asanaCsvExportEpics.innerHTML = '';
+    asanaCsvExportState.epicData = [];
+
+    state.columns.forEach((column, colIndex) => {
+        const tasks = [];
+        state.slices.forEach(slice => {
+            if (slice.rowType === 'Users' || slice.rowType === 'Activities') return;
+            if (!asanaCsvExportState.selectedSlices.has(slice.id)) return;
+
+            const sliceStories = slice.stories[column.id] || [];
+            sliceStories.forEach(story => {
+                if (story.name.trim()) {
+                    const storyStatus = story.status || 'none';
+                    if (!asanaCsvExportState.selectedStatuses.has(storyStatus)) return;
+
+                    tasks.push({
+                        name: story.name,
+                        status: story.status || null,
+                        included: true
+                    });
+                }
+            });
+        });
+
+        if (tasks.length === 0) return;
+
+        const epicData = {
+            columnId: column.id,
+            name: column.name || `Activity ${colIndex + 1}`,
+            included: true,
+            tasks
+        };
+        asanaCsvExportState.epicData.push(epicData);
+
+        const epicDiv = el('div', 'export-epic');
+        epicDiv.dataset.columnId = column.id;
+
+        const header = el('div', 'export-epic-header');
+
+        const checkbox = el('input', 'export-epic-checkbox', { type: 'checkbox', checked: true });
+        checkbox.addEventListener('change', (e) => {
+            epicData.included = e.target.checked;
+            epicDiv.classList.toggle('excluded', !e.target.checked);
+            updateAsanaCsvExportCount();
+        });
+
+        const nameInput = el('input', 'export-epic-name', {
+            type: 'text',
+            value: epicData.name,
+            placeholder: 'Section name'
+        });
+        nameInput.addEventListener('input', (e) => {
+            epicData.name = e.target.value;
+        });
+
+        header.append(checkbox, nameInput);
+
+        const tasksList = el('div', 'export-tasks');
+        tasks.forEach((task) => {
+            const taskEl = el('label', 'export-task');
+            taskEl.dataset.status = task.status || 'none';
+
+            const taskCheckbox = el('input', 'export-task-checkbox', { type: 'checkbox', checked: true });
+            taskCheckbox.addEventListener('change', (e) => {
+                task.included = e.target.checked;
+                taskEl.classList.toggle('excluded', !e.target.checked);
+                updateAsanaCsvExportCount();
+            });
+            taskEl.append(taskCheckbox);
+
+            const nameSpan = el('span', 'export-task-name', { text: task.name });
+            taskEl.append(nameSpan);
+
+            const statusClass = task.status === 'done' ? 'done' :
+                task.status === 'in-progress' ? 'in-progress' :
+                task.status === 'planned' ? 'planned' : 'none';
+            const statusText = task.status === 'done' ? 'Done' :
+                task.status === 'in-progress' ? 'In Progress' :
+                task.status === 'planned' ? 'Planned' : 'No Status';
+            const statusBadge = el('span', `export-task-status ${statusClass}`, { text: statusText });
+            taskEl.append(statusBadge);
+            tasksList.append(taskEl);
+        });
+
+        epicDiv.append(header, tasksList);
+        dom.asanaCsvExportEpics.append(epicDiv);
+    });
+
+    if (dom.asanaCsvExportEpics.children.length === 0) {
+        const emptyMsg = el('p', null, {
+            style: 'color: #666; text-align: center; padding: 20px;',
+            text: 'No stories to export. Add some stories to your map first, or select more releases above.'
+        });
+        dom.asanaCsvExportEpics.append(emptyMsg);
+    }
+
+    updateAsanaCsvExportCount();
+};
+
+export const downloadAsanaCsv = () => {
+    const withSections = dom.asanaCsvCreateSections.checked;
+    const header = ['Name', 'Description', 'Section', 'Parent Task'].map(escapeCSV).join(',');
+    const rows = [header];
+    const epicEls = dom.asanaCsvExportEpics.querySelectorAll('.export-epic');
+
+    epicEls.forEach((epicEl) => {
+        const checkbox = epicEl.querySelector('.export-epic-checkbox');
+        if (!checkbox.checked) return;
+
+        const nameInput = epicEl.querySelector('.export-epic-name');
+        const parentName = nameInput.value || 'Untitled';
+        const section = withSections ? parentName : '';
+
+        // Parent task row — must come before subtasks
+        rows.push([parentName, 'Imported from Storymaps.io', section, ''].map(escapeCSV).join(','));
+
+        const taskEls = epicEl.querySelectorAll('.export-task');
+        taskEls.forEach((taskEl) => {
+            const taskCheckbox = taskEl.querySelector('.export-task-checkbox');
+            if (!taskCheckbox.checked) return;
+            const taskName = taskEl.querySelector('.export-task-name')?.textContent || '';
+            // Subtask row — linked to parent via exact name match
+            rows.push([taskName, 'Imported from Storymaps.io', section, parentName].map(escapeCSV).join(','));
+        });
+    });
+
+    const csv = rows.join('\n');
+    const filename = sanitizeFilename(state.name || 'story-map') + '-asana.csv';
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = el('a', null, { href: url, download: filename });
+    link.click();
+    URL.revokeObjectURL(url);
+    hideAsanaCsvExportModal();
 };

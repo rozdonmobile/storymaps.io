@@ -16,6 +16,8 @@ export const serialize = () => ({
         if (s.url) obj.u = s.url;
         if (s.hidden) obj.h = true;
         if (s.status) obj.st = s.status;
+        if (s.points != null) obj.sp = s.points;
+        if (s.tags?.length) obj.tg = s.tags;
         return obj;
     }),
     s: state.slices.map(slice => {
@@ -27,6 +29,8 @@ export const serialize = () => ({
                 if (story.url) sObj.u = story.url;
                 if (story.hidden) sObj.h = true;
                 if (story.status) sObj.st = story.status;
+                if (story.points != null) sObj.sp = story.points;
+                if (story.tags?.length) sObj.tg = story.tags;
                 return sObj;
             }))
         };
@@ -51,7 +55,7 @@ export const deserialize = (data) => {
 
     state.name = data.name || '';
     state.columns = data.a.map(a => {
-        return createColumn(a.n || '', a.c || null, sanitizeUrl(a.u), !!a.h, a.st || null);
+        return createColumn(a.n || '', a.c || null, sanitizeUrl(a.u), !!a.h, a.st || null, a.sp ?? null, Array.isArray(a.tg) ? a.tg : []);
     });
     state.slices = data.s.map(slice => {
         const newSlice = {
@@ -65,7 +69,7 @@ export const deserialize = (data) => {
         const stories = Array.isArray(slice.t) ? slice.t : [];
         state.columns.forEach((col, i) => {
             newSlice.stories[col.id] = (stories[i] || []).map(t => {
-                return createStory(t.n || '', t.c || null, sanitizeUrl(t.u), !!t.h, t.st || null);
+                return createStory(t.n || '', t.c || null, sanitizeUrl(t.u), !!t.h, t.st || null, t.sp ?? null, Array.isArray(t.tg) ? t.tg : []);
             });
         });
         return newSlice;

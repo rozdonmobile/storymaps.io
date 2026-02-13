@@ -17,10 +17,11 @@ let _scrollElementIntoView = null;
 let _addColumn = null;
 let _addSlice = null;
 let _materializePhantomColumn = null;
+let _handleColumnSelection = null;
 
 export const PHANTOM_BUFFER = 3;
 
-export const init = ({ state, dom, isMapEditable, pushUndo, addStory, deleteColumn, deleteStory, deleteSlice, saveToStorage, renderAndSave, scrollElementIntoView, addColumn, addSlice, materializePhantomColumn }) => {
+export const init = ({ state, dom, isMapEditable, pushUndo, addStory, deleteColumn, deleteStory, deleteSlice, saveToStorage, renderAndSave, scrollElementIntoView, addColumn, addSlice, materializePhantomColumn, handleColumnSelection }) => {
     _state = state;
     _dom = dom;
     _isMapEditable = isMapEditable;
@@ -35,6 +36,19 @@ export const init = ({ state, dom, isMapEditable, pushUndo, addStory, deleteColu
     _addColumn = addColumn;
     _addSlice = addSlice;
     _materializePhantomColumn = materializePhantomColumn;
+    _handleColumnSelection = handleColumnSelection;
+};
+
+// Collect all unique tags used across the entire map
+export const getAllTagsInMap = () => {
+    const tags = new Set();
+    _state.columns.forEach(c => (c.tags || []).forEach(t => tags.add(t)));
+    _state.slices.forEach(slice => {
+        Object.values(slice.stories || {}).forEach(stories => {
+            stories.forEach(s => (s.tags || []).forEach(t => tags.add(t)));
+        });
+    });
+    return [...tags].sort((a, b) => a.localeCompare(b));
 };
 
 export const createDeleteBtn = (onConfirm, message) => {
@@ -115,6 +129,7 @@ export const createOptionsMenu = (item, colors, onDelete, deleteMessage, onColor
     const colorOption = el('div', 'options-item options-color');
     colorOption.appendChild(el('span', null, { text: 'Color' }));
     const colorSwatches = el('div', 'color-swatches');
+    colorSwatches.addEventListener('click', (e) => e.stopPropagation());
     const itemColor = item.color?.toLowerCase();
     Object.entries(colors).forEach(([name, hex]) => {
         const swatch = el('button', 'color-swatch', { title: name });
@@ -130,11 +145,41 @@ export const createOptionsMenu = (item, colors, onDelete, deleteMessage, onColor
     colorOption.appendChild(colorSwatches);
     menu.appendChild(colorOption);
 
+    // Points option
+    const pointsOption = el('div', 'options-item options-points');
+    pointsOption.appendChild(el('span', null, { text: 'Points' }));
+    const pointsInput = el('input', 'points-input');
+    pointsInput.type = 'text';
+    pointsInput.inputMode = 'decimal';
+    pointsInput.placeholder = '–';
+    pointsInput.value = item.points != null ? item.points : '';
+    pointsInput.addEventListener('click', (e) => e.stopPropagation());
+    pointsInput.addEventListener('keydown', (e) => {
+        // Allow navigation, delete, backspace, tab, decimal point
+        if (['Backspace', 'Delete', 'Tab', 'ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(e.key)) return;
+        if (e.key === '.' && !e.target.value.includes('.')) return;
+        if (e.key >= '0' && e.key <= '9') return;
+        e.preventDefault();
+    });
+    pointsInput.addEventListener('change', (e) => {
+        e.stopPropagation();
+        const val = e.target.value.trim() === '' ? null : parseFloat(e.target.value);
+        if (val !== null && isNaN(val)) { e.target.value = item.points ?? ''; return; }
+        if (onColorChange) { // reuse as signal that item is mutable
+            _pushUndo();
+            item.points = val;
+            _renderAndSave();
+        }
+    });
+    pointsOption.appendChild(pointsInput);
+    menu.appendChild(pointsOption);
+
     // Status option
     if (onStatusChange) {
         const statusOption = el('div', 'options-item options-status');
         statusOption.appendChild(el('span', null, { text: 'Status' }));
         const statusSwatches = el('div', 'status-swatches');
+        statusSwatches.addEventListener('click', (e) => e.stopPropagation());
 
         const noneSwatch = el('button', 'status-swatch status-none', { title: 'None', text: '×' });
         if (!item.status) noneSwatch.classList.add('selected');
@@ -159,6 +204,80 @@ export const createOptionsMenu = (item, colors, onDelete, deleteMessage, onColor
         statusOption.appendChild(statusSwatches);
         menu.appendChild(statusOption);
     }
+
+    // Tags option
+    const tagsOption = el('div', 'options-item options-tags');
+    tagsOption.appendChild(el('span', null, { text: 'Tags' }));
+    tagsOption.addEventListener('click', (e) => e.stopPropagation());
+    const tagsList = el('div', 'tags-list');
+    const renderTagPills = () => {
+        tagsList.innerHTML = '';
+        (item.tags || []).forEach(tag => {
+            const pill = el('span', 'tag-pill');
+            pill.appendChild(el('span', null, { text: tag }));
+            const removeBtn = el('button', 'tag-remove', { text: '\u00d7', title: 'Remove tag' });
+            removeBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                _pushUndo();
+                item.tags = item.tags.filter(t => t !== tag);
+                renderTagPills();
+                _renderAndSave();
+            });
+            pill.appendChild(removeBtn);
+            tagsList.appendChild(pill);
+        });
+    };
+    renderTagPills();
+    tagsOption.appendChild(tagsList);
+
+    const tagInputWrapper = el('div', 'tag-input-wrapper');
+    const tagInput = el('input', 'tag-input');
+    tagInput.type = 'text';
+    tagInput.placeholder = 'Add tag...';
+    tagInput.addEventListener('click', (e) => e.stopPropagation());
+    const tagAutocomplete = el('div', 'tag-autocomplete');
+
+    const addTag = (tagText) => {
+        const trimmed = tagText.trim().toLowerCase();
+        if (!trimmed) return;
+        if (!item.tags) item.tags = [];
+        if (item.tags.includes(trimmed)) return;
+        _pushUndo();
+        item.tags.push(trimmed);
+        tagInput.value = '';
+        tagAutocomplete.classList.remove('visible');
+        renderTagPills();
+        _renderAndSave();
+    };
+
+    tagInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            e.stopPropagation();
+            addTag(tagInput.value);
+        }
+    });
+
+    tagInput.addEventListener('input', () => {
+        const val = tagInput.value.trim().toLowerCase();
+        tagAutocomplete.innerHTML = '';
+        if (!val) { tagAutocomplete.classList.remove('visible'); return; }
+        const existing = getAllTagsInMap().filter(t => t.includes(val) && !(item.tags || []).includes(t));
+        if (existing.length === 0) { tagAutocomplete.classList.remove('visible'); return; }
+        existing.slice(0, 6).forEach(tag => {
+            const suggestion = el('button', 'tag-suggestion', { text: tag });
+            suggestion.addEventListener('click', (e) => {
+                e.stopPropagation();
+                addTag(tag);
+            });
+            tagAutocomplete.appendChild(suggestion);
+        });
+        tagAutocomplete.classList.add('visible');
+    });
+
+    tagInputWrapper.append(tagInput, tagAutocomplete);
+    tagsOption.appendChild(tagInputWrapper);
+    menu.appendChild(tagsOption);
 
     // URL option
     const urlOption = el('button', 'options-item', { text: item.url ? 'Edit URL...' : 'Add URL...' });
@@ -326,6 +445,33 @@ export const createPhantomStoryColumn = (phantomIndex, slice, insertIndex) => {
     return phantom;
 };
 
+const buildCardTags = (tags, card) => {
+    const tagsRow = el('div', 'card-tags-row');
+    const maxVisible = tags.length <= 2 ? 2 : 1;
+    tags.slice(0, maxVisible).forEach(tag => {
+        tagsRow.appendChild(el('span', 'card-tag-badge', { text: tag }));
+    });
+    if (tags.length > maxVisible) {
+        const overflowCount = tags.length - maxVisible;
+        const overflow = el('span', 'card-tag-overflow', { text: `+${overflowCount}` });
+
+        // Popover showing all tags on hover
+        const popover = el('div', 'card-tags-popover');
+        tags.forEach(tag => {
+            popover.appendChild(el('span', 'card-tags-popover-pill', { text: tag }));
+        });
+        overflow.appendChild(popover);
+
+        // Click opens the options menu
+        overflow.addEventListener('click', (e) => {
+            e.stopPropagation();
+            card.querySelector('.btn-options')?.click();
+        });
+        tagsRow.appendChild(overflow);
+    }
+    return tagsRow;
+};
+
 export const createColumnCard = (column) => {
     if (column.hidden) {
         return createColumnPlaceholder(column);
@@ -369,11 +515,29 @@ export const createColumnCard = (column) => {
     const urlIndicator = createUrlIndicator(column.url);
     if (urlIndicator) card.appendChild(urlIndicator);
 
+    if (column.tags?.length > 0) {
+        card.appendChild(buildCardTags(column.tags, card));
+    }
+
     if (column.status && STATUS_OPTIONS[column.status]) {
         const statusIndicator = el('div', 'status-indicator', { title: STATUS_OPTIONS[column.status].label });
         statusIndicator.style.backgroundColor = STATUS_OPTIONS[column.status].color;
         card.appendChild(statusIndicator);
     }
+
+    if (column.points != null && column.points > 0) {
+        const badge = el('span', 'points-badge', { text: String(column.points), title: `${column.points} points` });
+        card.appendChild(badge);
+    }
+
+    // Column selection on background click
+    card.addEventListener('mousedown', (e) => {
+        if (e.shiftKey && !e.target.closest('textarea, button, a, .options-menu')) e.preventDefault();
+    });
+    card.addEventListener('click', (e) => {
+        if (e.target.closest('textarea, button, a, .options-menu')) return;
+        if (_handleColumnSelection) _handleColumnSelection(column.id, e.shiftKey, { type: 'step' });
+    });
 
     return card;
 };
@@ -426,11 +590,29 @@ export const createStoryCard = (story, columnId, sliceId, isBackboneRow = false,
     const urlIndicator = createUrlIndicator(story.url);
     if (urlIndicator) card.appendChild(urlIndicator);
 
+    if (story.tags?.length > 0) {
+        card.appendChild(buildCardTags(story.tags, card));
+    }
+
     if (story.status && STATUS_OPTIONS[story.status]) {
         const statusIndicator = el('div', 'status-indicator', { title: STATUS_OPTIONS[story.status].label });
         statusIndicator.style.backgroundColor = STATUS_OPTIONS[story.status].color;
         card.appendChild(statusIndicator);
     }
+
+    if (story.points != null && story.points > 0) {
+        const badge = el('span', 'points-badge', { text: String(story.points), title: `${story.points} points` });
+        card.appendChild(badge);
+    }
+
+    // Column selection on story card background click
+    card.addEventListener('mousedown', (e) => {
+        if (e.shiftKey && !e.target.closest('textarea, button, a, .options-menu')) e.preventDefault();
+    });
+    card.addEventListener('click', (e) => {
+        if (e.target.closest('textarea, button, a, .options-menu')) return;
+        if (_handleColumnSelection) _handleColumnSelection(columnId, e.shiftKey, { type: 'story', storyId: story.id, sliceId });
+    });
 
     return card;
 };
@@ -460,7 +642,7 @@ export const createStoryColumn = (col, slice) => {
     }
 
     const hasCards = slice.stories[col.id].length > 0;
-    if ((!isBackboneRow || hasCards) && slice.rowType !== 'Activities') {
+    if ((!isBackboneRow || hasCards) && slice.rowType !== 'Activities' && (!col.hidden || hasCards)) {
         let btnText = '+';
         if (hasCards && slice.rowType === 'Users') btnText = '+ user';
         const addBtn = el('button', 'btn-add-story', { text: btnText });
@@ -523,6 +705,19 @@ const getSliceProgress = (slice) => {
     return { total, done, percent: total > 0 ? Math.round((done / total) * 100) : 0 };
 };
 
+const getSlicePoints = (slice) => {
+    let total = 0, hasAny = false;
+    Object.values(slice.stories || {}).forEach(stories => {
+        stories.forEach(story => {
+            if (story.points != null && story.points > 0) {
+                total += story.points;
+                hasAny = true;
+            }
+        });
+    });
+    return { total, hasAny };
+};
+
 export const createSliceContainer = (slice, index) => {
     let containerClass = 'slice-container';
     if (slice.separator === false) {
@@ -580,20 +775,34 @@ export const createSliceContainer = (slice, index) => {
         labelContainer.appendChild(labelInput);
 
         const progress = getSliceProgress(slice);
-        if (progress.total > 0) {
-            const progressContainer = el('div', 'slice-progress', {
-                title: `${progress.percent}% complete`
-            });
-            const progressTrack = el('div', 'slice-progress-track');
-            const progressBar = el('div', 'slice-progress-bar');
-            progressBar.style.width = `${progress.percent}%`;
-            progressTrack.appendChild(progressBar);
-            progressContainer.appendChild(progressTrack);
-            const progressText = el('span', 'slice-progress-text', {
-                text: `${progress.done}/${progress.total}`
-            });
-            progressContainer.appendChild(progressText);
-            labelContainer.appendChild(progressContainer);
+        const points = getSlicePoints(slice);
+        if (progress.total > 0 || points.hasAny) {
+            const metricsContainer = el('div', 'slice-metrics');
+
+            if (progress.total > 0) {
+                const progressContainer = el('div', 'slice-progress', {
+                    title: `${progress.percent}% complete`
+                });
+                const progressTrack = el('div', 'slice-progress-track');
+                const progressBar = el('div', 'slice-progress-bar');
+                progressBar.style.width = `${progress.percent}%`;
+                progressTrack.appendChild(progressBar);
+                progressContainer.appendChild(progressTrack);
+                const progressText = el('span', 'slice-progress-text', {
+                    text: `${progress.done}/${progress.total}`
+                });
+                progressContainer.appendChild(progressText);
+                metricsContainer.appendChild(progressContainer);
+            }
+
+            if (points.hasAny) {
+                const pointsText = el('span', 'slice-points-text', {
+                    text: `${points.total} ${points.total === 1 ? 'pt' : 'pts'}`
+                });
+                metricsContainer.appendChild(pointsText);
+            }
+
+            labelContainer.appendChild(metricsContainer);
         }
 
         const controlsRow = el('div', 'slice-controls-row');

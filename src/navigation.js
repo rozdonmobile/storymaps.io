@@ -5,6 +5,26 @@ import { ZOOM_LEVELS } from '/src/constants.js';
 
 let _dom = null;
 let _state = null;
+let _updateSelectionUI = null;
+let _selection = null;
+let _clearSelection = null;
+let _isMapEditable = null;
+let _addColumnAt = null;
+let _deleteColumn = null;
+let _duplicateColumns = null;
+let _duplicateCards = null;
+let _deleteSelectedColumns = null;
+let _deleteSelectedCards = null;
+
+// Marquee state
+let isMarquee = false;
+let marqueeStartX = 0;
+let marqueeStartY = 0;
+let marqueeEl = null;
+let marqueeRaf = null;
+let mousedownTarget = null;
+let didMarquee = false;
+const MARQUEE_THRESHOLD = 5;
 
 // Zoom state
 export let zoomLevel = 1;
@@ -19,9 +39,19 @@ let panStartY = 0;
 let panScrollLeft = 0;
 let panScrollTop = 0;
 
-export const init = ({ dom, state }) => {
+export const init = ({ dom, state, updateSelectionUI, selection, clearSelection, isMapEditable, addColumnAt, deleteColumn, duplicateColumns, duplicateCards, deleteSelectedColumns, deleteSelectedCards }) => {
     _dom = dom;
     _state = state;
+    _updateSelectionUI = updateSelectionUI;
+    _selection = selection;
+    _clearSelection = clearSelection;
+    _isMapEditable = isMapEditable;
+    _addColumnAt = addColumnAt;
+    _deleteColumn = deleteColumn;
+    _duplicateColumns = duplicateColumns;
+    _duplicateCards = duplicateCards;
+    _deleteSelectedColumns = deleteSelectedColumns;
+    _deleteSelectedCards = deleteSelectedCards;
 };
 
 const updatePanMode = () => {
@@ -113,17 +143,113 @@ export const scrollElementIntoView = (element) => {
     }
 };
 
+// Context menu state
+let contextMenuEl = null;
+let panDidMove = false;
+
+const resolveColumn = (target) => {
+    const el = target.closest('.step, .story-column, .step-placeholder');
+    if (!el) return { columnId: null, columnIndex: null };
+    const columnId = el.dataset.columnId;
+    const columnIndex = _state.columns.findIndex(c => c.id === columnId);
+    return { columnId, columnIndex: columnIndex >= 0 ? columnIndex : null };
+};
+
+const onDismissContextMenu = (e) => {
+    if (contextMenuEl && contextMenuEl.contains(e.target)) return;
+    dismissContextMenu();
+};
+
+const onDismissContextMenuKey = (e) => {
+    if (e.key === 'Escape') dismissContextMenu();
+};
+
+const dismissContextMenu = () => {
+    if (!contextMenuEl) return;
+    contextMenuEl.remove();
+    contextMenuEl = null;
+    document.removeEventListener('mousedown', onDismissContextMenu, { capture: true });
+    document.removeEventListener('keydown', onDismissContextMenuKey, { capture: true });
+    _dom.storyMapWrapper.removeEventListener('scroll', onDismissContextMenu);
+};
+
+const makeMenuItem = (label, icon, action, destructive = false) => {
+    const btn = document.createElement('button');
+    if (destructive) btn.className = 'destructive';
+    btn.innerHTML = `<svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">${icon}</svg><span>${label}</span>`;
+    btn.addEventListener('click', () => { action(); dismissContextMenu(); });
+    return btn;
+};
+
+const ICON_ADD_SPACER = '<line x1="8" y1="3" x2="8" y2="13"/><line x1="3" y1="8" x2="13" y2="8"/>';
+const ICON_DELETE = '<polyline points="3 5 4 13 12 13 13 5"/><line x1="2" y1="5" x2="14" y2="5"/><line x1="6" y1="3" x2="10" y2="3"/>';
+const ICON_DUPLICATE = '<rect x="3" y="3" width="8" height="10" rx="1.5"/><path d="M6 3V2.5A1.5 1.5 0 0 1 7.5 1H12a1.5 1.5 0 0 1 1.5 1.5V11A1.5 1.5 0 0 1 12 12.5H11"/>';
+
+const addSep = (menu) => {
+    const sep = document.createElement('div');
+    sep.className = 'context-menu-sep';
+    menu.appendChild(sep);
+};
+
+const positionMenu = (menu, x, y) => {
+    document.body.appendChild(menu);
+    contextMenuEl = menu;
+
+    const rect = menu.getBoundingClientRect();
+    const overflowX = x + rect.width - window.innerWidth + 8;
+    const overflowY = y + rect.height - window.innerHeight + 8;
+    menu.style.left = (overflowX > 0 ? x - overflowX : x) + 'px';
+    menu.style.top = (overflowY > 0 ? y - overflowY : y) + 'px';
+
+    setTimeout(() => {
+        document.addEventListener('mousedown', onDismissContextMenu, { capture: true });
+        document.addEventListener('keydown', onDismissContextMenuKey, { capture: true });
+        _dom.storyMapWrapper.addEventListener('scroll', onDismissContextMenu);
+    });
+};
+
+const showContextMenu = (x, y, columnId, columnIndex) => {
+    dismissContextMenu();
+    const menu = document.createElement('div');
+    menu.className = 'canvas-context-menu';
+
+    if (_selection.columnIds.length > 0) return;
+
+    menu.appendChild(makeMenuItem('Add spacer column', ICON_ADD_SPACER, () => {
+        _addColumnAt(columnIndex !== null ? columnIndex + 1 : _state.columns.length, true);
+    }));
+
+    if (columnId) {
+        addSep(menu);
+        menu.appendChild(makeMenuItem('Delete column', ICON_DELETE, () => {
+            _deleteColumn(columnId);
+        }, true));
+    }
+
+    positionMenu(menu, x, y);
+};
+
 export const initPan = () => {
     const wrapper = _dom.storyMapWrapper;
 
-    // Suppress context menu on the wrapper so right-click is free for panning
-    wrapper.addEventListener('contextmenu', (e) => e.preventDefault());
+    // Suppress browser context menu; show custom menu on non-drag right-click
+    wrapper.addEventListener('contextmenu', (e) => {
+        e.preventDefault();
+        if (panDidMove) return;
+        if (!_isMapEditable()) return;
+        if (!window.matchMedia('(hover: hover)').matches) return;
+
+        const { columnId, columnIndex } = resolveColumn(e.target);
+        showContextMenu(e.clientX, e.clientY, columnId, columnIndex);
+    });
 
     wrapper.addEventListener('mousedown', (e) => {
         if (e.button !== 2) return;
         e.preventDefault();
+        dismissContextMenu();
 
         isPanning = true;
+        panDidMove = false;
         panStartX = e.clientX;
         panStartY = e.clientY;
         panScrollLeft = wrapper.scrollLeft;
@@ -134,6 +260,7 @@ export const initPan = () => {
     document.addEventListener('mousemove', (e) => {
         if (!isPanning) return;
         e.preventDefault();
+        panDidMove = true;
         wrapper.scrollLeft = panScrollLeft - (e.clientX - panStartX);
         wrapper.scrollTop = panScrollTop - (e.clientY - panStartY);
     });
@@ -230,5 +357,116 @@ export const zoomOut = () => {
 export const zoomCycle = () => {
     const currentIndex = ZOOM_LEVELS.indexOf(zoomLevel);
     zoomAroundCenter(ZOOM_LEVELS[(currentIndex + 1) % ZOOM_LEVELS.length]);
+};
+
+// Marquee (rectangle) selection
+
+const MARQUEE_SKIP_SELECTORS = '.step, .story-card, textarea, button, a, input, .options-menu, .btn-add-story, .btn-add-slice, .selection-toolbar, .slice-menu-dropdown, .slice-label-container';
+
+const rectsIntersect = (a, b) =>
+    !(a.right < b.left || a.left > b.right || a.bottom < b.top || a.top > b.bottom);
+
+const highlightIntersecting = (marqueeRect) => {
+    const cards = _dom.storyMap.querySelectorAll('.step, .story-card');
+    for (const card of cards) {
+        const cardRect = card.getBoundingClientRect();
+        card.classList.toggle('marquee-preview', rectsIntersect(marqueeRect, cardRect));
+    }
+};
+
+const finalizeMarqueeSelection = () => {
+    const entries = [];
+    for (const elem of _dom.storyMap.querySelectorAll('.marquee-preview')) {
+        elem.classList.remove('marquee-preview');
+        const columnId = elem.dataset.columnId;
+        if (elem.classList.contains('step')) {
+            entries.push({ columnId, type: 'step' });
+        } else if (elem.classList.contains('story-card')) {
+            entries.push({
+                columnId,
+                type: 'story',
+                storyId: elem.dataset.storyId,
+                sliceId: elem.dataset.sliceId
+            });
+        }
+    }
+    if (entries.length === 0) return;
+
+    _selection.clickedCards = entries;
+    _selection.columnIds = [...new Set(entries.map(e => e.columnId))];
+    _selection.anchorId = _selection.columnIds[0];
+    _updateSelectionUI();
+};
+
+export const initMarquee = () => {
+    const wrapper = _dom.storyMapWrapper;
+
+    wrapper.addEventListener('mousedown', (e) => {
+        if (e.button !== 0) return;
+        if (!_isMapEditable()) return;
+        if (!window.matchMedia('(hover: hover)').matches) return;
+        if (e.target.closest(MARQUEE_SKIP_SELECTORS)) return;
+
+        e.preventDefault();
+        marqueeStartX = e.clientX;
+        marqueeStartY = e.clientY;
+        mousedownTarget = e.target;
+        didMarquee = false;
+    });
+
+    document.addEventListener('mousemove', (e) => {
+        if (mousedownTarget === null || isPanning) return;
+
+        const dx = e.clientX - marqueeStartX;
+        const dy = e.clientY - marqueeStartY;
+
+        if (!isMarquee && Math.abs(dx) < MARQUEE_THRESHOLD && Math.abs(dy) < MARQUEE_THRESHOLD) return;
+
+        if (!isMarquee) {
+            isMarquee = true;
+            didMarquee = true;
+            marqueeEl = document.createElement('div');
+            marqueeEl.className = 'marquee-rect';
+            document.body.appendChild(marqueeEl);
+            wrapper.classList.add('marquee-active');
+            _clearSelection();
+            _updateSelectionUI();
+        }
+
+        const left = Math.min(marqueeStartX, e.clientX);
+        const top = Math.min(marqueeStartY, e.clientY);
+        const width = Math.abs(dx);
+        const height = Math.abs(dy);
+
+        marqueeEl.style.left = left + 'px';
+        marqueeEl.style.top = top + 'px';
+        marqueeEl.style.width = width + 'px';
+        marqueeEl.style.height = height + 'px';
+
+        if (marqueeRaf) cancelAnimationFrame(marqueeRaf);
+        marqueeRaf = requestAnimationFrame(() => {
+            highlightIntersecting({ left, top, right: left + width, bottom: top + height });
+        });
+    });
+
+    document.addEventListener('mouseup', (e) => {
+        if (mousedownTarget === null) return;
+
+        if (isMarquee) {
+            finalizeMarqueeSelection();
+            if (marqueeEl) marqueeEl.remove();
+            marqueeEl = null;
+            wrapper.classList.remove('marquee-active');
+            isMarquee = false;
+            if (marqueeRaf) { cancelAnimationFrame(marqueeRaf); marqueeRaf = null; }
+            // Suppress the click event that follows mouseup so it doesn't clear the selection
+            document.addEventListener('click', (ev) => ev.stopPropagation(), { capture: true, once: true });
+        } else if (!e.target.closest(MARQUEE_SKIP_SELECTORS)) {
+            _clearSelection();
+            _updateSelectionUI();
+        }
+
+        mousedownTarget = null;
+    });
 };
 

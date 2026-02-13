@@ -22,20 +22,15 @@ const stripHtmlTags = (text) => text.replace(/<[^>]*>/g, '');
 let _loadPromise = null;
 const loadDeps = () => {
     if (_loadPromise) return _loadPromise;
-    _loadPromise = Promise.all([
-        import('https://esm.sh/@codemirror/view@6.36.5?deps=@codemirror/state@6.5.2'),
-        import('https://esm.sh/@codemirror/state@6.5.2'),
-        import('https://esm.sh/@codemirror/commands@6.8.0?deps=@codemirror/state@6.5.2'),
-        import('https://esm.sh/y-codemirror.next@0.3.5?deps=yjs@13.6.18,@codemirror/state@6.5.2,@codemirror/view@6.36.5'),
-    ]).then(([viewMod, stateMod, cmdMod, collabMod]) => {
-        EditorView = viewMod.EditorView;
-        keymap = viewMod.keymap;
-        EditorState = stateMod.EditorState;
-        Compartment = stateMod.Compartment;
-        defaultKeymap = cmdMod.defaultKeymap;
-        history = cmdMod.history;
-        historyKeymap = cmdMod.historyKeymap;
-        yCollab = collabMod.yCollab;
+    _loadPromise = import('/vendor/codemirror.bundle.js').then((mod) => {
+        EditorView = mod.EditorView;
+        keymap = mod.keymap;
+        EditorState = mod.EditorState;
+        Compartment = mod.Compartment;
+        defaultKeymap = mod.defaultKeymap;
+        history = mod.history;
+        historyKeymap = mod.historyKeymap;
+        yCollab = mod.yCollab;
         collabCompartment = new Compartment();
         readOnlyCompartment = new Compartment();
     });

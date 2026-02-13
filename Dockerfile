@@ -11,7 +11,6 @@ WORKDIR /app
 COPY --from=build /app/node_modules ./node_modules
 COPY package*.json ./
 COPY server.js ./
-COPY robots.txt sitemap.xml ./
 COPY public/ ./public/
 COPY src/ ./src/
 RUN mkdir -p yjs-data && chown -R node:node /app

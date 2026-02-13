@@ -1,7 +1,7 @@
 // Storymaps.io — AGPL-3.0 — see LICENCE for details
 import { createServer } from 'node:http';
 import { readFile, writeFile, mkdir } from 'node:fs/promises';
-import { extname, join, dirname, resolve } from 'node:path';
+import { basename, extname, join, dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { gzipSync } from 'node:zlib';
 import { createHash, randomBytes } from 'node:crypto';
@@ -68,7 +68,7 @@ const writeJson = async (filePath, data) => {
 
 const PUBLIC_DIR = join(__dirname, 'public');
 const SRC_DIR = join(__dirname, 'src');
-const STATIC_DIRS = [PUBLIC_DIR, SRC_DIR, __dirname];
+const STATIC_DIRS = [PUBLIC_DIR, SRC_DIR];
 
 const MIME_TYPES = {
   '.html': 'text/html',
@@ -140,38 +140,77 @@ const handleApi = async (req, res) => {
   }
 
   // --- Lock API ---
+  // GET /api/lock/:mapId — returns { isLocked } only, never the hash
+  // POST /api/lock/:mapId — lock with { passwordHash }
   const lockMatch = path.match(/^\/api\/lock\/([a-z0-9]+)$/);
   if (lockMatch) {
     const mapId = lockMatch[1];
     const locks = await readJson(LOCK_FILE, {});
 
     if (req.method === 'GET') {
-      const lock = locks[mapId] || null;
       res.writeHead(200, { 'Content-Type': 'application/json', 'Cache-Control': 'no-cache' });
-      res.end(JSON.stringify(lock));
+      res.end(JSON.stringify({ isLocked: !!locks[mapId]?.isLocked }));
       return;
     }
 
     if (req.method === 'POST') {
+      if (!body.passwordHash) {
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'Password hash required' }));
+        return;
+      }
       locks[mapId] = {
         isLocked: true,
         passwordHash: body.passwordHash,
         lockedAt: Date.now(),
-        lockedBy: body.sessionId || null,
       };
       await writeJson(LOCK_FILE, locks);
       res.writeHead(200, { 'Content-Type': 'application/json', 'Cache-Control': 'no-cache' });
-      res.end(JSON.stringify(locks[mapId]));
+      res.end(JSON.stringify({ isLocked: true }));
       return;
     }
+  }
 
-    if (req.method === 'DELETE') {
-      delete locks[mapId];
-      await writeJson(LOCK_FILE, locks);
-      res.writeHead(200, { 'Content-Type': 'application/json', 'Cache-Control': 'no-cache' });
+  // POST /api/lock/:mapId/unlock — verify hash server-side
+  const unlockMatch = path.match(/^\/api\/lock\/([a-z0-9]+)\/unlock$/);
+  if (unlockMatch && req.method === 'POST') {
+    const mapId = unlockMatch[1];
+    const locks = await readJson(LOCK_FILE, {});
+    const lock = locks[mapId];
+
+    if (!lock?.isLocked) {
+      res.writeHead(200, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({ ok: true }));
       return;
     }
+    const ok = body.passwordHash === lock.passwordHash;
+    res.writeHead(ok ? 200 : 403, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ ok }));
+    return;
+  }
+
+  // POST /api/lock/:mapId/remove — verify hash then delete lock
+  const removeMatch = path.match(/^\/api\/lock\/([a-z0-9]+)\/remove$/);
+  if (removeMatch && req.method === 'POST') {
+    const mapId = removeMatch[1];
+    const locks = await readJson(LOCK_FILE, {});
+    const lock = locks[mapId];
+
+    if (!lock?.isLocked) {
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ ok: true }));
+      return;
+    }
+    if (body.passwordHash !== lock.passwordHash) {
+      res.writeHead(403, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ ok: false, error: 'Incorrect password' }));
+      return;
+    }
+    delete locks[mapId];
+    await writeJson(LOCK_FILE, locks);
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ ok: true }));
+    return;
   }
 
   // --- Map ID API ---
@@ -235,7 +274,11 @@ const server = createServer(async (req, res) => {
     // Try to read from disk (resolve + startsWith guard against path traversal)
     let content;
     for (const dir of STATIC_DIRS) {
-      const resolved = resolve(dir, relPath.slice(1)); // strip leading /
+      // Strip leading / and matching dir prefix (e.g. /src/app.js → app.js for SRC_DIR)
+      let filePart = relPath.slice(1);
+      const dirName = basename(dir);
+      if (filePart.startsWith(dirName + '/')) filePart = filePart.slice(dirName.length + 1);
+      const resolved = resolve(dir, filePart);
       if (!resolved.startsWith(dir + '/') && resolved !== dir) continue;
       try {
         content = await readFile(resolved);
@@ -414,6 +457,18 @@ await ensureDataDir();
 server.listen(PORT, () => {
   console.log(`Server running at http://localhost:${PORT}/`);
 });
+
+// Log active presence every 30 seconds
+setInterval(() => {
+  const rooms = [];
+  for (const [name, doc] of docs) {
+    const count = doc.awareness.getStates().size;
+    if (count > 0) rooms.push(`${name}(${count})`);
+  }
+  if (rooms.length > 0) {
+    console.log(`[${new Date().toISOString()}] [presence] ${rooms.length} active rooms: ${rooms.join(', ')}`);
+  }
+}, 30_000);
 
 // Flush pending SQLite writes on shutdown
 const gracefulShutdown = () => {

@@ -2,8 +2,8 @@
 // Orchestrator — imports all modules, wires init(), owns dom + persistence + event listeners
 
 import * as notepad from '/src/notepad.js';
-import { generateId, el, CARD_COLORS, ZOOM_LEVELS } from '/src/constants.js';
-import { state, init as stateInit, initState, hasContent, confirmOverwrite, pushUndo, undo, redo, updateUndoRedoButtons, createColumn, createStory, createSlice } from '/src/state.js';
+import { generateId, el, CARD_COLORS, STATUS_OPTIONS, ZOOM_LEVELS } from '/src/constants.js';
+import { state, init as stateInit, initState, hasContent, confirmOverwrite, pushUndo, undo, redo, updateUndoRedoButtons, createColumn, createStory, createSlice, selection, clearSelection } from '/src/state.js';
 import { serialize, deserialize } from '/src/serialization.js';
 import * as navigation from '/src/navigation.js';
 import * as presence from '/src/presence.js';
@@ -34,6 +34,10 @@ const dom = {
     undoBtn: document.getElementById('undoBtn'),
     redoBtn: document.getElementById('redoBtn'),
     shareBtn: document.getElementById('shareBtn'),
+    shareMenu: document.getElementById('shareMenu'),
+    shareCopyLink: document.getElementById('shareCopyLink'),
+    shareScreenshot: document.getElementById('shareScreenshot'),
+    shareDownload: document.getElementById('shareDownload'),
     welcomeScreen: document.getElementById('welcomeScreen'),
     welcomeNewBtn: document.getElementById('welcomeNewBtn'),
     welcomeCounter: document.getElementById('welcomeCounter'),
@@ -129,6 +133,45 @@ const dom = {
     jiraApiImportCall: document.getElementById('jiraApiImportCall'),
     jiraApiCopyFunction: document.getElementById('jiraApiCopyFunction'),
     jiraApiCopyCall: document.getElementById('jiraApiCopyCall'),
+    // Asana export
+    exportAsanaBtn: document.getElementById('exportAsanaBtn'),
+    asanaExportModal: document.getElementById('asanaExportModal'),
+    asanaExportModalClose: document.getElementById('asanaExportModalClose'),
+    asanaExportTitle: document.getElementById('asanaExportTitle'),
+    asanaStage1: document.getElementById('asanaStage1'),
+    asanaStage2: document.getElementById('asanaStage2'),
+    asanaExportSlices: document.getElementById('asanaExportSlices'),
+    asanaExportEpics: document.getElementById('asanaExportEpics'),
+    asanaExportCount: document.getElementById('asanaExportCount'),
+    asanaFilterNone: document.getElementById('asanaFilterNone'),
+    asanaFilterPlanned: document.getElementById('asanaFilterPlanned'),
+    asanaFilterInProgress: document.getElementById('asanaFilterInProgress'),
+    asanaFilterDone: document.getElementById('asanaFilterDone'),
+    asanaExportCancel: document.getElementById('asanaExportCancel'),
+    asanaExportNext: document.getElementById('asanaExportNext'),
+    asanaExportBack: document.getElementById('asanaExportBack'),
+    asanaExportDone: document.getElementById('asanaExportDone'),
+    asanaApiToken: document.getElementById('asanaApiToken'),
+    asanaProjectUrl: document.getElementById('asanaProjectUrl'),
+    asanaImportFunction: document.getElementById('asanaImportFunction'),
+    asanaImportCall: document.getElementById('asanaImportCall'),
+    asanaCreateSections: document.getElementById('asanaCreateSections'),
+    asanaCopyFunction: document.getElementById('asanaCopyFunction'),
+    asanaCopyCall: document.getElementById('asanaCopyCall'),
+    // Asana CSV export
+    exportAsanaCsvBtn: document.getElementById('exportAsanaCsvBtn'),
+    asanaCsvExportModal: document.getElementById('asanaCsvExportModal'),
+    asanaCsvExportModalClose: document.getElementById('asanaCsvExportModalClose'),
+    asanaCsvExportSlices: document.getElementById('asanaCsvExportSlices'),
+    asanaCsvExportEpics: document.getElementById('asanaCsvExportEpics'),
+    asanaCsvExportCount: document.getElementById('asanaCsvExportCount'),
+    asanaCsvFilterNone: document.getElementById('asanaCsvFilterNone'),
+    asanaCsvFilterPlanned: document.getElementById('asanaCsvFilterPlanned'),
+    asanaCsvFilterInProgress: document.getElementById('asanaCsvFilterInProgress'),
+    asanaCsvFilterDone: document.getElementById('asanaCsvFilterDone'),
+    asanaCsvCreateSections: document.getElementById('asanaCsvCreateSections'),
+    asanaCsvExportCancel: document.getElementById('asanaCsvExportCancel'),
+    asanaCsvExportDownload: document.getElementById('asanaCsvExportDownload'),
     // Cursor toggle
     toggleCursorsBtn: document.getElementById('toggleCursorsBtn'),
     toggleCursorsText: document.getElementById('toggleCursorsText'),
@@ -152,15 +195,28 @@ const dom = {
     legendEntries: document.getElementById('legendEntries'),
     legendAddBtn: document.getElementById('legendAddBtn'),
     controlsRight: document.getElementById('controlsRight'),
+    // Search
+    searchBtn: document.getElementById('searchBtn'),
+    searchBar: document.getElementById('searchBar'),
+    searchInput: document.getElementById('searchInput'),
+    searchClose: document.getElementById('searchClose'),
+    // Filter
+    searchFilterBtn: document.getElementById('searchFilterBtn'),
+    filterCount: document.getElementById('filterCount'),
+    filterPanel: document.getElementById('filterPanel'),
+    filterStatusList: document.getElementById('filterStatusList'),
+    filterColorList: document.getElementById('filterColorList'),
+    filterTagsList: document.getElementById('filterTagsList'),
+    filterClearBtn: document.getElementById('filterClearBtn'),
 };
 
 const { isMapEditable } = lock;
-const { render, initSortable, addColumn, addStory, addSlice, deleteColumn, deleteStory, deleteSlice } = renderMod;
+const { render, initSortable, addColumn, addColumnAt, addStory, addSlice, deleteColumn, deleteStory, deleteSlice, handleColumnSelection, updateSelectionUI, duplicateColumns, duplicateCards, deleteSelectedColumns, deleteSelectedCards } = renderMod;
 const { closeMainMenu, closeAllOptionsMenus, zoomToFit, scrollElementIntoView } = navigation;
 const { loadYjs, createYjsDoc, destroyYjs, syncFromYjs, syncToYjs, getProvider, getYdoc, getYmap, ensureSortable } = yjs;
 const { trackPresence, clearPresence, trackCursor, clearCursors, toggleCursorsVisibility, updateCursorsVisibilityUI, getCursorColor, getSessionId, broadcastDragStart, broadcastDragEnd } = presence;
 const { lockState, loadLockState, subscribeLockState, clearLockSubscription, updateLockUI, updateEditability, checkSessionUnlock, initLockListeners, hideLockModal } = lock;
-const { renderLegend } = ui;
+const { renderLegend, getAllTagsInMap } = ui;
 
 // =============================================================================
 // Persistence
@@ -285,6 +341,7 @@ const importMap = (file) => {
             deserialize(JSON.parse(e.target.result));
             dom.boardName.value = state.name;
             renderAndSave();
+            requestAnimationFrame(zoomToFit);
             if (isFromWelcome) {
                 subscribeToMap(state.mapId);
             }
@@ -329,6 +386,7 @@ const importFromJsonText = async (jsonText) => {
         deserialize(data);
         dom.boardName.value = state.name;
         renderAndSave();
+        requestAnimationFrame(zoomToFit);
         hideImportModal();
         if (isFromWelcome) {
             subscribeToMap(state.mapId);
@@ -362,6 +420,10 @@ const {
     generatePhabImportFunction, generatePhabImportCall, copyPhabCode, phabExportState,
     showJiraApiExportModal, hideJiraApiExportModal, confirmCloseJiraApiModal, populateJiraApiExportEpics,
     showJiraApiStage2, showJiraApiStage1, generateJiraApiImportCall, jiraApiExportState,
+    showAsanaExportModal, hideAsanaExportModal, confirmCloseAsanaModal, populateAsanaExportEpics,
+    showAsanaStage2, showAsanaStage1, generateAsanaImportCall, asanaExportState,
+    showAsanaCsvExportModal, hideAsanaCsvExportModal, confirmCloseAsanaCsvModal,
+    populateAsanaCsvExportEpics, downloadAsanaCsv, asanaCsvExportState,
 } = exportsMod;
 
 const showExportModal = () => {
@@ -409,7 +471,7 @@ const loadSample = async (name) => {
     if (!confirmOverwrite()) return;
 
     try {
-        const response = await fetch(`samples/${name}.json`);
+        const response = await fetch(`samples/${name}.json`, { cache: 'no-cache' });
         if (!response.ok) throw new Error();
         pushUndo();
         deserialize(await response.json());
@@ -471,6 +533,188 @@ const copyMap = async () => {
 // =============================================================================
 
 const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+
+// =============================================================================
+// Search / Filter
+// =============================================================================
+
+let searchDebounceTimer = null;
+const filterState = { statuses: new Set(), colors: new Set(), tags: new Set() };
+
+const openSearch = () => {
+    if (dom.searchBtn.disabled) return;
+    dom.searchBar.classList.remove('hidden');
+    dom.boardName.style.display = 'none';
+    dom.storyMap.classList.add('search-active');
+    dom.searchInput.focus();
+};
+
+const closeSearch = () => {
+    dom.searchBar.classList.add('hidden');
+    dom.boardName.style.display = '';
+    dom.storyMap.classList.remove('search-active');
+    dom.searchInput.value = '';
+    closeFilterPanel();
+    clearAllFilters();
+    clearSearchFilter();
+};
+
+const clearSearchFilter = () => {
+    dom.storyMap.querySelectorAll('.search-dimmed').forEach(el => el.classList.remove('search-dimmed'));
+};
+
+const hasActiveFilters = () => filterState.statuses.size > 0 || filterState.colors.size > 0 || filterState.tags.size > 0;
+
+// Look up the state object for a card element
+const getItemForStep = (step) => {
+    const colId = step.dataset.columnId;
+    return state.columns.find(c => c.id === colId);
+};
+
+const getItemForStoryCard = (card) => {
+    const storyId = card.dataset.storyId;
+    const sliceId = card.dataset.sliceId;
+    const colId = card.dataset.columnId;
+    const slice = state.slices.find(s => s.id === sliceId);
+    return slice?.stories[colId]?.find(s => s.id === storyId);
+};
+
+const itemMatchesFilters = (item) => {
+    if (!item) return false;
+    if (filterState.statuses.size > 0) {
+        const itemStatus = item.status || 'none';
+        if (!filterState.statuses.has(itemStatus)) return false;
+    }
+    if (filterState.colors.size > 0) {
+        const itemColor = (item.color || '').toLowerCase();
+        if (!filterState.colors.has(itemColor)) return false;
+    }
+    if (filterState.tags.size > 0) {
+        const itemTags = item.tags || [];
+        if (!itemTags.some(t => filterState.tags.has(t))) return false;
+    }
+    return true;
+};
+
+const applySearchFilter = (query) => {
+    clearSearchFilter();
+    const q = query?.toLowerCase() || '';
+    const filtering = hasActiveFilters();
+
+    if (!q && !filtering) return;
+
+    // Dim non-matching step cards
+    dom.storyMap.querySelectorAll('.step').forEach(step => {
+        const text = step.querySelector('.step-text')?.value?.toLowerCase() || '';
+        const textMatch = !q || text.includes(q);
+        const filterMatch = !filtering || itemMatchesFilters(getItemForStep(step));
+        if (!textMatch || !filterMatch) step.classList.add('search-dimmed');
+    });
+
+    // Dim non-matching story cards
+    dom.storyMap.querySelectorAll('.story-card').forEach(card => {
+        const text = card.querySelector('.story-text')?.value?.toLowerCase() || '';
+        const textMatch = !q || text.includes(q);
+        const filterMatch = !filtering || itemMatchesFilters(getItemForStoryCard(card));
+        if (!textMatch || !filterMatch) card.classList.add('search-dimmed');
+    });
+};
+
+// Filter panel
+const populateFilterPanel = () => {
+    // Status checkboxes
+    dom.filterStatusList.innerHTML = '';
+    const statusEntries = [['none', 'No Status', '#e5e5e5'], ...Object.entries(STATUS_OPTIONS).map(([k, v]) => [k, v.label, v.color])];
+    statusEntries.forEach(([key, label, color]) => {
+        const lbl = el('label', 'filter-checkbox');
+        const cb = el('input');
+        cb.type = 'checkbox';
+        cb.checked = filterState.statuses.has(key);
+        const dot = el('span', 'filter-status-dot');
+        dot.style.backgroundColor = color;
+        const text = el('span', null, { text: label });
+        cb.addEventListener('change', () => {
+            if (cb.checked) filterState.statuses.add(key); else filterState.statuses.delete(key);
+            updateFilterCountBadge();
+            applySearchFilter(dom.searchInput.value.trim());
+        });
+        lbl.append(cb, dot, text);
+        dom.filterStatusList.appendChild(lbl);
+    });
+
+    // Color swatches
+    dom.filterColorList.innerHTML = '';
+    Object.entries(CARD_COLORS).forEach(([name, hex]) => {
+        const swatch = el('button', 'filter-color-swatch', { title: name });
+        swatch.style.backgroundColor = hex;
+        if (filterState.colors.has(hex.toLowerCase())) swatch.classList.add('selected');
+        swatch.addEventListener('click', () => {
+            const lc = hex.toLowerCase();
+            if (filterState.colors.has(lc)) {
+                filterState.colors.delete(lc);
+                swatch.classList.remove('selected');
+            } else {
+                filterState.colors.add(lc);
+                swatch.classList.add('selected');
+            }
+            updateFilterCountBadge();
+            applySearchFilter(dom.searchInput.value.trim());
+        });
+        dom.filterColorList.appendChild(swatch);
+    });
+
+    // Tag checkboxes
+    dom.filterTagsList.innerHTML = '';
+    const allTags = getAllTagsInMap();
+    if (allTags.length === 0) {
+        dom.filterTagsList.appendChild(el('span', 'filter-empty', { text: 'No tags in map' }));
+    } else {
+        allTags.forEach(tag => {
+            const lbl = el('label', 'filter-checkbox');
+            const cb = el('input');
+            cb.type = 'checkbox';
+            cb.checked = filterState.tags.has(tag);
+            const text = el('span', null, { text: tag });
+            cb.addEventListener('change', () => {
+                if (cb.checked) filterState.tags.add(tag); else filterState.tags.delete(tag);
+                updateFilterCountBadge();
+                applySearchFilter(dom.searchInput.value.trim());
+            });
+            lbl.append(cb, text);
+            dom.filterTagsList.appendChild(lbl);
+        });
+    }
+};
+
+const openFilterPanel = () => {
+    populateFilterPanel();
+    dom.filterPanel.classList.remove('hidden');
+    dom.searchFilterBtn.classList.add('active');
+};
+
+const closeFilterPanel = () => {
+    dom.filterPanel.classList.add('hidden');
+    dom.searchFilterBtn.classList.remove('active');
+};
+
+const toggleFilterPanel = () => {
+    if (dom.filterPanel.classList.contains('hidden')) openFilterPanel(); else closeFilterPanel();
+};
+
+const updateFilterCountBadge = () => {
+    const count = filterState.statuses.size + filterState.colors.size + filterState.tags.size;
+    dom.filterCount.textContent = count;
+    dom.filterCount.classList.toggle('hidden', count === 0);
+    dom.searchFilterBtn.classList.toggle('has-filters', count > 0);
+};
+
+const clearAllFilters = () => {
+    filterState.statuses.clear();
+    filterState.colors.clear();
+    filterState.tags.clear();
+    updateFilterCountBadge();
+    applySearchFilter(dom.searchInput.value.trim());
+};
 
 const initEventListeners = () => {
     dom.logoLink.addEventListener('click', (e) => {
@@ -740,8 +984,96 @@ const initEventListeners = () => {
         });
     });
 
-    // Share button
-    dom.shareBtn.addEventListener('click', async () => {
+    // Asana Export Modal
+    dom.exportAsanaBtn.addEventListener('click', () => {
+        if (dom.exportAsanaBtn.disabled) return;
+        closeMainMenu();
+        showAsanaExportModal();
+    });
+    dom.asanaExportModalClose.addEventListener('click', confirmCloseAsanaModal);
+    dom.asanaExportModal.addEventListener('click', (e) => {
+        if (e.target === dom.asanaExportModal) confirmCloseAsanaModal();
+    });
+    dom.asanaExportCancel.addEventListener('click', confirmCloseAsanaModal);
+    dom.asanaExportNext.addEventListener('click', showAsanaStage2);
+    dom.asanaExportBack.addEventListener('click', showAsanaStage1);
+    dom.asanaExportDone.addEventListener('click', hideAsanaExportModal);
+    dom.asanaCopyFunction.addEventListener('click', () => {
+        copyPhabCode(dom.asanaImportFunction, dom.asanaCopyFunction);
+    });
+    dom.asanaCopyCall.addEventListener('click', () => {
+        copyPhabCode(dom.asanaImportCall, dom.asanaCopyCall);
+    });
+    dom.asanaApiToken.addEventListener('input', () => {
+        dom.asanaImportCall.textContent = generateAsanaImportCall();
+    });
+    dom.asanaProjectUrl.addEventListener('input', () => {
+        dom.asanaImportCall.textContent = generateAsanaImportCall();
+    });
+    const asanaStatusFilters = [
+        { el: dom.asanaFilterNone, status: 'none' },
+        { el: dom.asanaFilterPlanned, status: 'planned' },
+        { el: dom.asanaFilterInProgress, status: 'in-progress' },
+        { el: dom.asanaFilterDone, status: 'done' }
+    ];
+    asanaStatusFilters.forEach(({ el: checkbox, status }) => {
+        checkbox.addEventListener('change', (e) => {
+            const label = checkbox.closest('label');
+            if (e.target.checked) {
+                asanaExportState.selectedStatuses.add(status);
+                label.classList.add('checked');
+            } else {
+                asanaExportState.selectedStatuses.delete(status);
+                label.classList.remove('checked');
+            }
+            populateAsanaExportEpics();
+        });
+    });
+
+    // Asana CSV Export Modal
+    dom.exportAsanaCsvBtn.addEventListener('click', () => {
+        if (dom.exportAsanaCsvBtn.disabled) return;
+        closeMainMenu();
+        showAsanaCsvExportModal();
+    });
+    dom.asanaCsvExportModalClose.addEventListener('click', confirmCloseAsanaCsvModal);
+    dom.asanaCsvExportModal.addEventListener('click', (e) => {
+        if (e.target === dom.asanaCsvExportModal) confirmCloseAsanaCsvModal();
+    });
+    dom.asanaCsvExportCancel.addEventListener('click', confirmCloseAsanaCsvModal);
+    dom.asanaCsvExportDownload.addEventListener('click', downloadAsanaCsv);
+    const asanaCsvStatusFilters = [
+        { el: dom.asanaCsvFilterNone, status: 'none' },
+        { el: dom.asanaCsvFilterPlanned, status: 'planned' },
+        { el: dom.asanaCsvFilterInProgress, status: 'in-progress' },
+        { el: dom.asanaCsvFilterDone, status: 'done' }
+    ];
+    asanaCsvStatusFilters.forEach(({ el: checkbox, status }) => {
+        checkbox.addEventListener('change', (e) => {
+            const label = checkbox.closest('label');
+            if (e.target.checked) {
+                asanaCsvExportState.selectedStatuses.add(status);
+                label.classList.add('checked');
+            } else {
+                asanaCsvExportState.selectedStatuses.delete(status);
+                label.classList.remove('checked');
+            }
+            populateAsanaCsvExportEpics();
+        });
+    });
+
+    // Share dropdown
+    dom.shareBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        closeMainMenu();
+        const onMap = !dom.welcomeScreen.classList.contains('visible');
+        dom.shareScreenshot.disabled = !onMap;
+        dom.shareDownload.disabled = !onMap;
+        dom.shareMenu.classList.toggle('visible');
+    });
+    dom.shareCopyLink.addEventListener('click', async (e) => {
+        e.stopPropagation();
+        dom.shareMenu.classList.remove('visible');
         const url = window.location.href;
         try {
             await navigator.clipboard.writeText(url);
@@ -751,10 +1083,83 @@ const initEventListeners = () => {
             prompt('Copy this link to share:', url);
         }
     });
+    const captureMap = async () => {
+        if (!window._htmlToImage) {
+            const mod = await import('/vendor/html-to-image.bundle.js');
+            window._htmlToImage = mod;
+        }
+
+        // Capture the map as a canvas (no logo in live DOM — avoids flicker)
+        const mapCanvas = await window._htmlToImage.toCanvas(dom.storyMap, {
+            backgroundColor: '#f8fafc',
+            pixelRatio: 2,
+            style: {
+                transform: 'none',
+                margin: '0',
+                minWidth: '0',
+                padding: '24px',
+            },
+        });
+
+        // Capture the logo separately
+        const logoCanvas = await window._htmlToImage.toCanvas(dom.logoLink, {
+            backgroundColor: 'transparent',
+            pixelRatio: 2,
+        });
+
+        // Composite: logo on top, then map below with spacing
+        const logoPad = 24 * 2; // padding around edges (matches map padding), scaled by pixelRatio
+        const logoGap = 60 * 2; // gap between logo and map, scaled by pixelRatio
+        const finalCanvas = document.createElement('canvas');
+        finalCanvas.width = Math.max(mapCanvas.width, logoCanvas.width + logoPad * 2);
+        finalCanvas.height = mapCanvas.height + logoCanvas.height + logoGap;
+        const ctx = finalCanvas.getContext('2d');
+        ctx.fillStyle = '#f8fafc';
+        ctx.fillRect(0, 0, finalCanvas.width, finalCanvas.height);
+        ctx.drawImage(logoCanvas, logoPad, logoPad);
+        ctx.drawImage(mapCanvas, 0, logoCanvas.height + logoGap);
+
+        return finalCanvas;
+    };
+    dom.shareScreenshot.addEventListener('click', async (e) => {
+        e.stopPropagation();
+        dom.shareMenu.classList.remove('visible');
+        dom.shareBtn.textContent = 'Capturing...';
+        try {
+            const canvas = await captureMap();
+            const blob = await new Promise(r => canvas.toBlob(r, 'image/png'));
+            await navigator.clipboard.write([
+                new ClipboardItem({ 'image/png': blob })
+            ]);
+            dom.shareBtn.textContent = 'Copied!';
+            setTimeout(() => dom.shareBtn.textContent = 'Share', 2000);
+        } catch (err) {
+            alert('Screenshot failed: ' + err.message);
+            dom.shareBtn.textContent = 'Share';
+        }
+    });
+    dom.shareDownload.addEventListener('click', async (e) => {
+        e.stopPropagation();
+        dom.shareMenu.classList.remove('visible');
+        dom.shareBtn.textContent = 'Capturing...';
+        try {
+            const canvas = await captureMap();
+            const dataUrl = canvas.toDataURL('image/png');
+            const link = el('a', null, {
+                href: dataUrl,
+                download: sanitizeFilename(state.name || 'story-map') + '.png'
+            });
+            link.click();
+            dom.shareBtn.textContent = 'Share';
+        } catch (err) {
+            alert('Screenshot failed: ' + err.message);
+            dom.shareBtn.textContent = 'Share';
+        }
+    });
 
     // Undo/Redo buttons
-    dom.undoBtn.addEventListener('click', undo);
-    dom.redoBtn.addEventListener('click', redo);
+    dom.undoBtn.addEventListener('click', () => { clearSelection(); undo(); });
+    dom.redoBtn.addEventListener('click', () => { clearSelection(); redo(); });
 
     // Legend controls
     dom.legendToggle?.addEventListener('click', () => {
@@ -773,6 +1178,25 @@ const initEventListeners = () => {
         if (inputs.length) inputs[inputs.length - 1].focus();
     });
 
+    // Search
+    dom.searchBtn.addEventListener('click', openSearch);
+    dom.searchInput.addEventListener('input', () => {
+        clearTimeout(searchDebounceTimer);
+        searchDebounceTimer = setTimeout(() => applySearchFilter(dom.searchInput.value.trim()), 150);
+    });
+    dom.searchClose.addEventListener('click', closeSearch);
+
+    // Filter panel
+    dom.searchFilterBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        toggleFilterPanel();
+    });
+    dom.filterClearBtn.addEventListener('click', () => {
+        clearAllFilters();
+        populateFilterPanel();
+    });
+    dom.filterPanel.addEventListener('click', (e) => e.stopPropagation());
+
     // Zoom controls
     dom.zoomIn.addEventListener('click', navigation.zoomIn);
     dom.zoomOut.addEventListener('click', navigation.zoomOut);
@@ -781,6 +1205,7 @@ const initEventListeners = () => {
     // Main menu dropdown
     dom.menuBtn.addEventListener('click', (e) => {
         e.stopPropagation();
+        dom.shareMenu.classList.remove('visible');
         dom.mainMenu.classList.toggle('visible');
         document.body.classList.toggle('main-menu-open', dom.mainMenu.classList.contains('visible'));
         const onMap = !dom.welcomeScreen.classList.contains('visible');
@@ -824,26 +1249,63 @@ const initEventListeners = () => {
     document.addEventListener('click', () => {
         closeMainMenu();
         closeAllOptionsMenus();
+        dom.shareMenu.classList.remove('visible');
+        closeFilterPanel();
     });
 
     document.addEventListener('keydown', (e) => {
-        const isTextInput = e.target.matches('input, textarea');
+        const isTextInput = e.target.matches('input, textarea') || e.target.closest('.cm-editor');
 
         if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey && !isTextInput) {
             e.preventDefault();
+            clearSelection();
             undo();
         }
         if ((e.ctrlKey || e.metaKey) && (e.key === 'y' || (e.key === 'z' && e.shiftKey)) && !isTextInput) {
             e.preventDefault();
+            clearSelection();
             redo();
         }
+        if ((e.ctrlKey || e.metaKey) && e.key === 'd' && !isTextInput && selection.columnIds.length > 0) {
+            e.preventDefault();
+            duplicateColumns();
+        }
+        if ((e.key === 'Delete' || e.key === 'Backspace') && !isTextInput && selection.columnIds.length > 0) {
+            e.preventDefault();
+            const hasStorySelection = selection.clickedCards.some(c => c.type === 'story');
+            if (hasStorySelection) {
+                deleteSelectedCards();
+            } else {
+                deleteSelectedColumns();
+            }
+        }
+        if ((e.ctrlKey || e.metaKey) && e.key === 'f') {
+            e.preventDefault();
+            openSearch();
+        }
         if (e.key === 'Escape') {
+            if (!dom.filterPanel.classList.contains('hidden')) {
+                closeFilterPanel();
+            } else if (!dom.searchBar.classList.contains('hidden')) {
+                closeSearch();
+            } else if (selection.columnIds.length > 0) {
+                clearSelection();
+                updateSelectionUI();
+            }
             closeMainMenu();
             closeAllOptionsMenus();
+            dom.shareMenu.classList.remove('visible');
             hideImportModal();
             hideExportModal();
             hideJiraExportModal();
+            hideJiraApiExportModal();
             hidePhabExportModal();
+            hideAsanaExportModal();
+            hideAsanaCsvExportModal();
+        }
+        if (!isTextInput && ((e.altKey && e.key === 'r') || (e.shiftKey && e.code === 'Digit0'))) {
+            e.preventDefault();
+            zoomToFit();
         }
         if (!isTextInput && ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(e.key)) {
             const PAN_AMOUNT = 100;
@@ -868,6 +1330,9 @@ const initEventListeners = () => {
 
     // Pan/drag navigation (right-click to pan, Miro-style)
     navigation.initPan();
+
+    // Marquee (rectangle) selection
+    navigation.initMarquee();
 
     // Ctrl+scroll wheel zoom
     navigation.initWheelZoom();
@@ -932,6 +1397,8 @@ const showWelcomeScreen = () => {
     dom.boardName.classList.add('hidden');
     dom.zoomControls.classList.add('hidden');
     dom.controlsRight?.classList.add('hidden');
+    dom.searchBtn.disabled = true;
+    closeSearch();
     clearPresence();
     clearCursors();
     clearLockSubscription();
@@ -946,8 +1413,8 @@ const hideWelcomeScreen = () => {
     dom.boardName.classList.remove('hidden');
     dom.zoomControls.classList.remove('hidden');
     dom.controlsRight?.classList.remove('hidden');
+    dom.searchBtn.disabled = false;
     unsubscribeFromCounter();
-
 };
 
 const showLoading = () => {
@@ -975,6 +1442,9 @@ const startNewMap = async () => {
 };
 
 const showTutorialToast = () => {
+    const isMac = navigator.platform.includes('Mac') || navigator.userAgent.includes('Mac');
+    const shortcutEl = dom.tutorialToast.querySelector('.reset-shortcut-key');
+    if (isMac && shortcutEl) shortcutEl.textContent = 'Shift + 0';
     dom.tutorialToast.classList.add('visible');
     const dismiss = () => {
         dom.tutorialToast.classList.remove('visible');
@@ -992,7 +1462,7 @@ const startWithSample = async (sampleName) => {
     history.replaceState({ mapId }, '', `/${mapId}`);
 
     try {
-        const response = await fetch(`samples/${sampleName}.json`);
+        const response = await fetch(`samples/${sampleName}.json`, { cache: 'no-cache' });
         if (!response.ok) throw new Error();
         deserialize(await response.json());
     } catch {
@@ -1017,7 +1487,7 @@ const startWithSample = async (sampleName) => {
 stateInit({ dom, serialize, deserialize, renderAndSave });
 
 // Wire navigation module
-navigation.init({ dom, state });
+navigation.init({ dom, state, updateSelectionUI, selection, clearSelection, isMapEditable, addColumnAt, deleteColumn, duplicateColumns, duplicateCards, deleteSelectedColumns, deleteSelectedCards });
 
 // Wire presence module
 presence.init({
@@ -1084,6 +1554,7 @@ ui.init({
     addColumn,
     addSlice,
     materializePhantomColumn,
+    handleColumnSelection,
 });
 
 // Wire render module
@@ -1173,6 +1644,7 @@ const init = async () => {
         if (loaded) {
             hideWelcomeScreen();
             requestAnimationFrame(zoomToFit);
+            setTimeout(showTutorialToast, 800);
         } else {
             showWelcomeScreen();
         }

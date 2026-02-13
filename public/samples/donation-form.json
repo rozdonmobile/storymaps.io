@@ -2,74 +2,436 @@
   "app": "storymap",
   "v": 1,
   "name": "Add Donation Form to Website",
-  "notes": "JG: What is the target delivery date? Let's keep MVP lean\n\nSR: Stripe test keys are in 1Password - don't commit them\n\nJG: Monthly giving is a stretch goal, not MVP",
+  "notes": "MP: Keep MVP lean, monthly giving is a stretch goal\n\nSR: Stripe test keys are in 1Password, don't commit them\n\nMP: Gift Aid blocked on legal review, chasing Sarah in legal\n\nTarget delivery date TBD, need to align with fundraising campaign",
   "l": [
-    {"c": "#fef08a", "n": "Tasks"},
-    {"c": "#a5f3fc", "n": "Notes"},
-    {"c": "#bef264", "n": "Questions"},
-    {"c": "#fecdd3", "n": "Edge cases"}
+    {
+      "c": "#fef08a",
+      "n": "Tasks"
+    },
+    {
+      "c": "#a5f3fc",
+      "n": "Technical Notes"
+    },
+    {
+      "c": "#bef264",
+      "n": "Open Questions"
+    },
+    {
+      "c": "#fecdd3",
+      "n": "Edge Cases"
+    },
+    {
+      "c": "#fdba74",
+      "n": "Compliance"
+    }
   ],
   "a": [
-    {"n": "Find Donate Button", "c": "#86efac"},
-    {"n": "Choose Amount", "c": "#86efac"},
-    {"n": "Enter Details", "c": "#86efac"},
-    {"n": "Pay", "c": "#86efac"},
-    {"n": "Get Confirmation", "c": "#86efac"},
-    {"n": "Receive Receipt", "c": "#86efac"}
+    {
+      "n": "Find Donate Button",
+      "c": "#86efac"
+    },
+    {
+      "n": "Choose Amount",
+      "c": "#86efac"
+    },
+    {
+      "n": "Enter Details",
+      "c": "#86efac"
+    },
+    {
+      "n": "Pay",
+      "c": "#86efac"
+    },
+    {
+      "n": "Get Confirmation",
+      "c": "#86efac"
+    },
+    {
+      "n": "Receive Receipt",
+      "c": "#86efac"
+    }
   ],
-  "s": [{
-    "sep": false,
-    "rt": "Users",
-    "n": "",
-    "t": [
-      [{"n": "Donor", "c": "#fda4af"}],
-      [],
-      [],
-      [],
-      [],
-      []
-    ]
-  }, {
-    "sep": false,
-    "rt": "Activities",
-    "n": "",
-    "t": [
-      [{"n": "Make a Donation", "c": "#93c5fd"}],
-      [],
-      [],
-      [],
-      [],
-      []
-    ]
-  }, {
-    "n": "MVP",
-    "t": [
-      [{"n": "Donate button in nav", "st": "done"}, {"n": "Donate button on homepage", "st": "done"}],
-      [{"n": "Preset amounts ($10, $25, $50)", "st": "done"}, {"n": "Custom amount input", "st": "done"}, {"n": "Min/max donation limits?", "c": "#bef264"}],
-      [{"n": "Name field", "st": "done"}, {"n": "Email field", "st": "done"}, {"n": "Form validation", "st": "done"}],
-      [{"n": "Stripe checkout", "st": "done"}, {"n": "Secure payment badge", "st": "done"}, {"n": "Stripe handles PCI compliance", "c": "#a5f3fc"}],
-      [{"n": "Thank you page", "st": "done"}, {"n": "Donation summary", "st": "done"}],
-      [{"n": "Email receipt", "st": "done"}]
-    ]
-  }, {
-    "n": "V1",
-    "t": [
-      [{"n": "Sticky donate button", "st": "in-progress"}],
-      [{"n": "Impact labels ($25 feeds a family)", "st": "in-progress"}, {"n": "Monthly giving option", "st": "planned"}],
-      [{"n": "Address for tax receipt", "st": "done"}, {"n": "Dedicate donation option", "st": "planned"}],
-      [{"n": "Apple Pay", "st": "planned"}, {"n": "Google Pay", "st": "planned"}, {"n": "PayPal", "st": "planned"}, {"n": "What if payment fails mid-checkout?", "c": "#fecdd3"}],
-      [{"n": "Social share buttons", "st": "planned"}, {"n": "Suggest another donation", "st": "planned"}],
-      [{"n": "PDF tax receipt", "st": "in-progress"}, {"n": "Annual summary email", "st": "planned"}, {"n": "Tax receipt format varies by country", "c": "#a5f3fc"}]
-    ]
-  }, {
-    "n": "V2",
-    "t": [
-      [{"n": "Campaign-specific pages", "st": "planned"}],
-      [{"n": "Recurring subscription", "st": "planned"}, {"n": "Pause/cancel subscription", "st": "planned"}],
-      [{"n": "Create donor account", "st": "planned"}, {"n": "Save payment method", "st": "planned"}, {"n": "Returning donor with expired saved card", "c": "#fecdd3"}],
-      [{"n": "Multiple currencies", "st": "planned"}],
-      [{"n": "Donor dashboard", "st": "planned"}, {"n": "Giving history", "st": "planned"}],
-      [{"n": "Download all receipts", "st": "planned"}]
-    ]
-  }]
+  "s": [
+    {
+      "n": "",
+      "sep": false,
+      "rt": "Users",
+      "t": [
+        [
+          {
+            "n": "Donor",
+            "c": "#fda4af"
+          }
+        ],
+        [],
+        [],
+        [],
+        [],
+        []
+      ]
+    },
+    {
+      "n": "",
+      "sep": false,
+      "rt": "Activities",
+      "t": [
+        [
+          {
+            "n": "Make a Donation",
+            "c": "#93c5fd"
+          }
+        ],
+        [],
+        [],
+        [],
+        [],
+        []
+      ]
+    },
+    {
+      "n": "MVP",
+      "t": [
+        [
+          {
+            "n": "Donate button in nav",
+            "st": "done",
+            "sp": 1,
+            "tg": [
+              "frontend"
+            ]
+          },
+          {
+            "n": "Donate button on homepage",
+            "st": "done",
+            "sp": 1,
+            "tg": [
+              "frontend"
+            ]
+          }
+        ],
+        [
+          {
+            "n": "Preset amounts ($10, $25, $50)",
+            "st": "done",
+            "sp": 2,
+            "tg": [
+              "frontend"
+            ]
+          },
+          {
+            "n": "Custom amount input",
+            "st": "done",
+            "sp": 2,
+            "tg": [
+              "frontend"
+            ]
+          },
+          {
+            "n": "Min/max donation limits?",
+            "c": "#bef264"
+          }
+        ],
+        [
+          {
+            "n": "Name field",
+            "st": "done",
+            "sp": 1,
+            "tg": [
+              "frontend"
+            ]
+          },
+          {
+            "n": "Email field",
+            "st": "done",
+            "sp": 1,
+            "tg": [
+              "frontend"
+            ]
+          },
+          {
+            "n": "Form validation",
+            "st": "done",
+            "sp": 2,
+            "tg": [
+              "frontend"
+            ]
+          }
+        ],
+        [
+          {
+            "n": "Stripe checkout",
+            "st": "done",
+            "sp": 3,
+            "tg": [
+              "backend",
+              "payments"
+            ],
+            "u": "https://docs.stripe.com/payments/checkout"
+          },
+          {
+            "n": "Secure payment badge",
+            "st": "done",
+            "sp": 1,
+            "tg": [
+              "frontend"
+            ]
+          },
+          {
+            "n": "Stripe handles PCI compliance",
+            "c": "#fdba74"
+          }
+        ],
+        [
+          {
+            "n": "Thank you page",
+            "st": "done",
+            "sp": 2,
+            "tg": [
+              "frontend"
+            ]
+          },
+          {
+            "n": "Donation summary",
+            "st": "done",
+            "sp": 1,
+            "tg": [
+              "frontend"
+            ]
+          }
+        ],
+        [
+          {
+            "n": "Email receipt",
+            "st": "done",
+            "sp": 2,
+            "tg": [
+              "backend",
+              "email"
+            ]
+          }
+        ]
+      ]
+    },
+    {
+      "n": "V1",
+      "t": [
+        [
+          {
+            "n": "Sticky donate button",
+            "st": "in-progress",
+            "tg": [
+              "frontend"
+            ]
+          }
+        ],
+        [
+          {
+            "n": "Impact labels ($25 feeds a family)",
+            "st": "in-progress",
+            "tg": [
+              "frontend"
+            ]
+          },
+          {
+            "n": "Monthly giving option",
+            "st": "planned",
+            "tg": [
+              "backend",
+              "payments"
+            ]
+          }
+        ],
+        [
+          {
+            "n": "Address for tax receipt",
+            "st": "done",
+            "sp": 2,
+            "tg": [
+              "frontend"
+            ]
+          },
+          {
+            "n": "Dedicate donation option",
+            "st": "planned",
+            "tg": [
+              "frontend"
+            ]
+          },
+          {
+            "n": "Gift Aid declaration",
+            "st": "blocked",
+            "tg": [
+              "legal"
+            ]
+          },
+          {
+            "n": "GDPR consent for marketing emails",
+            "c": "#fdba74"
+          }
+        ],
+        [
+          {
+            "n": "Apple Pay",
+            "st": "planned",
+            "tg": [
+              "payments"
+            ]
+          },
+          {
+            "n": "Google Pay",
+            "st": "planned",
+            "tg": [
+              "payments"
+            ]
+          },
+          {
+            "n": "PayPal",
+            "st": "planned",
+            "tg": [
+              "payments"
+            ]
+          },
+          {
+            "n": "What if payment fails mid-checkout?",
+            "c": "#fecdd3"
+          },
+          {
+            "n": "Stripe webhooks handle async payment events",
+            "c": "#a5f3fc"
+          }
+        ],
+        [
+          {
+            "n": "Social share buttons",
+            "st": "planned",
+            "tg": [
+              "frontend"
+            ]
+          },
+          {
+            "n": "Suggest another donation",
+            "st": "planned",
+            "tg": [
+              "frontend"
+            ]
+          }
+        ],
+        [
+          {
+            "n": "PDF tax receipt",
+            "st": "in-progress",
+            "tg": [
+              "backend"
+            ]
+          },
+          {
+            "n": "Annual summary email",
+            "st": "planned",
+            "tg": [
+              "backend",
+              "email"
+            ]
+          },
+          {
+            "n": "Tax receipt format varies by country",
+            "c": "#fdba74"
+          }
+        ]
+      ]
+    },
+    {
+      "n": "V2",
+      "t": [
+        [
+          {
+            "n": "Campaign-specific pages",
+            "st": "planned",
+            "tg": [
+              "frontend",
+              "backend"
+            ]
+          }
+        ],
+        [
+          {
+            "n": "Recurring subscription",
+            "st": "planned",
+            "tg": [
+              "backend",
+              "payments"
+            ]
+          },
+          {
+            "n": "Pause/cancel subscription",
+            "st": "planned",
+            "tg": [
+              "backend",
+              "payments"
+            ]
+          }
+        ],
+        [
+          {
+            "n": "Create donor account",
+            "st": "planned",
+            "tg": [
+              "backend"
+            ]
+          },
+          {
+            "n": "Save payment method",
+            "st": "planned",
+            "tg": [
+              "backend",
+              "payments"
+            ]
+          },
+          {
+            "n": "Returning donor with expired saved card",
+            "c": "#fecdd3"
+          }
+        ],
+        [
+          {
+            "n": "Multiple currencies",
+            "st": "planned",
+            "tg": [
+              "backend",
+              "payments"
+            ]
+          },
+          {
+            "n": "Currency conversion rates differ across providers",
+            "c": "#a5f3fc"
+          }
+        ],
+        [
+          {
+            "n": "Donor dashboard",
+            "st": "planned",
+            "tg": [
+              "frontend",
+              "backend"
+            ]
+          },
+          {
+            "n": "Giving history",
+            "st": "planned",
+            "tg": [
+              "frontend"
+            ]
+          }
+        ],
+        [
+          {
+            "n": "Download all receipts",
+            "st": "planned",
+            "tg": [
+              "backend"
+            ]
+          }
+        ]
+      ]
+    }
+  ]
 }

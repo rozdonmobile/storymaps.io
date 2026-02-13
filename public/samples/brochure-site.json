@@ -2,68 +2,391 @@
   "app": "storymap",
   "v": 1,
   "name": "Build Brochure Site",
-  "notes": "JG: Client wants to launch before the trade show on March 15\n\nLM: Stock photos are placeholder - real shoot booked for next week\n\nJG: Keep V1 ideas parked, focus on getting MVP live",
+  "notes": "AL: Client launch deadline is the March 15 trade show, no scope creep\n\nLM: Stock photos are placeholder, real shoot next week\n\nAL: V1 is parked until MVP is live\n\nWaiting on brand guidelines from client before finalising fonts and colours",
   "l": [
-    {"c": "#fef08a", "n": "Tasks"},
-    {"c": "#a5f3fc", "n": "Notes"},
-    {"c": "#bef264", "n": "Questions"},
-    {"c": "#fecdd3", "n": "Edge cases"}
+    {
+      "c": "#fef08a",
+      "n": "Tasks"
+    },
+    {
+      "c": "#a5f3fc",
+      "n": "Notes"
+    },
+    {
+      "c": "#bef264",
+      "n": "Questions"
+    },
+    {
+      "c": "#fecdd3",
+      "n": "Edge cases"
+    }
   ],
   "a": [
-    {"n": "Land on Site", "c": "#86efac"},
-    {"n": "Learn About Company", "c": "#86efac"},
-    {"n": "View Services", "c": "#86efac"},
-    {"n": "See Social Proof", "c": "#86efac"},
-    {"n": "Get in Touch", "c": "#86efac"}
+    {
+      "n": "Land on Site",
+      "c": "#86efac"
+    },
+    {
+      "n": "Learn About Company",
+      "c": "#86efac"
+    },
+    {
+      "n": "View Services",
+      "c": "#86efac"
+    },
+    {
+      "n": "See Social Proof",
+      "c": "#86efac"
+    },
+    {
+      "n": "Get in Touch",
+      "c": "#86efac"
+    }
   ],
-  "s": [{
-    "sep": false,
-    "rt": "Users",
-    "n": "",
-    "t": [
-      [{"n": "Potential Client", "c": "#fda4af"}],
-      [],
-      [],
-      [],
-      []
-    ]
-  }, {
-    "sep": false,
-    "rt": "Activities",
-    "n": "",
-    "t": [
-      [{"n": "Evaluate Company", "c": "#93c5fd"}],
-      [],
-      [],
-      [],
-      []
-    ]
-  }, {
-    "n": "MVP",
-    "t": [
-      [{"n": "Hero section", "st": "done"}, {"n": "Navigation menu", "st": "done"}, {"n": "Clear value proposition", "st": "done"}, {"n": "Need brand guidelines from client", "c": "#a5f3fc"}],
-      [{"n": "Company intro", "st": "done"}, {"n": "Mission statement", "st": "done"}],
-      [{"n": "Service list", "st": "done"}, {"n": "Basic descriptions", "st": "done"}, {"n": "SEO metadata for each service?", "c": "#bef264"}],
-      [{"n": "Client logos", "st": "done"}],
-      [{"n": "Contact form", "st": "done"}, {"n": "Email address", "st": "done"}, {"n": "Phone number", "st": "done"}]
-    ]
-  }, {
-    "n": "V1",
-    "t": [
-      [{"n": "Animated hero", "st": "in-progress"}, {"n": "Call to action button", "st": "done"}],
-      [{"n": "Team photos", "st": "in-progress"}, {"n": "Company history", "st": "planned"}],
-      [{"n": "Service detail pages", "st": "in-progress"}, {"n": "Pricing info", "st": "planned"}],
-      [{"n": "Written testimonials", "st": "in-progress"}, {"n": "Case studies", "st": "planned"}, {"n": "Who provides testimonial copy?", "c": "#bef264"}],
-      [{"n": "Location map", "st": "done"}, {"n": "Social media links", "st": "in-progress"}, {"n": "Form submission when offline", "c": "#fecdd3"}]
-    ]
-  }, {
-    "n": "V2",
-    "t": [
-      [{"n": "Video background", "st": "planned"}, {"n": "Live chat widget", "st": "planned"}],
-      [{"n": "Blog section", "st": "planned"}, {"n": "News/updates", "st": "planned"}, {"n": "Who writes the blog content?", "c": "#bef264"}],
-      [{"n": "Service comparison table", "st": "planned"}, {"n": "FAQ section", "st": "planned"}],
-      [{"n": "Video testimonials", "st": "planned"}, {"n": "Awards & certifications", "st": "planned"}],
-      [{"n": "Booking calendar", "st": "planned"}, {"n": "Newsletter signup", "st": "planned"}]
-    ]
-  }]
+  "s": [
+    {
+      "n": "",
+      "sep": false,
+      "rt": "Users",
+      "t": [
+        [
+          {
+            "n": "Potential Client",
+            "c": "#fda4af"
+          }
+        ],
+        [],
+        [],
+        [],
+        []
+      ]
+    },
+    {
+      "n": "",
+      "sep": false,
+      "rt": "Activities",
+      "t": [
+        [
+          {
+            "n": "Evaluate Company",
+            "c": "#93c5fd"
+          }
+        ],
+        [],
+        [],
+        [],
+        []
+      ]
+    },
+    {
+      "n": "MVP",
+      "t": [
+        [
+          {
+            "n": "Hero banner with headline",
+            "st": "done",
+            "sp": 2,
+            "tg": [
+              "design"
+            ]
+          },
+          {
+            "n": "Navigation menu",
+            "st": "done",
+            "sp": 1,
+            "tg": [
+              "dev"
+            ]
+          },
+          {
+            "n": "Value proposition tagline",
+            "st": "done",
+            "sp": 1,
+            "tg": [
+              "content"
+            ]
+          },
+          {
+            "n": "Need brand guidelines from client",
+            "c": "#a5f3fc"
+          }
+        ],
+        [
+          {
+            "n": "Company intro",
+            "st": "done",
+            "sp": 1,
+            "tg": [
+              "content"
+            ]
+          },
+          {
+            "n": "Mission statement",
+            "st": "done",
+            "sp": 1,
+            "tg": [
+              "content"
+            ]
+          }
+        ],
+        [
+          {
+            "n": "Service list",
+            "st": "done",
+            "sp": 2,
+            "tg": [
+              "dev",
+              "content"
+            ]
+          },
+          {
+            "n": "Basic descriptions",
+            "st": "done",
+            "sp": 1,
+            "tg": [
+              "content"
+            ]
+          },
+          {
+            "n": "Add SEO meta tags",
+            "st": "done",
+            "sp": 2,
+            "tg": [
+              "seo"
+            ]
+          }
+        ],
+        [
+          {
+            "n": "Client logos",
+            "st": "done",
+            "sp": 1,
+            "tg": [
+              "design"
+            ]
+          }
+        ],
+        [
+          {
+            "n": "Contact form",
+            "st": "done",
+            "sp": 2,
+            "tg": [
+              "dev"
+            ]
+          },
+          {
+            "n": "Email address",
+            "st": "done",
+            "sp": 1,
+            "tg": [
+              "content"
+            ]
+          },
+          {
+            "n": "Phone number",
+            "st": "done",
+            "sp": 1,
+            "tg": [
+              "content"
+            ]
+          }
+        ]
+      ]
+    },
+    {
+      "n": "V1",
+      "t": [
+        [
+          {
+            "n": "Animated hero",
+            "st": "in-progress",
+            "tg": [
+              "design",
+              "dev"
+            ],
+            "u": "https://www.figma.com/"
+          },
+          {
+            "n": "Call to action button",
+            "st": "done",
+            "sp": 2,
+            "tg": [
+              "design"
+            ]
+          }
+        ],
+        [
+          {
+            "n": "Team photos",
+            "st": "in-progress",
+            "tg": [
+              "content"
+            ]
+          },
+          {
+            "n": "Company history",
+            "st": "planned",
+            "tg": [
+              "content"
+            ]
+          }
+        ],
+        [
+          {
+            "n": "Service detail pages",
+            "st": "in-progress",
+            "tg": [
+              "dev",
+              "content"
+            ]
+          },
+          {
+            "n": "Pricing info",
+            "st": "planned",
+            "tg": [
+              "content"
+            ]
+          }
+        ],
+        [
+          {
+            "n": "Written testimonials",
+            "st": "in-progress",
+            "tg": [
+              "content"
+            ]
+          },
+          {
+            "n": "Case studies",
+            "st": "planned",
+            "tg": [
+              "content",
+              "design"
+            ]
+          },
+          {
+            "n": "Who provides testimonial copy?",
+            "c": "#bef264"
+          }
+        ],
+        [
+          {
+            "n": "Location map",
+            "st": "done",
+            "sp": 2,
+            "tg": [
+              "dev"
+            ]
+          },
+          {
+            "n": "Social media links",
+            "st": "in-progress",
+            "tg": [
+              "dev"
+            ]
+          },
+          {
+            "n": "Form queues if connection drops",
+            "c": "#fecdd3"
+          }
+        ]
+      ]
+    },
+    {
+      "n": "V2",
+      "t": [
+        [
+          {
+            "n": "Video background",
+            "st": "planned",
+            "tg": [
+              "design",
+              "dev"
+            ]
+          },
+          {
+            "n": "Live chat widget",
+            "st": "planned",
+            "tg": [
+              "dev"
+            ]
+          }
+        ],
+        [
+          {
+            "n": "Blog section",
+            "st": "planned",
+            "tg": [
+              "dev",
+              "content"
+            ]
+          },
+          {
+            "n": "News & updates feed",
+            "st": "planned",
+            "tg": [
+              "dev",
+              "content"
+            ]
+          },
+          {
+            "n": "Who writes the blog content?",
+            "c": "#bef264"
+          }
+        ],
+        [
+          {
+            "n": "Service comparison table",
+            "st": "planned",
+            "tg": [
+              "dev",
+              "design"
+            ]
+          },
+          {
+            "n": "FAQ section",
+            "st": "planned",
+            "tg": [
+              "content",
+              "dev"
+            ]
+          }
+        ],
+        [
+          {
+            "n": "Video testimonials",
+            "st": "planned",
+            "tg": [
+              "content",
+              "design"
+            ]
+          },
+          {
+            "n": "Awards & certifications",
+            "st": "planned",
+            "tg": [
+              "content"
+            ]
+          }
+        ],
+        [
+          {
+            "n": "Booking calendar",
+            "st": "planned",
+            "tg": [
+              "dev"
+            ]
+          },
+          {
+            "n": "Newsletter signup",
+            "st": "planned",
+            "tg": [
+              "dev"
+            ]
+          }
+        ]
+      ]
+    }
+  ]
 }

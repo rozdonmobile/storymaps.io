@@ -6,12 +6,12 @@ A free, open-source user story mapping tool with real-time collaboration.
 
 ## What is User Story Mapping?
 
-User story mapping is a technique for organising stories into a visual map that shows the entire product life cycle at a glance. It helps teams build a shared understanding of what a product does, who it serves, how it delivers value, how it was built, and where it's going next. It's essentially a comprehension tool which shows you the product vision and evolution in a single diagram. 
+User story mapping is a technique for organising stories into a visual map that shows the entire product life cycle at a glance. It helps teams build a shared understanding of what a product does, who it serves, how it delivers value, how it was built, and where it's going next. It's essentially a comprehension tool which shows you the product vision and evolution in a single diagram.
 
 If a sprint shows you the tree, a story map shows you the forest.
 
 
-It's not a replacement for Jira, Trello, Phabricator, or any other project management tool. It's the missing layer that sits alongside them. Your issue tracker tells you what work needs doing. Your story map tells you why it matters and where it fits.
+It's not a replacement for Jira, Asana, Phabricator, or any other project management tool. It's the missing layer that sits alongside them. Your issue tracker tells you what work needs doing. Your story map tells you why it matters and where it fits.
 
 ### Why It Matters
 
@@ -25,11 +25,11 @@ By mapping out the user journey upfront, you can instantly spot functional gaps.
 
 You start implementation, work through the first three stages, and hit "Approve", only to realise you forgot to account for what happens if the customer's design isn't approved. Implementation pauses. After discussing it with stakeholders, you add "Revise Design" → "Revise Dimensions" → "Re-approve". Your workload just went from five steps to eight, mid-sprint... sound familiar?
 
-This kind of hidden complexity surfaces repeatedly in projects. It's nobody's fault, but it impacts everyone: scope creep and uncomfortable conversations about why things are taking longer than expected. Even agile isn't immune to this. 
+This kind of hidden complexity surfaces repeatedly in projects. It's nobody's fault, but it impacts everyone: scope creep and uncomfortable conversations about why things are taking longer than expected. Even agile isn't immune to this.
 
 With story mapping, everyone is in the room during the mapping session. The question "What happens if they don't approve?" surfaces early because the team is walking through the user's journey together, step by step. You have the conversation before implementation starts, capture it in the map, and reduce disruptions while building shared understanding across the team.
 
-By this point, you've probably recognised some of these patterns in your own work. Try creating a story map for your current project, or start small by mapping a single feature or process. Share it with your team and get their feedback. Don't get hung up on making the perfect map. The goal isn't a perfect diagram, it's a better shared understanding of what you’re building! Keep that in mind and good luck!
+By this point, you've probably recognised some of these patterns in your own work. Try creating a story map for your current project, or start small by mapping a single feature or process. Share it with your team and get their feedback. Don't get hung up on making the perfect map. The goal isn't a perfect diagram, it's a better shared understanding of what you're building! Keep that in mind and good luck!
 
 ### User Story Mapping Structure:
 - **Users** - Who are the users? e.g. first-time shopper
@@ -41,32 +41,52 @@ By this point, you've probably recognised some of these patterns in your own wor
 ## App Features
 
 ### Story Mapping
-- **Users** - Add context rows showing who does what
-- **Activities & Steps (Backbone)** - Define activities and steps representing the user journey left-to-right
-- **Tasks** - Add task cards under each step to break down the work
-- **Release Slices** - Group tasks horizontally into releases or priorities (MVP, V1, V2, etc.)
-- **Status Indicators** - Mark tasks as done, in-progress, planned, or blocked with progress tracking per slice
-- **Legend** - Define colour-coded card categories (e.g. Tasks, Notes, Questions, Edge cases)
-- **Colours & Links** - Customise card colours and add external URLs to your existing task management tools
-- **Drag & Drop** - Reorder cards, columns, and slices
+- **Users, Activities & Steps (Backbone)** - define the user journey left-to-right
+- **Task cards** - break down work under each step
+- **Release slices** - group tasks into MVP, V1, V2 etc.; mark slices complete to collapse them
+- **Status indicators** - done, in-progress, planned, blocked with per-slice progress tracking
+- **Story points** - estimate effort per card, auto-summed per slice
+- **Tags** - categorize cards with free-text tags, autocomplete from existing tags
+- **Legend** - define colour-coded card categories (e.g. Tasks, Notes, Questions, Edge Cases)
+- **Card colours & links** - 14 colours, external URLs to issue trackers
+- **Drag & drop** - reorder cards, columns, and slices
+- **Hide columns** - insert spacer columns to visually group steps
+
+### Search & Filter
+- **Search** (Ctrl+F) - live search with non-matching cards dimmed
+- **Filter panel** - filter by status, colour, or tag; combine multiple filters
+
+### Multi-Select & Bulk Edit
+- **Select cards** - click, Shift+click, or marquee-drag to select multiple cards
+- **Selection toolbar** - bulk change colour, status, or tags; duplicate or delete selected items
 
 ### Collaboration
-- **Real-time Collaboration** - Multiple users can edit the same map simultaneously with conflict-free merging powered by Yjs CRDTs
-- **Collaborative Notepad** - Shared notepad for team notes, decisions, and questions that syncs in real-time
-- **Live Cursors** - See other users' cursors and drag operations in real-time
-- **Live Viewer Count** - See how many people are viewing the map
-- **Shareable URLs** - Each map gets a unique URL for easy sharing
-- **Lock Maps** - Password-protect maps to prevent edits; unlock anytime to resume editing
+- **Real-time sync** - multiple users editing simultaneously (Yjs CRDTs)
+- **Live cursors** - see other users' cursor positions and drag operations
+- **Collaborative notepad** - shared notes that sync in real-time
+- **Viewer count** - see how many people are viewing the map
+- **Shareable URLs** - each map gets a unique link
+- **Lock maps** - password-protect to prevent edits
 
-### Tools
-- **Export to Jira** - Export your map as epics and stories to Jira via CSV import or the REST API
-- **Export to Phabricator** - Export your map as tasks and subtasks to Phabricator via the Maniphest API
-- **Import/Export JSON** - Save and load story maps as JSON files
-- **Print / PDF** - Print your story map or save as PDF
-- **Undo/Redo** - Ctrl+Z / Ctrl+Y to undo and redo changes
-- **Infinite Canvas** - Ctrl+scroll to zoom, right-click drag to pan
-- **Local Storage** - Automatically saves your work
-- **Samples** - Load example story maps to learn the methodology
+### Import & Export
+- **JSON** - import/export story maps as JSON files
+- **Jira** - export as CSV or via REST API
+- **Asana** - export as CSV or via REST API
+- **Phabricator** - export via Maniphest API
+- **Share as image** - copy map screenshot to clipboard or download as PNG
+- **Print / PDF**
+
+### Navigation
+- **Infinite canvas** - Ctrl+scroll to zoom, right-click drag to pan
+- **Zoom to fit** (Alt+R / Shift+0) - auto-fit all content to viewport
+- **Keyboard shortcuts** - undo/redo (Ctrl+Z / Ctrl+Y), search (Ctrl+F), duplicate (Ctrl+D), delete (Delete/Backspace), zoom, pan
+
+### Other
+- **Undo / Redo** (Ctrl+Z / Ctrl+Y)
+- **Copy map** - duplicate an existing map to a new URL
+- **Sample maps** - load examples to learn the methodology
+- **Map counter** - community stat showing total maps created
+- **Auto-save** - continuous save to local storage and server
 
 ## Architecture
 
@@ -81,33 +101,97 @@ The app is a single Node.js server (`server.js`) that handles:
 - **JSON files** - Lock state (`yjs-data/locks.json`) and counters (`yjs-data/stats.json`)
 
 ### Client
-The client has no build step — ES modules are loaded directly from `src/`. Third-party libraries (Yjs, CodeMirror) are vendored as pre-built bundles in `public/vendor/`.
+The client has no build step - ES modules are loaded directly from `src/`. Third-party libraries (Yjs, CodeMirror) are vendored as pre-built bundles in `public/vendor/`.
 
 ## Self-Hosting
 
+Storymaps is a single Docker container behind a Caddy reverse proxy. It runs on any Linux server and gives your team a private instance at e.g. `storymaps.yourcompany.com` with automatic HTTPS.
+
 ### Prerequisites
+- A Linux server (VM, VPS, or container platform) - 512 MB RAM / 1 vCPU is sufficient
 - Docker and Docker Compose
-- A domain with DNS pointing to your server
+- A domain or subdomain with DNS pointing to the server
 
 ### Quick Start
 
-1. Clone the repo
-2. Build the Docker image:
+1. Clone the repo:
    ```bash
-   docker compose build
+   git clone https://github.com/jackgleeson/storymaps.io
+   cd userstorymaps
    ```
-3. Edit the `Caddyfile` with your domain:
+2. Edit the `Caddyfile` - replace `storymaps.io` with your domain and remove the `www` and `new` redirect blocks:
    ```
-   yourdomain.com {
+   storymaps.yourcompany.com {
        reverse_proxy app:8080
    }
    ```
-4. Start the services:
+3. Build and start:
    ```bash
-   docker compose up -d
+   docker compose up -d --build
    ```
+4. Visit `https://storymaps.yourcompany.com` - Caddy provisions TLS automatically via Let's Encrypt.
 
-Caddy automatically provisions HTTPS certificates via Let's Encrypt. Data persists in the `yjs-data/` host-mounted volume.
+### Behind an Existing Reverse Proxy
+
+If you already run nginx, Traefik, HAProxy, or another proxy, you can skip Caddy and expose the app directly.
+
+1. Remove the `caddy` service from `docker-compose.yml` and expose port 8080 on the `app` service:
+   ```yaml
+   services:
+     app:
+       image: storymaps-app
+       build: .
+       restart: unless-stopped
+       volumes:
+         - ./yjs-data:/app/yjs-data
+       ports:
+         - "8080:8080"
+   ```
+2. Point your existing proxy at `localhost:8080` and handle TLS termination there.
+
+   Example nginx snippet:
+   ```nginx
+   server {
+       listen 443 ssl;
+       server_name storymaps.yourcompany.com;
+
+       ssl_certificate     /path/to/cert.pem;
+       ssl_certificate_key /path/to/key.pem;
+
+       location / {
+           proxy_pass http://localhost:8080;
+           proxy_http_version 1.1;
+           proxy_set_header Upgrade $http_upgrade;
+           proxy_set_header Connection "upgrade";
+           proxy_set_header Host $host;
+       }
+   }
+   ```
+   The `Upgrade` and `Connection` headers are required for WebSocket connections.
+
+### Data & Backups
+
+All data lives in `./yjs-data/` on the host:
+- LevelDB files - Yjs document state
+- `maps.db` - SQLite map index
+- `locks.json` - lock state
+- `stats.json` - counters
+
+Back up this directory regularly (e.g. a cron job with `tar` or `rsync`). To migrate to a new server, copy `yjs-data/` across and start the containers.
+
+### Updating
+
+```bash
+git pull && docker compose up -d --build
+```
+
+Data is preserved across rebuilds since `yjs-data/` is a host-mounted volume.
+
+### Environment Variables
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `PORT`   | `8080`  | Server listen port |
 
 ### Running Locally (Development)
 
@@ -124,16 +208,18 @@ The server starts on `http://localhost:8080`.
 3. Click **+** to add steps (columns) to the backbone
 4. Click **+** in a column to add tasks
 5. Click **+ Add Slice** to create release groupings
-6. Click the **...** menu on cards to set colours, status, or links
+6. Click the **...** menu on cards to set colours, status, links, tags, or story points
 7. Drag tasks to reorder or move between columns
 8. Use the **Legend** to define card categories and colour-code your map
-9. Use the **Notepad** to capture team notes and decisions
-10. Click **Share** to copy the URL and collaborate with others
-11. Use **Menu → Lock Map** to password-protect the map from edits
-12. Use **Ctrl+Z** / **Ctrl+Y** to undo and redo changes
-13. Use **Ctrl+scroll** to zoom, **right-click drag** to pan
-14. Use **Menu → Export** to save as JSON or export to Jira/Phabricator
-15. Use **Print** to save as PDF
+9. Use **Ctrl+F** to search or open the **Filter** panel to filter by status, colour, or tag
+10. Click, Shift+click, or marquee-drag to select multiple cards, then use the toolbar to bulk edit
+11. Use the **Notepad** to capture team notes and decisions
+12. Click **Share** to copy the URL, copy the map as an image, or download as PNG
+13. Use **Menu → Lock Map** to password-protect the map from edits
+14. Use **Ctrl+Z** / **Ctrl+Y** to undo and redo, **Ctrl+D** to duplicate
+15. Use **Ctrl+scroll** to zoom, **right-click drag** to pan, **Alt+R** to zoom to fit
+16. Use **Menu → Export** to save as JSON or export to Jira, Asana, or Phabricator
+17. Use **Print** to save as PDF
 
 ## Support
 If you find this tool useful, consider [buying me a coffee](https://buymeacoffee.com/jackgleeson). It goes towards server costs and helps me keep the app running.
@@ -145,4 +231,4 @@ If you find this tool useful, consider [buying me a coffee](https://buymeacoffee
 - Collaborative notepad powered by [CodeMirror 6](https://codemirror.net/)
 
 ## License
-AGPL-3.0 — see [LICENCE](LICENCE) for details.
+AGPL-3.0 - see [LICENCE](LICENCE) for details.

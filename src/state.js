@@ -12,6 +12,10 @@ export const state = {
     notes: ''
 };
 
+// Ephemeral selection state (not serialized, not synced, not in undo)
+export const selection = { columnIds: [], anchorId: null, clickedCards: [], columnHighlight: false };
+export const clearSelection = () => { selection.columnIds = []; selection.anchorId = null; selection.clickedCards = []; selection.columnHighlight = false; };
+
 // Undo/Redo stack (in-memory, lost on refresh)
 const undoStack = [];
 const redoStack = [];
@@ -188,8 +192,8 @@ export const confirmOverwrite = () => {
     return !hasContent() || confirm('This will replace your current story map. Continue?');
 };
 
-export const createColumn = (name = '', color = null, url = null, hidden = false, status = null) => ({ id: generateId(), name, color, url, hidden, status });
-export const createStory = (name = '', color = null, url = null, hidden = false, status = null) => ({ id: generateId(), name, color, url, hidden, status });
+export const createColumn = (name = '', color = null, url = null, hidden = false, status = null, points = null, tags = []) => ({ id: generateId(), name, color, url, hidden, status, points, tags });
+export const createStory = (name = '', color = null, url = null, hidden = false, status = null, points = null, tags = []) => ({ id: generateId(), name, color, url, hidden, status, points, tags });
 export const createSlice = (name = '', separator = true, rowType = null) => {
     const slice = { id: generateId(), name, separator, rowType, stories: {} };
     state.columns.forEach(s => slice.stories[s.id] = []);

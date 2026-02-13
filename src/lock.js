@@ -61,7 +61,6 @@ export const loadLockState = async (mapId) => {
         const res = await fetch(`/api/lock/${mapId}`);
         const data = await res.json();
         if (data) {
-            lockState.passwordHash = data.passwordHash || null;
             lockState.isLocked = !!data.isLocked;
         }
     } catch (err) {
@@ -84,7 +83,6 @@ export const subscribeLockState = (mapId) => {
             if (data) {
                 const wasLocked = lockState.isLocked;
                 lockState.isLocked = !!data.isLocked;
-                lockState.passwordHash = data.passwordHash || null;
 
                 if (!wasLocked && lockState.isLocked) {
                     lockState.sessionUnlocked = checkSessionUnlock(mapId);
@@ -131,13 +129,12 @@ const lockMap = async (password) => {
     if (!_state.mapId) return;
 
     const hash = await hashPassword(password);
-    const { getSessionId } = await import('/src/presence.js');
 
     try {
         await fetch(`/api/lock/${_state.mapId}`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ passwordHash: hash, sessionId: getSessionId() }),
+            body: JSON.stringify({ passwordHash: hash }),
         });
 
         lockState.isLocked = true;
@@ -163,10 +160,19 @@ const lockMap = async (password) => {
 
 // Remove lock entirely (make map publicly editable again)
 export const removeLock = async () => {
-    if (!_state.mapId) return;
+    if (!_state.mapId || !lockState.passwordHash) return;
 
     try {
-        await fetch(`/api/lock/${_state.mapId}`, { method: 'DELETE' });
+        const res = await fetch(`/api/lock/${_state.mapId}/remove`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ passwordHash: lockState.passwordHash }),
+        });
+        const data = await res.json();
+        if (!data.ok) {
+            alert('Failed to remove lock.');
+            return;
+        }
 
         lockState.isLocked = false;
         lockState.passwordHash = null;
@@ -194,13 +200,12 @@ export const removeLock = async () => {
 // Re-lock the map (for users who have already unlocked)
 const relockMap = async () => {
     if (!_state.mapId || !lockState.passwordHash) return;
-    const { getSessionId } = await import('/src/presence.js');
 
     try {
         await fetch(`/api/lock/${_state.mapId}`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ passwordHash: lockState.passwordHash, sessionId: getSessionId() }),
+            body: JSON.stringify({ passwordHash: lockState.passwordHash }),
         });
 
         lockState.isLocked = true;
@@ -218,23 +223,28 @@ const relockMap = async () => {
     }
 };
 
-// Unlock map locally (verify password client-side)
-const unlockMapLocally = async (password) => {
-    if (!lockState.passwordHash) {
-        await loadLockState(_state.mapId);
-    }
-
+// Unlock map (verify password server-side)
+const unlockMap = async (password) => {
     const inputHash = await hashPassword(password);
 
-    if (inputHash === lockState.passwordHash) {
-        lockState.sessionUnlocked = true;
-        saveSessionUnlock(_state.mapId);
-        updateLockUI();
-        updateEditability();
-        return true;
+    try {
+        const res = await fetch(`/api/lock/${_state.mapId}/unlock`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ passwordHash: inputHash }),
+        });
+        const data = await res.json();
+        if (!data.ok) return false;
+    } catch {
+        return false;
     }
 
-    return false;
+    lockState.passwordHash = inputHash;
+    lockState.sessionUnlocked = true;
+    saveSessionUnlock(_state.mapId);
+    updateLockUI();
+    updateEditability();
+    return true;
 };
 
 // Update lock menu item and banner UI
@@ -388,7 +398,7 @@ const handleLockModalConfirm = async () => {
         await lockMap(password);
         hideLockModal();
     } else {
-        const success = await unlockMapLocally(password);
+        const success = await unlockMap(password);
         if (success) {
             hideLockModal();
         } else {

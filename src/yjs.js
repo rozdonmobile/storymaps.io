@@ -23,12 +23,9 @@ let _yjsLoadPromise = null;
 
 export const loadYjs = () => {
     if (_yjsLoadPromise) return _yjsLoadPromise;
-    _yjsLoadPromise = Promise.all([
-        import('https://esm.sh/yjs@13.6.18'),
-        import('https://esm.sh/y-websocket@2.0.4?deps=yjs@13.6.18'),
-    ]).then(([yMod, wsMod]) => {
-        Y = yMod;
-        WebsocketProvider = wsMod.WebsocketProvider;
+    _yjsLoadPromise = import('/vendor/yjs.bundle.js').then((mod) => {
+        Y = mod;
+        WebsocketProvider = mod.WebsocketProvider;
     });
     return _yjsLoadPromise;
 };
@@ -77,7 +74,8 @@ const CARD_FIELDS = {
     color:  { default: null },
     url:    { default: null },
     hidden: { default: false },
-    status: { default: null }
+    status: { default: null },
+    points: { default: null }
 };
 
 const createYCard = (obj) => {
@@ -89,6 +87,7 @@ const createYCard = (obj) => {
             yMap.set(field, value ?? defaultVal);
         }
     }
+    if (obj.tags?.length) yMap.set('tags', JSON.stringify(obj.tags));
     return yMap;
 };
 
@@ -106,16 +105,30 @@ const updateYCard = (yMap, obj) => {
             }
         }
     }
+    const tagsJson = obj.tags?.length ? JSON.stringify(obj.tags) : null;
+    const currentTags = yMap.get('tags') || null;
+    if (tagsJson !== currentTags) {
+        if (tagsJson) yMap.set('tags', tagsJson);
+        else yMap.delete('tags');
+    }
 };
 
-const cardFromYjs = (data) => ({
-    id: data.id,
-    name: data.name || '',
-    color: data.color || null,
-    url: data.url || null,
-    hidden: data.hidden || false,
-    status: data.status || null
-});
+const cardFromYjs = (data) => {
+    let tags = [];
+    if (data.tags) {
+        try { tags = JSON.parse(data.tags); } catch { /* ignore */ }
+    }
+    return {
+        id: data.id,
+        name: data.name || '',
+        color: data.color || null,
+        url: data.url || null,
+        hidden: data.hidden || false,
+        status: data.status || null,
+        points: data.points ?? null,
+        tags
+    };
+};
 
 const createYColumn = createYCard;
 const createYStory = createYCard;
