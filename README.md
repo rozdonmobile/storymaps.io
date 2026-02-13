@@ -29,9 +29,9 @@ This kind of hidden complexity surfaces repeatedly in projects. It's nobody's fa
 
 With story mapping, everyone is in the room during the mapping session. The question "What happens if they don't approve?" surfaces early because the team is walking through the user's journey together, step by step. You have the conversation before implementation starts, capture it in the map, and reduce disruptions while building shared understanding across the team.
 
-By this point, you've probably recognised some of these patterns in your own work. Try creating a story map for your current project, or start small by mapping a single feature or process. Share it with your team and get their feedback. Don't get hung up on making the perfect map. The goal isn't a perfect diagram, it's a better shared understanding of what you're building! Keep that in mind and good luck!
+You've probably seen these patterns in your own work. It happens to us all. It's hard to quantify, and that's why it's frustrating. But a good heuristic is this: think about how long you thought your last project or complex feature would take, and compare it to how long it actually took. The difference is your hidden complexity tax. It's not a mistake, it's just a blindspot in how agile manages complexity. Story mapping won't eliminate that gap entirely, but it shrinks it by surfacing the unknowns before they become surprises. Try creating a story map for your current project, or start small by mapping a single feature or process. Share it with your team and get their feedback. Don't get hung up on making the perfect map. The goal isn't a perfect diagram, it's a better shared understanding of what you're building. Keep that in mind and see where it takes you.
 
-### User Story Mapping Structure:
+### Here's the basic structure of a story map:
 - **Users** - Who are the users? e.g. first-time shopper
 - **Activities** - What are they trying to achieve? e.g. find a product
 - **Steps** - The journey they take to achieve their goals from left to right e.g. search -> browse -> compare
