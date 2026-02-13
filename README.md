@@ -23,11 +23,13 @@ A story map preserves it. One diagram that shows who the users are, what journey
 
 By mapping out the user journey upfront, you can instantly spot functional gaps. For example, say you're building an online store for a local sign shop. You plan out steps: "Browse Designs" → "Customise Text" → "Confirm Dimensions" → "Approve" → "Checkout". That seems like a sensible linear flow in your backlog.
 
-You start implementation, work through the first three stages, and hit "Approve", only to realise you forgot to account for what happens if the customer's design isn't approved. Implementation pauses. After discussing it with stakeholders, you add "Revise Design" → "Revise Dimensions" → "Re-approve". Your workload just went from five steps to eight, mid-sprint, sound familiar?.
+You start implementation, work through the first three stages, and hit "Approve", only to realise you forgot to account for what happens if the customer's design isn't approved. Implementation pauses. After discussing it with stakeholders, you add "Revise Design" → "Revise Dimensions" → "Re-approve". Your workload just went from five steps to eight, mid-sprint... sound familiar?
 
-This kind of hidden complexity surfaces repeatedly in projects. It's nobody's fault, but it impacts everyone: scope creep, late deliveries, and uncomfortable conversations about why things are taking longer than expected.
+This kind of hidden complexity surfaces repeatedly in projects. It's nobody's fault, but it impacts everyone: scope creep and uncomfortable conversations about why things are taking longer than expected. Even agile isn't immune to this. 
 
-With story mapping, everyone is in the room during the mapping session. The question "What happens if they don't approve?" surfaces early because the team is walking through the user's journey together, step by step. You have the conversation before implementation starts, capture it in the map, and reduce disruptions while building shared understanding across the team.  Flat Backlogs Hide Complexity. Story Maps Expose It.
+With story mapping, everyone is in the room during the mapping session. The question "What happens if they don't approve?" surfaces early because the team is walking through the user's journey together, step by step. You have the conversation before implementation starts, capture it in the map, and reduce disruptions while building shared understanding across the team.
+
+By this point, you've probably recognised some of these patterns in your own work. Try creating a story map for your current project, or start small by mapping a single feature or process. Share it with your team and get their feedback. Don't get hung up on making the perfect map. The goal isn't a perfect diagram, it's a better shared understanding of what you’re building! Keep that in mind and good luck!
 
 ### User Story Mapping Structure:
 - **Users** - Who are the users? e.g. first-time shopper
