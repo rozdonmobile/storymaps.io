@@ -232,15 +232,9 @@ const showContextMenu = (x, y, columnId, columnIndex) => {
 export const initPan = () => {
     const wrapper = _dom.storyMapWrapper;
 
-    // Suppress browser context menu; show custom menu on non-drag right-click
+    // Suppress native browser context menu (custom menu shown on mouseup instead)
     wrapper.addEventListener('contextmenu', (e) => {
         e.preventDefault();
-        if (panDidMove) return;
-        if (!_isMapEditable()) return;
-        if (!window.matchMedia('(hover: hover)').matches) return;
-
-        const { columnId, columnIndex } = resolveColumn(e.target);
-        showContextMenu(e.clientX, e.clientY, columnId, columnIndex);
     });
 
     wrapper.addEventListener('mousedown', (e) => {
@@ -269,6 +263,13 @@ export const initPan = () => {
         if (!isPanning) return;
         isPanning = false;
         wrapper.classList.remove('panning');
+
+        if (!panDidMove && e.button === 2
+            && _isMapEditable()
+            && window.matchMedia('(hover: hover)').matches) {
+            const { columnId, columnIndex } = resolveColumn(e.target);
+            showContextMenu(e.clientX, e.clientY, columnId, columnIndex);
+        }
     });
 };
 
