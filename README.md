@@ -76,6 +76,7 @@ You've probably seen these patterns in your own work. It happens to us all. It's
 - **Jira** - export as CSV or via REST API
 - **Asana** - export as CSV or via REST API
 - **Phabricator** - export via Maniphest API
+- **URL endpoints** - append `.json` or `.yaml` to any map URL to fetch its data programmatically (e.g. `curl storymaps.io/abc123.json`)
 - **Share as image** - copy map screenshot to clipboard or download as PNG
 - **Print / PDF**
 
@@ -98,7 +99,7 @@ You've probably seen these patterns in your own work. It happens to us all. It's
 The app is a single Node.js server (`server.js`) that handles:
 - **WebSocket** - Real-time collaboration via y-websocket
 - **Static files** - Serves the client app from `public/` and `src/`
-- **REST API** - Lock state (`/api/lock/:mapId`) and stats (`/api/stats`)
+- **REST API** - Lock state (`/api/lock/:mapId`), stats (`/api/stats`), and format endpoints (`/:mapId.json`, `/:mapId.yaml`)
 
 ### Data Storage
 - **LevelDB** - Yjs document persistence in `yjs-data/`

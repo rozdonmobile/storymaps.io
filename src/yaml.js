@@ -1,8 +1,8 @@
 // Storymaps.io — AGPL-3.0 — see LICENCE for details
 // YAML ↔ JSON transform + validation
 
-import jsyaml from '/vendor/js-yaml.bundle.js';
-import { generateId } from '/src/constants.js';
+import jsyaml from '#js-yaml';
+import { generateId } from './constants.js';
 
 const DEFAULT_STEP_COLOR = '#86efac';
 const DEFAULT_STORY_COLOR = '#fef08a';

@@ -38,6 +38,9 @@ const isOriginAllowed = (origin) => {
 process.env.YPERSISTENCE = DATA_DIR;
 const { setupWSConnection, docs, getPersistence } = await import('y-websocket/bin/utils');
 
+import { jsonToYamlObj } from './src/yaml.js';
+import jsyaml from '#js-yaml';
+
 // JSON file paths for lock and counter data
 const LOCK_FILE = join(DATA_DIR, 'locks.json');
 const STATS_FILE = join(DATA_DIR, 'stats.json');
@@ -83,6 +86,7 @@ const MIME_TYPES = {
   '.woff2': 'font/woff2',
   '.xml': 'application/xml',
   '.txt': 'text/plain',
+  '.yaml': 'text/yaml',
 };
 
 // Extensions worth gzipping (text-based formats)
@@ -250,6 +254,100 @@ const handleApi = async (req, res) => {
 };
 
 // =============================================================================
+// Serialization (Yjs doc → JSON v1 / YAML)
+// =============================================================================
+
+const serializeDoc = (doc) => {
+  const ymap = doc.getMap('storymap');
+  const columns = ymap.get('columns')?.toJSON() || [];
+  const usersMap = ymap.get('users')?.toJSON() || {};
+  const activitiesMap = ymap.get('activities')?.toJSON() || {};
+  const slicesArr = ymap.get('slices')?.toJSON() || [];
+  const legendArr = ymap.get('legend')?.toJSON() || [];
+  const notes = doc.getText('notes')?.toString() || '';
+
+  const sCard = (c) => {
+    const o = { name: c.name || '' };
+    if (c.color) o.color = c.color;
+    if (c.url) o.url = c.url;
+    if (c.hidden) o.hidden = true;
+    if (c.status) o.status = c.status;
+    if (c.points != null) o.points = c.points;
+    const tags = c.tags ? (typeof c.tags === 'string' ? JSON.parse(c.tags) : c.tags) : [];
+    if (tags.length) o.tags = tags;
+    return o;
+  };
+
+  const toPositional = (map) => columns.map(col => (map[col.id] || []).map(sCard));
+
+  const result = {
+    app: 'storymap', v: 1,
+    exported: new Date().toISOString(),
+    name: ymap.get('name') || '',
+    users: toPositional(usersMap),
+    activities: toPositional(activitiesMap),
+    steps: columns.map(col => {
+      if (col.partialMapId) {
+        const o = { partialMapId: col.partialMapId };
+        if (col.partialMapOrigin) o.partialMapOrigin = true;
+        return o;
+      }
+      return sCard(col);
+    }),
+    slices: slicesArr.map(s => {
+      const stories = s.stories || {};
+      const obj = { name: s.name || '', stories: columns.map(col => (stories[col.id] || []).map(sCard)) };
+      if (s.collapsed) obj.collapsed = true;
+      return obj;
+    }),
+  };
+
+  if (legendArr.length) result.legend = legendArr.map(e => ({ color: e.color, label: e.label }));
+  if (notes) result.notes = notes;
+
+  // Partial maps: stored in state format (keyed by IDs), convert to serialized format (positional arrays)
+  const pmRaw = ymap.get('partialMaps');
+  if (pmRaw) {
+    const pms = typeof pmRaw === 'string' ? JSON.parse(pmRaw) : pmRaw;
+    if (pms?.length) {
+      result.partialMaps = pms.map(pm => {
+        const pmCols = pm.columns || [];
+        return {
+          id: pm.id,
+          name: pm.name,
+          users: pmCols.map(c => (pm.users?.[c.id] || []).map(sCard)),
+          activities: pmCols.map(c => (pm.activities?.[c.id] || []).map(sCard)),
+          steps: pmCols.map(sCard),
+          stories: slicesArr.map(slice =>
+            pmCols.map(c => (pm.stories?.[slice.id]?.[c.id] || []).map(sCard))
+          )
+        };
+      });
+    }
+  }
+
+  return result;
+};
+
+const loadAndSerialize = async (mapId) => {
+  // Try in-memory first (active WebSocket connections)
+  let doc = docs.get(mapId);
+  if (doc) return serializeDoc(doc);
+
+  // Load from LevelDB persistence
+  const persistence = getPersistence();
+  if (!persistence) return null;
+  const Y = await import('yjs');
+  doc = new Y.Doc();
+  await persistence.bindState(mapId, doc);
+  const ymap = doc.getMap('storymap');
+  if (!ymap.get('columns')) { doc.destroy(); return null; }
+  const data = serializeDoc(doc);
+  doc.destroy();
+  return data;
+};
+
+// =============================================================================
 // HTTP Server
 // =============================================================================
 
@@ -288,9 +386,26 @@ const server = createServer(async (req, res) => {
       }
     }
 
+    // Format extension: /:mapId.json or /:mapId.yaml
+    if (!content && !reqPath.includes('/', 1) && (ext === '.json' || ext === '.yaml')) {
+      const mapId = reqPath.slice(1, -ext.length);
+      if (mapId) {
+        const data = await loadAndSerialize(mapId);
+        if (data) {
+          const body = ext === '.yaml'
+            ? jsyaml.dump(jsonToYamlObj(data), { indent: 2, lineWidth: 120, noRefs: true, quotingType: '"' })
+            : JSON.stringify(data, null, 2);
+          const ct = ext === '.yaml' ? 'text/yaml' : 'application/json';
+          res.writeHead(200, { 'Content-Type': ct + '; charset=utf-8', 'Cache-Control': 'no-store' });
+          res.end(body);
+          return;
+        }
+      }
+    }
+
     // SPA fallback: serve index.html for map URLs (no extension, not in subdirectories)
     let isHtmlFallback = false;
-    if (!content && !reqPath.includes('/', 1) && (ext === '' || ext === '.json')) {
+    if (!content && !reqPath.includes('/', 1) && ext === '') {
       cacheKey = '/index.html';
       cached = fileCache.get(cacheKey);
       if (!cached) {
