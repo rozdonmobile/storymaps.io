@@ -49,19 +49,17 @@ export const init = (opts) => {
     _saveToStorage = opts.saveToStorage;
     _isMapEditable = opts.isMapEditable;
 
-    // Attach toggle/close listeners immediately (no module loading yet)
-    const panel = document.getElementById('notesPanel');
-    const toggle = document.getElementById('notesToggle');
+    // Close button closes the entire unified panel
     const close = document.getElementById('notesClose');
-
-    toggle?.addEventListener('click', () => {
-        _ensureEditor();
-        panel?.classList.toggle('open');
-    });
+    const controlsRight = document.getElementById('controlsRight');
     close?.addEventListener('click', () => {
-        panel?.classList.remove('open');
+        controlsRight?.classList.remove('panel-open');
+        document.querySelectorAll('.panel-section').forEach(s => s.classList.remove('open'));
+        document.querySelectorAll('.panel-tab').forEach(t => t.classList.remove('active'));
     });
 };
+
+export const ensureEditor = () => _ensureEditor();
 
 // Lazy-load CodeMirror and create the editor on first use
 const _ensureEditor = () => {

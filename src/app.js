@@ -2,8 +2,8 @@
 // Orchestrator — imports all modules, wires init(), owns dom + persistence + event listeners
 
 import * as notepad from '/src/notepad.js';
-import { generateId, el, CARD_COLORS, STATUS_OPTIONS, ZOOM_LEVELS } from '/src/constants.js';
-import { state, init as stateInit, initState, hasContent, confirmOverwrite, pushUndo, undo, redo, updateUndoRedoButtons, createColumn, createStory, createSlice, selection, clearSelection } from '/src/state.js';
+import { generateId, el, CARD_COLORS, DEFAULT_CARD_COLORS, STATUS_OPTIONS, ZOOM_LEVELS } from '/src/constants.js';
+import { state, init as stateInit, initState, hasContent, confirmOverwrite, pushUndo, undo, redo, updateUndoRedoButtons, createColumn, createStory, createSlice, createRefColumn, selection, clearSelection, partialMapEditState } from '/src/state.js';
 import { serialize, deserialize } from '/src/serialization.js';
 import * as navigation from '/src/navigation.js';
 import * as presence from '/src/presence.js';
@@ -12,6 +12,7 @@ import * as yjs from '/src/yjs.js';
 import * as ui from '/src/ui.js';
 import * as renderMod from '/src/render.js';
 import * as exportsMod from '/src/exports.js';
+import { exportToYaml, importFromYaml } from '/src/yaml.js';
 
 // =============================================================================
 // DOM References
@@ -23,8 +24,12 @@ const dom = {
     boardName: document.getElementById('boardName'),
     newMapBtn: document.getElementById('newMapBtn'),
     copyExistingBtn: document.getElementById('copyExistingBtn'),
-    importBtn: document.getElementById('importMap'),
+    importJsonMenuItem: document.getElementById('importJsonMenuItem'),
+    importYamlMenuItem: document.getElementById('importYamlMenuItem'),
+    importSubmenuTrigger: document.getElementById('importSubmenuTrigger'),
+    importSubmenu: document.getElementById('importSubmenu'),
     exportBtn: document.getElementById('exportMap'),
+    exportYamlBtn: document.getElementById('exportYamlBtn'),
     printBtn: document.getElementById('printMap'),
     menuBtn: document.getElementById('menuBtn'),
     mainMenu: document.getElementById('mainMenu'),
@@ -63,6 +68,21 @@ const dom = {
     exportCopyBtn: document.getElementById('exportCopyBtn'),
     exportFilename: document.getElementById('exportFilename'),
     exportDownloadBtn: document.getElementById('exportDownloadBtn'),
+    // YAML import modal
+    importYamlModal: document.getElementById('importYamlModal'),
+    importYamlModalClose: document.getElementById('importYamlModalClose'),
+    importYamlText: document.getElementById('importYamlText'),
+    importYamlBtn: document.getElementById('importYamlBtn'),
+    importYamlDropzone: document.getElementById('importYamlDropzone'),
+    importYamlFileInput: document.getElementById('importYamlFileInput'),
+    importYamlValidationError: document.getElementById('importYamlValidationError'),
+    // YAML export modal
+    exportYamlModal: document.getElementById('exportYamlModal'),
+    exportYamlModalClose: document.getElementById('exportYamlModalClose'),
+    exportYamlText: document.getElementById('exportYamlText'),
+    exportYamlCopyBtn: document.getElementById('exportYamlCopyBtn'),
+    exportYamlFilename: document.getElementById('exportYamlFilename'),
+    exportYamlDownloadBtn: document.getElementById('exportYamlDownloadBtn'),
     // Jira export
     exportJiraBtn: document.getElementById('exportJiraBtn'),
     jiraExportModal: document.getElementById('jiraExportModal'),
@@ -175,6 +195,9 @@ const dom = {
     // Cursor toggle
     toggleCursorsBtn: document.getElementById('toggleCursorsBtn'),
     toggleCursorsText: document.getElementById('toggleCursorsText'),
+    // Focus mode
+    toggleFocusModeBtn: document.getElementById('toggleFocusModeBtn'),
+    toggleFocusModeText: document.getElementById('toggleFocusModeText'),
     // Lock feature
     lockMapBtn: document.getElementById('lockMapBtn'),
     relockBtn: document.getElementById('relockBtn'),
@@ -195,6 +218,16 @@ const dom = {
     legendEntries: document.getElementById('legendEntries'),
     legendAddBtn: document.getElementById('legendAddBtn'),
     controlsRight: document.getElementById('controlsRight'),
+    panelBody: document.getElementById('panelBody'),
+    notesToggle: document.getElementById('notesToggle'),
+    // Partials
+    partialsPanel: document.getElementById('partialsPanel'),
+    partialsToggle: document.getElementById('partialsToggle'),
+    partialsBody: document.getElementById('partialsBody'),
+    partialsList: document.getElementById('partialsList'),
+    // Card expand modal
+    cardExpandModal: document.getElementById('cardExpandModal'),
+    cardExpandTextarea: document.getElementById('cardExpandTextarea'),
     // Search
     searchBtn: document.getElementById('searchBtn'),
     searchBar: document.getElementById('searchBar'),
@@ -208,6 +241,7 @@ const dom = {
     filterColorList: document.getElementById('filterColorList'),
     filterTagsList: document.getElementById('filterTagsList'),
     filterClearBtn: document.getElementById('filterClearBtn'),
+    filterDoneBtn: document.getElementById('filterDoneBtn'),
 };
 
 const { isMapEditable } = lock;
@@ -216,7 +250,7 @@ const { closeMainMenu, closeAllOptionsMenus, zoomToFit, scrollElementIntoView } 
 const { loadYjs, createYjsDoc, destroyYjs, syncFromYjs, syncToYjs, getProvider, getYdoc, getYmap, ensureSortable } = yjs;
 const { trackPresence, clearPresence, trackCursor, clearCursors, toggleCursorsVisibility, updateCursorsVisibilityUI, getCursorColor, getSessionId, broadcastDragStart, broadcastDragEnd } = presence;
 const { lockState, loadLockState, subscribeLockState, clearLockSubscription, updateLockUI, updateEditability, checkSessionUnlock, initLockListeners, hideLockModal } = lock;
-const { renderLegend, getAllTagsInMap } = ui;
+const { renderLegend, getAllTagsInMap, renderPartialsList } = ui;
 
 // =============================================================================
 // Persistence
@@ -282,7 +316,20 @@ const saveToStorage = () => {
         return;
     }
 
+    // Don't overwrite localStorage that has real data with an empty state
+    // (protects against Yjs sync returning partial data e.g. notes only)
+    if (state.columns.length === 0) {
+        const existing = localStorage.getItem(STORAGE_KEY);
+        if (existing) {
+            try {
+                const parsed = JSON.parse(existing);
+                if (parsed.steps && parsed.steps.length > 0) return;
+            } catch { /* corrupted — ok to overwrite */ }
+        }
+    }
+
     localStorage.setItem(STORAGE_KEY, JSON.stringify(serialize()));
+    if (state.mapId) localStorage.setItem(STORAGE_KEY + ':mapId', state.mapId);
     if (state.mapId && getYmap()) {
         syncToYjs();
     }
@@ -290,9 +337,48 @@ const saveToStorage = () => {
 
 // Combined render and save - used after state mutations
 const renderAndSave = () => {
+    ensurePartialBlankCol();
     render();
     saveToStorage();
+    if (dom.searchInput.value.trim() || hasActiveFilters()) {
+        applySearchFilter(dom.searchInput.value.trim());
+    }
 };
+
+// =============================================================================
+// Card Expand Modal
+// =============================================================================
+
+let _expandedItem = null;
+
+const openExpandModal = (item) => {
+    _expandedItem = item;
+    const editable = isMapEditable();
+    dom.cardExpandTextarea.value = item.name || '';
+    dom.cardExpandTextarea.readOnly = !editable;
+    const modal = dom.cardExpandModal.querySelector('.card-expand-modal');
+    if (modal) modal.style.backgroundColor = item.color || '';
+    dom.cardExpandModal.classList.add('visible');
+    dom.cardExpandTextarea.focus();
+    if (editable) pushUndo();
+};
+
+const closeExpandModal = () => {
+    dom.cardExpandModal.classList.remove('visible');
+    _expandedItem = null;
+    renderAndSave();
+};
+
+dom.cardExpandTextarea.addEventListener('input', () => {
+    if (!_expandedItem) return;
+    _expandedItem.name = dom.cardExpandTextarea.value;
+    saveToStorage();
+});
+
+document.getElementById('cardExpandModalClose')?.addEventListener('click', closeExpandModal);
+dom.cardExpandModal.addEventListener('click', (e) => {
+    if (e.target === dom.cardExpandModal) closeExpandModal();
+});
 
 const loadFromStorage = () => {
     const data = localStorage.getItem(STORAGE_KEY);
@@ -396,6 +482,103 @@ const importFromJsonText = async (jsonText) => {
     }
 };
 
+// YAML Import
+const showImportYamlModal = () => {
+    dom.importYamlModal.classList.add('visible');
+    dom.importYamlText.value = '';
+    dom.importYamlValidationError.classList.add('hidden');
+    dom.importYamlText.focus();
+};
+
+const hideImportYamlModal = () => {
+    dom.importYamlModal.classList.remove('visible');
+    dom.importYamlText.value = '';
+};
+
+const importFromYamlText = async (yamlText) => {
+    const isFromWelcome = !state.mapId;
+
+    if (!isFromWelcome) {
+        saveToStorage();
+        if (!confirmOverwrite()) return;
+    }
+
+    dom.importYamlValidationError.classList.add('hidden');
+
+    let data;
+    try {
+        data = importFromYaml(yamlText);
+    } catch (err) {
+        if (err.validationErrors) {
+            dom.importYamlValidationError.textContent = err.validationErrors.join('\n');
+            dom.importYamlValidationError.classList.remove('hidden');
+        } else {
+            alert('Failed to import: Invalid YAML format');
+        }
+        return;
+    }
+
+    try {
+        if (isFromWelcome) {
+            hideWelcomeScreen();
+            initState();
+            const mapId = await newMapId();
+            state.mapId = mapId;
+            history.replaceState({ mapId }, '', `/${mapId}`);
+            await createYjsDoc(mapId);
+        } else {
+            pushUndo();
+        }
+        deserialize(data);
+        dom.boardName.value = state.name;
+        renderAndSave();
+        requestAnimationFrame(zoomToFit);
+        hideImportYamlModal();
+        if (isFromWelcome) {
+            subscribeToMap(state.mapId);
+        }
+    } catch {
+        alert('Failed to import: Invalid data structure');
+    }
+};
+
+const importYamlFile = (file) => {
+    const isFromWelcome = !state.mapId;
+
+    if (!isFromWelcome) {
+        saveToStorage();
+        if (!confirmOverwrite()) return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = async (e) => {
+        try {
+            const data = importFromYaml(e.target.result);
+            if (isFromWelcome) {
+                hideWelcomeScreen();
+                initState();
+                const mapId = await newMapId();
+                state.mapId = mapId;
+                history.replaceState({ mapId }, '', `/${mapId}`);
+                await createYjsDoc(mapId);
+            } else {
+                pushUndo();
+            }
+            deserialize(data);
+            dom.boardName.value = state.name;
+            renderAndSave();
+            requestAnimationFrame(zoomToFit);
+            if (isFromWelcome) {
+                subscribeToMap(state.mapId);
+            }
+        } catch (err) {
+            const msg = err.validationErrors ? err.validationErrors.join('\n') : 'Invalid YAML format';
+            alert('Failed to import: ' + msg);
+        }
+    };
+    reader.readAsText(file);
+};
+
 const updateExportJson = () => {
     const minify = dom.exportMinify.checked;
     const json = minify ? JSON.stringify(serialize()) : JSON.stringify(serialize(), null, 2);
@@ -460,6 +643,48 @@ const downloadExportFile = () => {
     link.click();
     URL.revokeObjectURL(url);
     hideExportModal();
+};
+
+// YAML Export
+const exportYaml = () => {
+    if (dom.welcomeScreen.classList.contains('visible')) return;
+    saveToStorage();
+    showExportYamlModal();
+};
+
+const showExportYamlModal = () => {
+    dom.exportYamlModal.classList.add('visible');
+    dom.exportYamlFilename.value = sanitizeFilename(state.name || 'story-map');
+    dom.exportYamlText.value = exportToYaml(serialize());
+};
+
+const hideExportYamlModal = () => {
+    dom.exportYamlModal.classList.remove('visible');
+};
+
+const copyExportYaml = async () => {
+    const yaml = dom.exportYamlText.value;
+    try {
+        await navigator.clipboard.writeText(yaml);
+        dom.exportYamlCopyBtn.textContent = 'Copied!';
+        setTimeout(() => dom.exportYamlCopyBtn.textContent = 'Copy to Clipboard', 2000);
+    } catch {
+        dom.exportYamlText.select();
+        document.execCommand('copy');
+        dom.exportYamlCopyBtn.textContent = 'Copied!';
+        setTimeout(() => dom.exportYamlCopyBtn.textContent = 'Copy to Clipboard', 2000);
+    }
+};
+
+const downloadExportYamlFile = () => {
+    const filename = sanitizeFilename(dom.exportYamlFilename.value) + '.yaml';
+    const yaml = dom.exportYamlText.value;
+    const blob = new Blob([yaml], { type: 'text/yaml' });
+    const url = URL.createObjectURL(blob);
+    const link = el('a', null, { href: url, download: filename });
+    link.click();
+    URL.revokeObjectURL(url);
+    hideExportYamlModal();
 };
 
 const loadSample = async (name) => {
@@ -568,15 +793,46 @@ const hasActiveFilters = () => filterState.statuses.size > 0 || filterState.colo
 // Look up the state object for a card element
 const getItemForStep = (step) => {
     const colId = step.dataset.columnId;
-    return state.columns.find(c => c.id === colId);
+    const mainCol = state.columns.find(c => c.id === colId);
+    if (mainCol) return mainCol;
+    for (const pm of state.partialMaps) {
+        const pmCol = pm.columns.find(c => c.id === colId);
+        if (pmCol) return pmCol;
+    }
+    return undefined;
 };
 
 const getItemForStoryCard = (card) => {
     const storyId = card.dataset.storyId;
     const sliceId = card.dataset.sliceId;
     const colId = card.dataset.columnId;
+    const rowType = card.dataset.rowType;
+    if (rowType === 'users') {
+        const main = state.users[colId]?.find(s => s.id === storyId);
+        if (main) return main;
+        for (const pm of state.partialMaps) {
+            const found = pm.users?.[colId]?.find(s => s.id === storyId);
+            if (found) return found;
+        }
+        return undefined;
+    }
+    if (rowType === 'activities') {
+        const main = state.activities[colId]?.find(s => s.id === storyId);
+        if (main) return main;
+        for (const pm of state.partialMaps) {
+            const found = pm.activities?.[colId]?.find(s => s.id === storyId);
+            if (found) return found;
+        }
+        return undefined;
+    }
     const slice = state.slices.find(s => s.id === sliceId);
-    return slice?.stories[colId]?.find(s => s.id === storyId);
+    const mainStory = slice?.stories[colId]?.find(s => s.id === storyId);
+    if (mainStory) return mainStory;
+    for (const pm of state.partialMaps) {
+        const found = pm.stories?.[sliceId]?.[colId]?.find(s => s.id === storyId);
+        if (found) return found;
+    }
+    return undefined;
 };
 
 const itemMatchesFilters = (item) => {
@@ -586,7 +842,7 @@ const itemMatchesFilters = (item) => {
         if (!filterState.statuses.has(itemStatus)) return false;
     }
     if (filterState.colors.size > 0) {
-        const itemColor = (item.color || '').toLowerCase();
+        const itemColor = (item.color || DEFAULT_CARD_COLORS.story).toLowerCase();
         if (!filterState.colors.has(itemColor)) return false;
     }
     if (filterState.tags.size > 0) {
@@ -613,7 +869,8 @@ const applySearchFilter = (query) => {
 
     // Dim non-matching story cards
     dom.storyMap.querySelectorAll('.story-card').forEach(card => {
-        const text = card.querySelector('.story-text')?.value?.toLowerCase() || '';
+        const text = (card.querySelector('.story-text')?.value
+            || card.querySelector('.story-text-preview')?.textContent || '').toLowerCase();
         const textMatch = !q || text.includes(q);
         const filterMatch = !filtering || itemMatchesFilters(getItemForStoryCard(card));
         if (!textMatch || !filterMatch) card.classList.add('search-dimmed');
@@ -621,15 +878,46 @@ const applySearchFilter = (query) => {
 };
 
 // Filter panel
+const getUsedStatusesAndColors = () => {
+    const statuses = new Set();
+    const colors = new Set();
+    state.columns.forEach(c => { if (c.color) colors.add(c.color.toLowerCase()); });
+    const addFromCards = (cards) => {
+        cards.forEach(s => {
+            if (s.status) statuses.add(s.status);
+            else statuses.add('none');
+            colors.add((s.color || DEFAULT_CARD_COLORS.story).toLowerCase());
+        });
+    };
+    Object.values(state.users || {}).forEach(addFromCards);
+    Object.values(state.activities || {}).forEach(addFromCards);
+    state.slices.forEach(slice => {
+        Object.values(slice.stories || {}).forEach(addFromCards);
+    });
+    (state.partialMaps || []).forEach(pm => {
+        pm.columns.forEach(c => { if (c.color) colors.add(c.color.toLowerCase()); });
+        Object.values(pm.users || {}).forEach(addFromCards);
+        Object.values(pm.activities || {}).forEach(addFromCards);
+        Object.values(pm.stories || {}).forEach(sliceStories => {
+            Object.values(sliceStories).forEach(addFromCards);
+        });
+    });
+    return { statuses, colors };
+};
+
 const populateFilterPanel = () => {
+    const used = getUsedStatusesAndColors();
     // Status checkboxes
     dom.filterStatusList.innerHTML = '';
     const statusEntries = [['none', 'No Status', '#e5e5e5'], ...Object.entries(STATUS_OPTIONS).map(([k, v]) => [k, v.label, v.color])];
     statusEntries.forEach(([key, label, color]) => {
+        const inUse = used.statuses.has(key);
         const lbl = el('label', 'filter-checkbox');
+        if (!inUse) lbl.classList.add('filter-disabled');
         const cb = el('input');
         cb.type = 'checkbox';
         cb.checked = filterState.statuses.has(key);
+        cb.disabled = !inUse;
         const dot = el('span', 'filter-status-dot');
         dot.style.backgroundColor = color;
         const text = el('span', null, { text: label });
@@ -644,9 +932,14 @@ const populateFilterPanel = () => {
 
     // Color swatches
     dom.filterColorList.innerHTML = '';
-    Object.entries(CARD_COLORS).forEach(([name, hex]) => {
+    const colorEntries = Object.entries(CARD_COLORS);
+    const usedColors = colorEntries.filter(([, hex]) => used.colors.has(hex.toLowerCase()));
+    const unusedColors = colorEntries.filter(([, hex]) => !used.colors.has(hex.toLowerCase()));
+    [...usedColors, ...unusedColors].forEach(([name, hex]) => {
+        const inUse = used.colors.has(hex.toLowerCase());
         const swatch = el('button', 'filter-color-swatch', { title: name });
         swatch.style.backgroundColor = hex;
+        if (!inUse) { swatch.classList.add('filter-disabled'); swatch.disabled = true; }
         if (filterState.colors.has(hex.toLowerCase())) swatch.classList.add('selected');
         swatch.addEventListener('click', () => {
             const lc = hex.toLowerCase();
@@ -781,7 +1074,22 @@ const initEventListeners = () => {
         closeMainMenu();
         toggleCursorsVisibility();
     });
-    dom.importBtn.addEventListener('click', () => {
+    // Focus mode toggle
+    let focusMode = localStorage.getItem('focusMode') === 'true';
+    function applyFocusMode() {
+        document.body.classList.toggle('focus-mode', focusMode);
+        if (dom.toggleFocusModeText) {
+            dom.toggleFocusModeText.textContent = focusMode ? 'Exit Focus Mode' : 'Focus Mode';
+        }
+    }
+    applyFocusMode();
+    dom.toggleFocusModeBtn?.addEventListener('click', () => {
+        closeMainMenu();
+        focusMode = !focusMode;
+        localStorage.setItem('focusMode', focusMode);
+        applyFocusMode();
+    });
+    dom.importJsonMenuItem.addEventListener('click', () => {
         closeMainMenu();
         if (lockState.isLocked && !lockState.sessionUnlocked) {
             alert('This map is read-only. Unlock it first to import.');
@@ -789,25 +1097,29 @@ const initEventListeners = () => {
         }
         showImportModal();
     });
+    dom.importYamlMenuItem.addEventListener('click', () => {
+        closeMainMenu();
+        if (lockState.isLocked && !lockState.sessionUnlocked) {
+            alert('This map is read-only. Unlock it first to import.');
+            return;
+        }
+        showImportYamlModal();
+    });
 
-    // Import modal events
+    // Import JSON modal events
     dom.importModalClose.addEventListener('click', hideImportModal);
     dom.importModal.addEventListener('click', (e) => {
         if (e.target === dom.importModal) hideImportModal();
     });
     dom.importJsonBtn.addEventListener('click', () => {
         const jsonText = dom.importJsonText.value.trim();
-        if (jsonText) {
-            importFromJsonText(jsonText);
-        }
+        if (jsonText) importFromJsonText(jsonText);
     });
     dom.importJsonText.addEventListener('keydown', (e) => {
         if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
             e.preventDefault();
             const jsonText = dom.importJsonText.value.trim();
-            if (jsonText) {
-                importFromJsonText(jsonText);
-            }
+            if (jsonText) importFromJsonText(jsonText);
         }
     });
     dom.importDropzone.addEventListener('click', () => {
@@ -837,7 +1149,50 @@ const initEventListeners = () => {
         }
     });
 
-    // Export modal events
+    // Import YAML modal events
+    dom.importYamlModalClose.addEventListener('click', hideImportYamlModal);
+    dom.importYamlModal.addEventListener('click', (e) => {
+        if (e.target === dom.importYamlModal) hideImportYamlModal();
+    });
+    dom.importYamlBtn.addEventListener('click', () => {
+        const yamlText = dom.importYamlText.value.trim();
+        if (yamlText) importFromYamlText(yamlText);
+    });
+    dom.importYamlText.addEventListener('keydown', (e) => {
+        if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+            e.preventDefault();
+            const yamlText = dom.importYamlText.value.trim();
+            if (yamlText) importFromYamlText(yamlText);
+        }
+    });
+    dom.importYamlDropzone.addEventListener('click', () => {
+        dom.importYamlFileInput.click();
+    });
+    dom.importYamlFileInput.addEventListener('change', (e) => {
+        if (e.target.files.length) {
+            hideImportYamlModal();
+            importYamlFile(e.target.files[0]);
+            e.target.value = '';
+        }
+    });
+    dom.importYamlDropzone.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        dom.importYamlDropzone.classList.add('dragover');
+    });
+    dom.importYamlDropzone.addEventListener('dragleave', () => {
+        dom.importYamlDropzone.classList.remove('dragover');
+    });
+    dom.importYamlDropzone.addEventListener('drop', (e) => {
+        e.preventDefault();
+        dom.importYamlDropzone.classList.remove('dragover');
+        const file = e.dataTransfer.files[0];
+        if (file && (file.name.endsWith('.yaml') || file.name.endsWith('.yml'))) {
+            hideImportYamlModal();
+            importYamlFile(file);
+        }
+    });
+
+    // Export JSON modal events
     dom.exportModalClose.addEventListener('click', hideExportModal);
     dom.exportModal.addEventListener('click', (e) => {
         if (e.target === dom.exportModal) hideExportModal();
@@ -845,6 +1200,18 @@ const initEventListeners = () => {
     dom.exportMinify.addEventListener('change', updateExportJson);
     dom.exportCopyBtn.addEventListener('click', copyExportJson);
     dom.exportDownloadBtn.addEventListener('click', downloadExportFile);
+
+    // Export YAML modal events
+    dom.exportYamlBtn.addEventListener('click', () => {
+        closeMainMenu();
+        exportYaml();
+    });
+    dom.exportYamlModalClose.addEventListener('click', hideExportYamlModal);
+    dom.exportYamlModal.addEventListener('click', (e) => {
+        if (e.target === dom.exportYamlModal) hideExportYamlModal();
+    });
+    dom.exportYamlCopyBtn.addEventListener('click', copyExportYaml);
+    dom.exportYamlDownloadBtn.addEventListener('click', downloadExportYamlFile);
 
     // Jira Export Modal
     dom.exportJiraBtn.addEventListener('click', () => {
@@ -1089,10 +1456,12 @@ const initEventListeners = () => {
             window._htmlToImage = mod;
         }
 
+        const dpr = Math.max(window.devicePixelRatio || 2, 2);
+
         // Capture the map as a canvas (no logo in live DOM — avoids flicker)
         const mapCanvas = await window._htmlToImage.toCanvas(dom.storyMap, {
             backgroundColor: '#f8fafc',
-            pixelRatio: 2,
+            pixelRatio: dpr,
             style: {
                 transform: 'none',
                 margin: '0',
@@ -1104,12 +1473,12 @@ const initEventListeners = () => {
         // Capture the logo separately
         const logoCanvas = await window._htmlToImage.toCanvas(dom.logoLink, {
             backgroundColor: 'transparent',
-            pixelRatio: 2,
+            pixelRatio: dpr,
         });
 
         // Composite: logo on top, then map below with spacing
-        const logoPad = 24 * 2; // padding around edges (matches map padding), scaled by pixelRatio
-        const logoGap = 60 * 2; // gap between logo and map, scaled by pixelRatio
+        const logoPad = 24 * dpr; // padding around edges (matches map padding), scaled by pixelRatio
+        const logoGap = 60 * dpr; // gap between logo and map, scaled by pixelRatio
         const finalCanvas = document.createElement('canvas');
         finalCanvas.width = Math.max(mapCanvas.width, logoCanvas.width + logoPad * 2);
         finalCanvas.height = mapCanvas.height + logoCanvas.height + logoGap;
@@ -1158,13 +1527,13 @@ const initEventListeners = () => {
     });
 
     // Undo/Redo buttons
-    dom.undoBtn.addEventListener('click', () => { clearSelection(); undo(); });
-    dom.redoBtn.addEventListener('click', () => { clearSelection(); redo(); });
+    dom.undoBtn.addEventListener('click', () => { undo(); });
+    dom.redoBtn.addEventListener('click', () => { redo(); });
 
-    // Legend controls
-    dom.legendToggle?.addEventListener('click', () => {
-        dom.legendPanel.classList.toggle('open');
-    });
+    // Panel tab controls
+    dom.legendToggle?.addEventListener('click', () => switchPanelTab('legend'));
+    dom.partialsToggle?.addEventListener('click', () => switchPanelTab('partials'));
+    dom.notesToggle?.addEventListener('click', () => switchPanelTab('notepad'));
     dom.legendAddBtn?.addEventListener('click', () => {
         if (state.legend.length >= Object.keys(CARD_COLORS).length) return;
         pushUndo();
@@ -1196,6 +1565,7 @@ const initEventListeners = () => {
         populateFilterPanel();
     });
     dom.filterPanel.addEventListener('click', (e) => e.stopPropagation());
+    dom.filterDoneBtn.addEventListener('click', closeFilterPanel);
 
     // Zoom controls
     dom.zoomIn.addEventListener('click', navigation.zoomIn);
@@ -1214,22 +1584,42 @@ const initEventListeners = () => {
         dom.printBtn.disabled = !onMap;
     });
 
+    // Submenu collapse helper
+    const collapseSubmenus = (...except) => {
+        const all = [
+            [dom.samplesSubmenuTrigger, dom.samplesSubmenu],
+            [dom.importSubmenuTrigger, dom.importSubmenu],
+            [dom.exportSubmenuTrigger, dom.exportSubmenu],
+        ];
+        all.forEach(([trigger, menu]) => {
+            if (except.includes(trigger)) return;
+            trigger.classList.remove('expanded');
+            menu.classList.remove('visible');
+        });
+    };
+
     // Samples submenu toggle
     dom.samplesSubmenuTrigger.addEventListener('click', (e) => {
         e.stopPropagation();
+        collapseSubmenus(dom.samplesSubmenuTrigger);
         dom.samplesSubmenuTrigger.classList.toggle('expanded');
         dom.samplesSubmenu.classList.toggle('visible');
-        dom.exportSubmenu.classList.remove('visible');
-        dom.exportSubmenuTrigger.classList.remove('expanded');
+    });
+
+    // Import submenu toggle
+    dom.importSubmenuTrigger.addEventListener('click', (e) => {
+        e.stopPropagation();
+        collapseSubmenus(dom.importSubmenuTrigger);
+        dom.importSubmenuTrigger.classList.toggle('expanded');
+        dom.importSubmenu.classList.toggle('visible');
     });
 
     // Export submenu toggle
     dom.exportSubmenuTrigger.addEventListener('click', (e) => {
         e.stopPropagation();
+        collapseSubmenus(dom.exportSubmenuTrigger);
         dom.exportSubmenuTrigger.classList.toggle('expanded');
         dom.exportSubmenu.classList.toggle('visible');
-        dom.samplesSubmenu.classList.remove('visible');
-        dom.samplesSubmenuTrigger.classList.remove('expanded');
     });
 
     // Handle clicks on sample items in main menu
@@ -1258,12 +1648,10 @@ const initEventListeners = () => {
 
         if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey && !isTextInput) {
             e.preventDefault();
-            clearSelection();
             undo();
         }
         if ((e.ctrlKey || e.metaKey) && (e.key === 'y' || (e.key === 'z' && e.shiftKey)) && !isTextInput) {
             e.preventDefault();
-            clearSelection();
             redo();
         }
         if ((e.ctrlKey || e.metaKey) && e.key === 'd' && !isTextInput && selection.columnIds.length > 0) {
@@ -1284,6 +1672,10 @@ const initEventListeners = () => {
             openSearch();
         }
         if (e.key === 'Escape') {
+            if (dom.cardExpandModal.classList.contains('visible')) {
+                closeExpandModal();
+                return;
+            }
             if (!dom.filterPanel.classList.contains('hidden')) {
                 closeFilterPanel();
             } else if (!dom.searchBar.classList.contains('hidden')) {
@@ -1337,6 +1729,9 @@ const initEventListeners = () => {
     // Ctrl+scroll wheel zoom
     navigation.initWheelZoom();
 
+    // Pinch-to-zoom on touch devices
+    navigation.initPinchZoom();
+
     // Lock feature event listeners
     initLockListeners();
 };
@@ -1346,6 +1741,7 @@ const initEventListeners = () => {
 // =============================================================================
 
 let counterLoaded = false;
+let legendAutoOpened = false;
 
 const setCounterValue = (count) => {
     if (!dom.welcomeCounter) return;
@@ -1390,6 +1786,33 @@ const incrementMapCounter = async () => {
     }
 };
 
+// Unified panel tab switching
+const switchPanelTab = (sectionKey) => {
+    const sections = dom.panelBody?.querySelectorAll('.panel-section');
+    const tabs = document.querySelectorAll('.panel-tab');
+    const activeSection = dom.panelBody?.querySelector(`.panel-section[data-section="${sectionKey}"]`);
+    const activeTab = document.querySelector(`.panel-tab[data-section="${sectionKey}"]`);
+
+    if (!activeSection || !activeTab || activeTab.disabled) return;
+
+    const isAlreadyOpen = activeSection.classList.contains('open');
+
+    // Close all sections and deactivate all tabs
+    sections?.forEach(s => s.classList.remove('open'));
+    tabs.forEach(t => t.classList.remove('active'));
+
+    if (isAlreadyOpen) {
+        // Close the panel entirely
+        dom.controlsRight?.classList.remove('panel-open');
+    } else {
+        // Open the requested section
+        activeSection.classList.add('open');
+        activeTab.classList.add('active');
+        dom.controlsRight?.classList.add('panel-open');
+        if (sectionKey === 'notepad') notepad.ensureEditor();
+    }
+};
+
 const showWelcomeScreen = () => {
     document.body.classList.add('welcome-visible');
     dom.welcomeScreen.classList.add('visible');
@@ -1397,6 +1820,9 @@ const showWelcomeScreen = () => {
     dom.boardName.classList.add('hidden');
     dom.zoomControls.classList.add('hidden');
     dom.controlsRight?.classList.add('hidden');
+    dom.controlsRight?.classList.remove('panel-open');
+    dom.panelBody?.querySelectorAll('.panel-section').forEach(s => s.classList.remove('open'));
+    document.querySelectorAll('.panel-tab').forEach(t => t.classList.remove('active'));
     dom.searchBtn.disabled = true;
     closeSearch();
     clearPresence();
@@ -1415,6 +1841,10 @@ const hideWelcomeScreen = () => {
     dom.controlsRight?.classList.remove('hidden');
     dom.searchBtn.disabled = false;
     unsubscribeFromCounter();
+    if (!legendAutoOpened && window.matchMedia('(pointer: fine)').matches) {
+        switchPanelTab('legend');
+        legendAutoOpened = true;
+    }
 };
 
 const showLoading = () => {
@@ -1442,6 +1872,7 @@ const startNewMap = async () => {
 };
 
 const showTutorialToast = () => {
+    if (!window.matchMedia('(pointer: fine)').matches) return;
     const isMac = navigator.platform.includes('Mac') || navigator.userAgent.includes('Mac');
     const shortcutEl = dom.tutorialToast.querySelector('.reset-shortcut-key');
     if (isMac && shortcutEl) shortcutEl.textContent = 'Shift + 0';
@@ -1487,7 +1918,7 @@ const startWithSample = async (sampleName) => {
 stateInit({ dom, serialize, deserialize, renderAndSave });
 
 // Wire navigation module
-navigation.init({ dom, state, updateSelectionUI, selection, clearSelection, isMapEditable, addColumnAt, deleteColumn, duplicateColumns, duplicateCards, deleteSelectedColumns, deleteSelectedCards });
+navigation.init({ dom, state, updateSelectionUI, selection, clearSelection, isMapEditable, addColumnAt, deleteColumn, duplicateColumns, duplicateCards, deleteSelectedColumns, deleteSelectedCards, insertPartialMapRef: (...args) => insertPartialMapRef(...args) });
 
 // Wire presence module
 presence.init({
@@ -1531,11 +1962,374 @@ const materializePhantomColumn = (phantomIndex = 0) => {
         const hidden = i < phantomIndex;
         const column = createColumn('', null, null, hidden);
         state.columns.push(column);
+        state.users[column.id] = [];
+        state.activities[column.id] = [];
         state.slices.forEach(slice => slice.stories[column.id] = []);
         if (!hidden) targetColumn = column;
     }
     renderAndSave();
     return targetColumn;
+};
+
+// =============================================================================
+// Partial Map Operations
+// =============================================================================
+
+const createPartialMap = (name, columnIds) => {
+    pushUndo();
+
+    const selectedCols = state.columns.filter(c => columnIds.includes(c.id));
+    if (selectedCols.length === 0) return;
+
+    const pmId = generateId();
+
+    // Deep-copy columns into partial definition
+    const pmColumns = selectedCols.map(c => ({
+        ...c,
+        id: c.id,
+        tags: [...(c.tags || [])]
+    }));
+
+    // Move stories from slices into the partial
+    const pmStories = {};
+    state.slices.forEach(slice => {
+        pmStories[slice.id] = {};
+        selectedCols.forEach(col => {
+            pmStories[slice.id][col.id] = (slice.stories[col.id] || []).map(s => ({
+                ...s,
+                tags: [...(s.tags || [])]
+            }));
+            delete slice.stories[col.id];
+        });
+    });
+
+    // Move users/activities into the partial
+    const pmUsers = {};
+    const pmActivities = {};
+    selectedCols.forEach(col => {
+        pmUsers[col.id] = (state.users[col.id] || []).map(s => ({ ...s, tags: [...(s.tags || [])] }));
+        pmActivities[col.id] = (state.activities[col.id] || []).map(s => ({ ...s, tags: [...(s.tags || [])] }));
+        delete state.users[col.id];
+        delete state.activities[col.id];
+    });
+
+    state.partialMaps.push({
+        id: pmId,
+        name,
+        columns: pmColumns,
+        users: pmUsers,
+        activities: pmActivities,
+        stories: pmStories
+    });
+
+    // Replace selected columns with a single reference column at the first selected position
+    const firstIdx = state.columns.findIndex(c => c.id === selectedCols[0].id);
+    const refCol = createRefColumn(pmId, true);
+
+    state.columns = state.columns.filter(c => !columnIds.includes(c.id));
+    state.columns.splice(firstIdx, 0, refCol);
+
+    // Add empty story arrays for the ref column
+    state.users[refCol.id] = [];
+    state.activities[refCol.id] = [];
+    state.slices.forEach(slice => {
+        slice.stories[refCol.id] = [];
+    });
+
+    clearSelection();
+    renderAndSave();
+
+    switchPanelTab('partials');
+};
+
+const isColumnEmpty = (col) => {
+    if (col.name && col.name.trim() !== '') return false;
+    if ((state.users[col.id] || []).length > 0) return false;
+    if ((state.activities[col.id] || []).length > 0) return false;
+    return !state.slices.some(s => (s.stories[col.id] || []).length > 0);
+};
+
+const ensurePartialBlankCol = () => {
+    const pmId = partialMapEditState.activeId;
+    if (!pmId) return;
+    const refCol = state.columns.find(c => c.partialMapId === pmId && c._editingHidden);
+    if (!refCol) return;
+    const refIdx = state.columns.indexOf(refCol);
+
+    // Find end of partial's editing range using tracked IDs
+    let endIdx = refIdx + 1;
+    while (endIdx < state.columns.length && partialMapEditState.editingColIds.has(state.columns[endIdx].id)) {
+        endIdx++;
+    }
+
+    // Check if the last column in range is already an empty blank
+    if (endIdx > refIdx + 1) {
+        const lastCol = state.columns[endIdx - 1];
+        if (lastCol._partialBlank && isColumnEmpty(lastCol)) return;
+    }
+
+    // Add a new blank column at endIdx
+    const blankCol = createColumn('', null, null, false);
+    blankCol._partialBlank = true;
+    state.columns.splice(endIdx, 0, blankCol);
+    state.users[blankCol.id] = [];
+    state.activities[blankCol.id] = [];
+    state.slices.forEach(slice => { slice.stories[blankCol.id] = []; });
+    partialMapEditState.editingColIds.add(blankCol.id);
+};
+
+const startEditingPartial = (partialMapId) => {
+    const pm = state.partialMaps.find(p => p.id === partialMapId);
+    if (!pm) return;
+
+    partialMapEditState.expandedIds.clear();
+    pushUndo();
+
+    const refCol = state.columns.find(c => c.partialMapId === partialMapId && c.partialMapOrigin)
+        || state.columns.find(c => c.partialMapId === partialMapId);
+    if (!refCol) return;
+
+    const refIdx = state.columns.indexOf(refCol);
+
+    // Mark ref column as hidden during editing
+    refCol._editingHidden = true;
+
+    // Splice partial's columns into state.columns after the ref
+    state.columns.splice(refIdx + 1, 0, ...pm.columns);
+
+    // Inject partial's stories into slices
+    state.slices.forEach(slice => {
+        const pmSliceStories = pm.stories[slice.id] || {};
+        pm.columns.forEach(col => {
+            slice.stories[col.id] = pmSliceStories[col.id] || [];
+        });
+    });
+
+    // Inject partial's users/activities into state
+    pm.columns.forEach(col => {
+        state.users[col.id] = (pm.users?.[col.id] || []);
+        state.activities[col.id] = (pm.activities?.[col.id] || []);
+    });
+
+    partialMapEditState.activeId = partialMapId;
+    partialMapEditState.editingColIds = new Set(pm.columns.map(c => c.id));
+
+    // Add blank column at the right edge for adding new steps
+    ensurePartialBlankCol();
+
+    renderAndSave();
+
+    requestAnimationFrame(() => {
+        if (pm.columns.length > 0) {
+            const firstCol = dom.storyMap.querySelector(`.step[data-column-id="${pm.columns[0].id}"]`);
+            if (firstCol) scrollElementIntoView(firstCol);
+        }
+    });
+};
+
+const stopEditingPartial = () => {
+    const pmId = partialMapEditState.activeId;
+    if (!pmId) return;
+
+    const pm = state.partialMaps.find(p => p.id === pmId);
+    if (!pm) return;
+
+    pushUndo();
+
+    // Find the hidden ref column
+    const refCol = state.columns.find(c => c.partialMapId === pmId && c._editingHidden);
+
+    // Gather editing columns in state.columns order using tracked IDs
+    const allRangeColIds = new Set(partialMapEditState.editingColIds);
+    const editedColumns = state.columns.filter(c => allRangeColIds.has(c.id));
+
+    // Prune trailing empty columns (blank columns the user didn't fill)
+    while (editedColumns.length > 0 && isColumnEmpty(editedColumns[editedColumns.length - 1])) {
+        editedColumns.pop();
+    }
+
+    // Update partial columns from the kept edited columns
+    pm.columns = editedColumns.map(c => {
+        const { _partialBlank, ...rest } = c;
+        return { ...rest, tags: [...(c.tags || [])] };
+    });
+
+    // Update partial stories from slices
+    pm.stories = {};
+    state.slices.forEach(slice => {
+        pm.stories[slice.id] = {};
+        pm.columns.forEach(col => {
+            pm.stories[slice.id][col.id] = (slice.stories[col.id] || []).map(s => ({
+                ...s,
+                tags: [...(s.tags || [])]
+            }));
+        });
+        // Clean up all range columns from slice stories
+        for (const colId of allRangeColIds) {
+            delete slice.stories[colId];
+        }
+    });
+
+    // Update partial users/activities from state
+    pm.users = {};
+    pm.activities = {};
+    pm.columns.forEach(col => {
+        pm.users[col.id] = (state.users[col.id] || []).map(s => ({ ...s, tags: [...(s.tags || [])] }));
+        pm.activities[col.id] = (state.activities[col.id] || []).map(s => ({ ...s, tags: [...(s.tags || [])] }));
+    });
+    // Clean up all range columns from state users/activities
+    for (const colId of allRangeColIds) {
+        delete state.users[colId];
+        delete state.activities[colId];
+    }
+
+    // Remove all range columns from state.columns
+    state.columns = state.columns.filter(c => !allRangeColIds.has(c.id));
+
+    // Unhide the ref column
+    if (refCol) delete refCol._editingHidden;
+
+    partialMapEditState.activeId = null;
+    partialMapEditState.editingColIds.clear();
+    renderAndSave();
+};
+
+const deletePartialMap = (partialMapId) => {
+    pushUndo();
+
+    // Remove all reference columns pointing to this partial
+    state.columns = state.columns.filter(c => c.partialMapId !== partialMapId);
+
+    // Clean up stories/users/activities for removed ref columns
+    const colIds = new Set(state.columns.map(c => c.id));
+    state.slices.forEach(slice => {
+        for (const colId of Object.keys(slice.stories)) {
+            if (!colIds.has(colId)) delete slice.stories[colId];
+        }
+    });
+    for (const colId of Object.keys(state.users)) {
+        if (!colIds.has(colId)) delete state.users[colId];
+    }
+    for (const colId of Object.keys(state.activities)) {
+        if (!colIds.has(colId)) delete state.activities[colId];
+    }
+
+    state.partialMaps = state.partialMaps.filter(p => p.id !== partialMapId);
+
+    if (partialMapEditState.activeId === partialMapId) {
+        partialMapEditState.activeId = null;
+    }
+
+    // Ensure at least one column remains
+    if (state.columns.length === 0) {
+        const col = createColumn('New Step', CARD_COLORS.green, null, false);
+        state.columns.push(col);
+        state.users[col.id] = [];
+        state.activities[col.id] = [];
+        state.slices.forEach(slice => slice.stories[col.id] = []);
+    }
+
+    renderAndSave();
+};
+
+const restorePartialMap = (partialMapId) => {
+    const pm = state.partialMaps.find(p => p.id === partialMapId);
+    if (!pm) return;
+
+    pushUndo();
+
+    // Find the first ref column for this partial (prefer origin)
+    const refCol = state.columns.find(c => c.partialMapId === partialMapId && c.partialMapOrigin)
+        || state.columns.find(c => c.partialMapId === partialMapId);
+    const insertIdx = refCol ? state.columns.indexOf(refCol) : state.columns.length;
+
+    // Count ref columns before the insert point (to adjust index after removal)
+    const refsBefore = state.columns.filter((c, i) => c.partialMapId === partialMapId && i < insertIdx).length;
+
+    // Remove ALL ref columns for this partial and clean up their data
+    const refColIds = state.columns.filter(c => c.partialMapId === partialMapId).map(c => c.id);
+    state.columns = state.columns.filter(c => c.partialMapId !== partialMapId);
+    refColIds.forEach(colId => {
+        delete state.users[colId];
+        delete state.activities[colId];
+    });
+    state.slices.forEach(slice => {
+        refColIds.forEach(colId => { delete slice.stories[colId]; });
+    });
+
+    const adjustedIdx = Math.min(insertIdx - refsBefore, state.columns.length);
+
+    // Splice partial's columns back into state.columns
+    state.columns.splice(adjustedIdx, 0, ...pm.columns);
+
+    // Restore stories into slices
+    state.slices.forEach(slice => {
+        const pmSliceStories = pm.stories[slice.id] || {};
+        pm.columns.forEach(col => {
+            slice.stories[col.id] = pmSliceStories[col.id] || [];
+        });
+    });
+
+    // Restore users/activities
+    pm.columns.forEach(col => {
+        state.users[col.id] = pm.users?.[col.id] || [];
+        state.activities[col.id] = pm.activities?.[col.id] || [];
+    });
+
+    // Remove the partial definition
+    state.partialMaps = state.partialMaps.filter(p => p.id !== partialMapId);
+
+    if (partialMapEditState.activeId === partialMapId) {
+        partialMapEditState.activeId = null;
+    }
+
+    renderAndSave();
+};
+
+const replaceWithPartial = (partialMapId, columnIds) => {
+    pushUndo();
+
+    const selectedCols = state.columns.filter(c => columnIds.includes(c.id));
+    if (selectedCols.length === 0) return;
+
+    const firstIdx = state.columns.findIndex(c => c.id === selectedCols[0].id);
+
+    // Delete selected columns and their data
+    state.columns = state.columns.filter(c => !columnIds.includes(c.id));
+    columnIds.forEach(colId => {
+        delete state.users[colId];
+        delete state.activities[colId];
+    });
+    state.slices.forEach(slice => {
+        columnIds.forEach(colId => {
+            delete slice.stories[colId];
+        });
+    });
+
+    // Insert ref column at the first selected position
+    const refCol = createRefColumn(partialMapId, false);
+    state.columns.splice(firstIdx, 0, refCol);
+    state.users[refCol.id] = [];
+    state.activities[refCol.id] = [];
+    state.slices.forEach(slice => {
+        slice.stories[refCol.id] = [];
+    });
+
+    clearSelection();
+    renderAndSave();
+    switchPanelTab('partials');
+};
+
+const insertPartialMapRef = (partialMapId, afterColumnIndex) => {
+    pushUndo();
+    const refCol = createRefColumn(partialMapId, false);
+    state.columns.splice(afterColumnIndex + 1, 0, refCol);
+    state.users[refCol.id] = [];
+    state.activities[refCol.id] = [];
+    state.slices.forEach(slice => {
+        slice.stories[refCol.id] = [];
+    });
+    renderAndSave();
 };
 
 // Wire ui module
@@ -1555,6 +2349,11 @@ ui.init({
     addSlice,
     materializePhantomColumn,
     handleColumnSelection,
+    startEditingPartial,
+    stopEditingPartial,
+    deletePartialMap,
+    restorePartialMap,
+    openExpandModal,
 });
 
 // Wire render module
@@ -1572,6 +2371,10 @@ renderMod.init({
     getZoomLevel: () => navigation.zoomLevel,
     broadcastDragStart,
     broadcastDragEnd,
+    getIsPinching: () => navigation.isPinching,
+    createPartialMap,
+    deletePartialMap,
+    replaceWithPartial,
 });
 
 // =============================================================================
@@ -1614,6 +2417,16 @@ const loadMapById = async (mapId) => {
                 ymap.observeDeep(check);
             });
             if (hasData) return true;
+        }
+
+        // Fallback: load from localStorage if Yjs sync failed
+        // Only skip if a *different* mapId is stored (null = no tracking yet, allow it)
+        const storedMapId = localStorage.getItem(STORAGE_KEY + ':mapId');
+        if ((!storedMapId || storedMapId === mapId) && loadFromStorage()) {
+            dom.boardName.value = state.name;
+            render();
+            saveToStorage();
+            return true;
         }
     }
     return false;

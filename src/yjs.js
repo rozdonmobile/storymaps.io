@@ -75,7 +75,9 @@ const CARD_FIELDS = {
     url:    { default: null },
     hidden: { default: false },
     status: { default: null },
-    points: { default: null }
+    points: { default: null },
+    partialMapId: { default: null },
+    partialMapOrigin: { default: false }
 };
 
 const createYCard = (obj) => {
@@ -126,7 +128,9 @@ const cardFromYjs = (data) => {
         hidden: data.hidden || false,
         status: data.status || null,
         points: data.points ?? null,
-        tags
+        tags,
+        partialMapId: data.partialMapId || null,
+        partialMapOrigin: data.partialMapOrigin || false
     };
 };
 
@@ -152,8 +156,6 @@ const createYSlice = (slice, columns) => {
     const ySlice = new Y.Map();
     ySlice.set('id', slice.id);
     ySlice.set('name', slice.name || '');
-    if (slice.separator === false) ySlice.set('separator', false);
-    if (slice.rowType) ySlice.set('rowType', slice.rowType);
     if (slice.collapsed) ySlice.set('collapsed', true);
 
     const yStories = new Y.Map();
@@ -170,9 +172,35 @@ const createYSlice = (slice, columns) => {
     return ySlice;
 };
 
+// Create a Yjs map for a backbone row (users or activities)
+const createYBackboneRow = (cardMap, columns) => {
+    const yRow = new Y.Map();
+    columns.forEach(col => {
+        const yCardArray = new Y.Array();
+        const cards = cardMap[col.id] || [];
+        cards.forEach(card => {
+            yCardArray.push([createYCard(card)]);
+        });
+        yRow.set(col.id, yCardArray);
+    });
+    return yRow;
+};
+
 // =============================================================================
 // Sync
 // =============================================================================
+
+const readBackboneRowFromYjs = (yRow) => {
+    const cardMap = {};
+    if (!yRow) return cardMap;
+    const rowData = typeof yRow.toJSON === 'function' ? yRow.toJSON() : yRow;
+    if (typeof rowData === 'object' && rowData !== null) {
+        for (const [colId, cards] of Object.entries(rowData)) {
+            cardMap[colId] = Array.isArray(cards) ? cards.map(cardFromYjs) : [];
+        }
+    }
+    return cardMap;
+};
 
 export const syncFromYjs = () => {
     if (!ymap) return;
@@ -188,30 +216,82 @@ export const syncFromYjs = () => {
         }
     }
 
+    // Read users/activities from their own Yjs maps
+    const yUsers = ymap.get('users');
+    if (yUsers) {
+        _state.users = readBackboneRowFromYjs(yUsers);
+    }
+    const yActivities = ymap.get('activities');
+    if (yActivities) {
+        _state.activities = readBackboneRowFromYjs(yActivities);
+    }
+
+    // Ensure all columns have entries
+    _state.columns.forEach(col => {
+        if (!_state.users[col.id]) _state.users[col.id] = [];
+        if (!_state.activities[col.id]) _state.activities[col.id] = [];
+    });
+
     const ySlices = ymap.get('slices');
     if (ySlices) {
         const slicesData = typeof ySlices.toJSON === 'function' ? ySlices.toJSON() : ySlices;
         if (Array.isArray(slicesData)) {
-            _state.slices = slicesData.map(sliceData => {
-                const slice = {
-                    id: sliceData.id,
-                    name: sliceData.name || '',
-                    separator: sliceData.separator !== false,
-                    rowType: sliceData.rowType || null,
-                    collapsed: sliceData.collapsed || false,
-                    stories: {}
-                };
+            // Check if old format (slices contain rowType) - migrate on the fly
+            const hasOldFormat = slicesData.some(s => s.rowType === 'Users' || s.rowType === 'Activities');
 
-                const storiesData = sliceData.stories || {};
-                _state.columns.forEach(col => {
-                    const columnStories = storiesData[col.id];
-                    slice.stories[col.id] = Array.isArray(columnStories)
-                        ? columnStories.map(cardFromYjs)
-                        : [];
+            if (hasOldFormat) {
+                // Migrate: extract Users/Activities into state.users/state.activities
+                const releaseSlices = [];
+                slicesData.forEach(sliceData => {
+                    const storiesData = sliceData.stories || {};
+                    if (sliceData.rowType === 'Users') {
+                        _state.columns.forEach(col => {
+                            const columnStories = storiesData[col.id];
+                            _state.users[col.id] = Array.isArray(columnStories) ? columnStories.map(cardFromYjs) : [];
+                        });
+                    } else if (sliceData.rowType === 'Activities') {
+                        _state.columns.forEach(col => {
+                            const columnStories = storiesData[col.id];
+                            _state.activities[col.id] = Array.isArray(columnStories) ? columnStories.map(cardFromYjs) : [];
+                        });
+                    } else {
+                        releaseSlices.push(sliceData);
+                    }
                 });
-
-                return slice;
-            });
+                _state.slices = releaseSlices.map(sliceData => {
+                    const slice = {
+                        id: sliceData.id,
+                        name: sliceData.name || '',
+                        collapsed: sliceData.collapsed || false,
+                        stories: {}
+                    };
+                    const storiesData = sliceData.stories || {};
+                    _state.columns.forEach(col => {
+                        const columnStories = storiesData[col.id];
+                        slice.stories[col.id] = Array.isArray(columnStories) ? columnStories.map(cardFromYjs) : [];
+                    });
+                    return slice;
+                });
+                // Trigger a write-back to convert the Yjs doc to v2 format
+                requestAnimationFrame(() => {
+                    if (ymap && !isSyncingFromRemote) syncToYjs();
+                });
+            } else {
+                _state.slices = slicesData.map(sliceData => {
+                    const slice = {
+                        id: sliceData.id,
+                        name: sliceData.name || '',
+                        collapsed: sliceData.collapsed || false,
+                        stories: {}
+                    };
+                    const storiesData = sliceData.stories || {};
+                    _state.columns.forEach(col => {
+                        const columnStories = storiesData[col.id];
+                        slice.stories[col.id] = Array.isArray(columnStories) ? columnStories.map(cardFromYjs) : [];
+                    });
+                    return slice;
+                });
+            }
         }
     }
 
@@ -225,6 +305,15 @@ export const syncFromYjs = () => {
                 label: entry.label || ''
             }));
         }
+    }
+
+    // Sync partial maps
+    const yPartialMaps = ymap.get('partialMaps');
+    if (yPartialMaps) {
+        try {
+            const pmData = typeof yPartialMaps === 'string' ? JSON.parse(yPartialMaps) : yPartialMaps;
+            if (Array.isArray(pmData)) _state.partialMaps = pmData;
+        } catch { /* ignore parse errors */ }
     }
 
     // Migrate old string-based notes into Y.Text if needed
@@ -284,14 +373,9 @@ const syncSliceStories = (yStories, slice, columns) => {
 
 const updateYSlice = (ySlice, slice, columns) => {
     if (ySlice.get('name') !== (slice.name || '')) ySlice.set('name', slice.name || '');
-    if (ySlice.get('separator') !== slice.separator) {
-        if (slice.separator === false) ySlice.set('separator', false);
-        else ySlice.delete('separator');
-    }
-    if (ySlice.get('rowType') !== slice.rowType) {
-        if (slice.rowType) ySlice.set('rowType', slice.rowType);
-        else ySlice.delete('rowType');
-    }
+    // Clean up old v1 fields if present
+    if (ySlice.get('separator') !== undefined) ySlice.delete('separator');
+    if (ySlice.get('rowType') !== undefined) ySlice.delete('rowType');
     if (ySlice.get('collapsed') !== slice.collapsed) {
         if (slice.collapsed) ySlice.set('collapsed', true);
         else ySlice.delete('collapsed');
@@ -303,6 +387,34 @@ const updateYSlice = (ySlice, slice, columns) => {
         ySlice.set('stories', yStories);
     }
     syncSliceStories(yStories, slice, columns);
+};
+
+const syncBackboneRow = (yRow, cardMap, columns) => {
+    columns.forEach(col => {
+        const cards = cardMap[col.id] || [];
+        let yCardArray = yRow.get(col.id);
+
+        if (!yCardArray || typeof yCardArray.toArray !== 'function') {
+            yCardArray = new Y.Array();
+            yRow.set(col.id, yCardArray);
+        }
+
+        syncYArray(
+            yCardArray,
+            cards,
+            card => card.id,
+            createYCard,
+            updateYCard
+        );
+    });
+
+    // Remove columns that no longer exist
+    const columnIds = new Set(columns.map(c => c.id));
+    const keysToDelete = [];
+    yRow.forEach((_, key) => {
+        if (!columnIds.has(key)) keysToDelete.push(key);
+    });
+    keysToDelete.forEach(key => yRow.delete(key));
 };
 
 export const syncToYjs = () => {
@@ -326,6 +438,22 @@ export const syncToYjs = () => {
             updateYColumn
         );
 
+        // Sync users and activities as separate Yjs maps
+        let yUsers = ymap.get('users');
+        if (!yUsers || typeof yUsers.forEach !== 'function') {
+            yUsers = new Y.Map();
+            ymap.set('users', yUsers);
+        }
+        syncBackboneRow(yUsers, _state.users, _state.columns);
+
+        let yActivities = ymap.get('activities');
+        if (!yActivities || typeof yActivities.forEach !== 'function') {
+            yActivities = new Y.Map();
+            ymap.set('activities', yActivities);
+        }
+        syncBackboneRow(yActivities, _state.activities, _state.columns);
+
+        // Sync slices (releases only — no more Users/Activities in here)
         let ySlices = ymap.get('slices');
         if (!ySlices || typeof ySlices.toArray !== 'function') {
             ySlices = new Y.Array();
@@ -364,6 +492,13 @@ export const syncToYjs = () => {
             createYLegendEntry,
             updateYLegendEntry
         );
+        // Sync partial maps as JSON string
+        const pmJson = JSON.stringify(_state.partialMaps);
+        const currentPm = ymap.get('partialMaps');
+        if (currentPm !== pmJson) {
+            ymap.set('partialMaps', pmJson);
+        }
+
         // Sync notes into Y.Text if it's empty and state has notes
         const ytext = ydoc.getText('notes');
         if (ytext.length === 0 && _state.notes) {

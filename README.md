@@ -48,6 +48,8 @@ You've probably seen these patterns in your own work. It happens to us all. It's
 - **Story points** - estimate effort per card, auto-summed per slice
 - **Tags** - categorize cards with free-text tags, autocomplete from existing tags
 - **Legend** - define colour-coded card categories (e.g. Tasks, Notes, Questions, Edge Cases)
+- **Map Partials** - reusable story map fragments that eliminate duplication when multiple user journeys converge on shared steps; extract a sequence of columns once, reference it from anywhere, and expand inline to see the detail
+- **Expanded view** - click the expand button on any card to see and edit all details in a larger modal
 - **Card colours & links** - 14 colours, external URLs to issue trackers
 - **Drag & drop** - reorder cards, columns, and slices
 - **Hide columns** - insert spacer columns to visually group steps
@@ -70,6 +72,7 @@ You've probably seen these patterns in your own work. It happens to us all. It's
 
 ### Import & Export
 - **JSON** - import/export story maps as JSON files
+- **YAML** - import/export as human-readable YAML; author maps in a text editor, version-control them in git, or generate from scripts
 - **Jira** - export as CSV or via REST API
 - **Asana** - export as CSV or via REST API
 - **Phabricator** - export via Maniphest API
@@ -77,12 +80,14 @@ You've probably seen these patterns in your own work. It happens to us all. It's
 - **Print / PDF**
 
 ### Navigation
-- **Infinite canvas** - Ctrl+scroll to zoom, right-click drag to pan
+- **Infinite canvas** - Ctrl+scroll to zoom, right-click drag or touch-drag to pan
+- **Pinch-to-zoom** - two-finger pinch to zoom on touch devices
 - **Zoom to fit** (Alt+R / Shift+0) - auto-fit all content to viewport
 - **Keyboard shortcuts** - undo/redo (Ctrl+Z / Ctrl+Y), search (Ctrl+F), duplicate (Ctrl+D), delete (Delete/Backspace), zoom, pan
 
 ### Other
 - **Undo / Redo** (Ctrl+Z / Ctrl+Y)
+- **Focus Mode** - hide card metadata (status, points, tags, links) for a cleaner presentation view
 - **Copy map** - duplicate an existing map to a new URL
 - **Sample maps** - load examples to learn the methodology
 - **Map counter** - community stat showing total maps created
@@ -116,7 +121,7 @@ Storymaps is a single Docker container behind a Caddy reverse proxy. It runs on 
 
 1. Clone the repo:
    ```bash
-   git clone https://github.com/jackgleeson/storymaps.io
+   git clone https://github.com/jackgleeson/userstorymaps.git
    cd userstorymaps
    ```
 2. Edit the `Caddyfile` - replace `storymaps.io` with your domain and remove the `www` and `new` redirect blocks:
@@ -218,8 +223,11 @@ The server starts on `http://localhost:8080`.
 13. Use **Menu → Lock Map** to password-protect the map from edits
 14. Use **Ctrl+Z** / **Ctrl+Y** to undo and redo, **Ctrl+D** to duplicate
 15. Use **Ctrl+scroll** to zoom, **right-click drag** to pan, **Alt+R** to zoom to fit
-16. Use **Menu → Export** to save as JSON or export to Jira, Asana, or Phabricator
-17. Use **Print** to save as PDF
+16. Select consecutive columns and use **Menu → Create Partial** to extract shared sequences into reusable map partials; manage them from the **Partials** panel
+17. Use **Menu → Focus Mode** to hide card metadata for a cleaner presentation view
+18. Use **Menu → Import** to import from JSON or YAML
+19. Use **Menu → Export** to save as JSON or YAML, or export to Jira, Asana, or Phabricator
+20. Use **Print** to save as PDF
 
 ## Support
 If you find this tool useful, consider [buying me a coffee](https://buymeacoffee.com/jackgleeson). It goes towards server costs and helps me keep the app running.

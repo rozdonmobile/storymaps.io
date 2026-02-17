@@ -15,6 +15,7 @@ let _duplicateColumns = null;
 let _duplicateCards = null;
 let _deleteSelectedColumns = null;
 let _deleteSelectedCards = null;
+let _insertPartialMapRef = null;
 
 // Marquee state
 let isMarquee = false;
@@ -28,6 +29,7 @@ const MARQUEE_THRESHOLD = 5;
 
 // Zoom state
 export let zoomLevel = 1;
+export let isPinching = false;
 const ZOOM_STEP = 0.1;
 const ZOOM_MIN = 0.1;
 const ZOOM_MAX = 3;
@@ -39,7 +41,7 @@ let panStartY = 0;
 let panScrollLeft = 0;
 let panScrollTop = 0;
 
-export const init = ({ dom, state, updateSelectionUI, selection, clearSelection, isMapEditable, addColumnAt, deleteColumn, duplicateColumns, duplicateCards, deleteSelectedColumns, deleteSelectedCards }) => {
+export const init = ({ dom, state, updateSelectionUI, selection, clearSelection, isMapEditable, addColumnAt, deleteColumn, duplicateColumns, duplicateCards, deleteSelectedColumns, deleteSelectedCards, insertPartialMapRef }) => {
     _dom = dom;
     _state = state;
     _updateSelectionUI = updateSelectionUI;
@@ -52,6 +54,7 @@ export const init = ({ dom, state, updateSelectionUI, selection, clearSelection,
     _duplicateCards = duplicateCards;
     _deleteSelectedColumns = deleteSelectedColumns;
     _deleteSelectedCards = deleteSelectedCards;
+    _insertPartialMapRef = insertPartialMapRef;
 };
 
 const updatePanMode = () => {
@@ -148,7 +151,7 @@ let contextMenuEl = null;
 let panDidMove = false;
 
 const resolveColumn = (target) => {
-    const el = target.closest('.step, .story-column, .step-placeholder');
+    const el = target.closest('.step, .story-column, .step-placeholder, .partial-map-ref, .partial-map-ref-cell');
     if (!el) return { columnId: null, columnIndex: null };
     const columnId = el.dataset.columnId;
     const columnIndex = _state.columns.findIndex(c => c.id === columnId);
@@ -184,6 +187,7 @@ const makeMenuItem = (label, icon, action, destructive = false) => {
 const ICON_ADD_SPACER = '<line x1="8" y1="3" x2="8" y2="13"/><line x1="3" y1="8" x2="13" y2="8"/>';
 const ICON_DELETE = '<polyline points="3 5 4 13 12 13 13 5"/><line x1="2" y1="5" x2="14" y2="5"/><line x1="6" y1="3" x2="10" y2="3"/>';
 const ICON_DUPLICATE = '<rect x="3" y="3" width="8" height="10" rx="1.5"/><path d="M6 3V2.5A1.5 1.5 0 0 1 7.5 1H12a1.5 1.5 0 0 1 1.5 1.5V11A1.5 1.5 0 0 1 12 12.5H11"/>';
+const ICON_INSERT_PARTIAL = '<rect x="2" y="2" width="5" height="5" rx="0.7" fill="#fef08a" stroke="#d4aa00" stroke-width="0.7"/><rect x="9" y="2" width="5" height="5" rx="0.7" fill="#fecdd3" stroke="#e88a9a" stroke-width="0.7"/><rect x="2" y="9" width="5" height="5" rx="0.7" fill="#a5f3fc" stroke="#67c5d6" stroke-width="0.7"/><rect x="9" y="9" width="5" height="5" rx="0.7" fill="#14b8a6" stroke="#0d9488" stroke-width="0.7"/>';
 
 const addSep = (menu) => {
     const sep = document.createElement('div');
@@ -219,11 +223,65 @@ const showContextMenu = (x, y, columnId, columnIndex) => {
         _addColumnAt(columnIndex !== null ? columnIndex + 1 : _state.columns.length, true);
     }));
 
-    if (columnId) {
+    // Insert partial map references (flyout submenu)
+    if (_state.partialMaps.length > 0 && _insertPartialMapRef) {
         addSep(menu);
-        menu.appendChild(makeMenuItem('Delete column', ICON_DELETE, () => {
-            _deleteColumn(columnId);
-        }, true));
+        const wrapper = document.createElement('div');
+        wrapper.className = 'ctx-submenu-wrapper';
+        const trigger = document.createElement('button');
+        trigger.className = 'ctx-submenu-trigger';
+        trigger.innerHTML = `<svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">${ICON_INSERT_PARTIAL}</svg><span>Add Partial Step</span><span class="ctx-submenu-arrow">›</span>`;
+        const submenu = document.createElement('div');
+        submenu.className = 'ctx-submenu canvas-context-menu';
+        const insertIdx = columnIndex !== null ? columnIndex : _state.columns.length - 1;
+        _state.partialMaps.forEach(pm => {
+            submenu.appendChild(makeMenuItem(
+                `${pm.name} (${pm.columns.length} step${pm.columns.length !== 1 ? 's' : ''})`,
+                ICON_INSERT_PARTIAL,
+                () => _insertPartialMapRef(pm.id, insertIdx)
+            ));
+        });
+        trigger.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const show = !submenu.classList.contains('visible');
+            submenu.classList.toggle('visible', show);
+            trigger.classList.toggle('expanded', show);
+            if (show) {
+                requestAnimationFrame(() => {
+                    const triggerRect = trigger.getBoundingClientRect();
+                    const subRect = submenu.getBoundingClientRect();
+                    // Horizontal: prefer right, fall back to left
+                    const spaceRight = window.innerWidth - triggerRect.right - 8;
+                    if (spaceRight >= subRect.width) {
+                        submenu.style.left = '100%';
+                        submenu.style.right = '';
+                    } else {
+                        submenu.style.right = '100%';
+                        submenu.style.left = '';
+                    }
+                    // Vertical: align top with trigger, clamp to viewport
+                    submenu.style.top = '0px';
+                    const newRect = submenu.getBoundingClientRect();
+                    const overflowY = newRect.bottom - window.innerHeight + 8;
+                    if (overflowY > 0) {
+                        submenu.style.top = -overflowY + 'px';
+                    }
+                });
+            }
+        });
+        wrapper.appendChild(trigger);
+        wrapper.appendChild(submenu);
+        menu.appendChild(wrapper);
+    }
+
+    if (columnId) {
+        const col = _state.columns.find(c => c.id === columnId);
+        if (col) {
+            addSep(menu);
+            menu.appendChild(makeMenuItem('Delete column', ICON_DELETE, () => {
+                _deleteColumn(columnId);
+            }, true));
+        }
     }
 
     positionMenu(menu, x, y);
@@ -279,6 +337,8 @@ export const closeMainMenu = () => {
     _dom.mainMenu.classList.remove('visible');
     _dom.samplesSubmenu.classList.remove('visible');
     _dom.samplesSubmenuTrigger.classList.remove('expanded');
+    _dom.importSubmenu.classList.remove('visible');
+    _dom.importSubmenuTrigger.classList.remove('expanded');
     _dom.exportSubmenu.classList.remove('visible');
     _dom.exportSubmenuTrigger.classList.remove('expanded');
     document.body.classList.remove('main-menu-open');
@@ -328,6 +388,72 @@ export const initWheelZoom = () => {
     }, { passive: false });
 };
 
+export const initPinchZoom = () => {
+    const wrapper = _dom.storyMapWrapper;
+    // Prevent browser pinch-zoom while allowing single-finger scroll
+    wrapper.style.touchAction = 'pan-x pan-y';
+
+    let startDist = 0;
+    let startZoom = 1;
+
+    const getTouchDist = (t1, t2) =>
+        Math.hypot(t2.clientX - t1.clientX, t2.clientY - t1.clientY);
+
+    wrapper.addEventListener('touchstart', (e) => {
+        if (e.touches.length >= 2) {
+            isPinching = true;
+            startDist = getTouchDist(e.touches[0], e.touches[1]);
+            startZoom = zoomLevel;
+        }
+    }, { passive: true });
+
+    wrapper.addEventListener('touchmove', (e) => {
+        if (!isPinching || e.touches.length < 2) return;
+        e.preventDefault();
+
+        const t0 = e.touches[0];
+        const t1 = e.touches[1];
+        const newDist = getTouchDist(t0, t1);
+        const newZoom = Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, startZoom * (newDist / startDist)));
+
+        if (newZoom === zoomLevel) return;
+
+        const wrapperRect = wrapper.getBoundingClientRect();
+        const oldZoom = zoomLevel;
+
+        // Midpoint of the two touches is the zoom anchor
+        const midX = (t0.clientX + t1.clientX) / 2;
+        const midY = (t0.clientY + t1.clientY) / 2;
+
+        // Content-space coordinate under the midpoint
+        const mapLeft = _dom.storyMap.offsetLeft;
+        const mapTop = _dom.storyMap.offsetTop;
+        const contentX = (midX - wrapperRect.left + wrapper.scrollLeft - mapLeft) / oldZoom;
+        const contentY = (midY - wrapperRect.top + wrapper.scrollTop - mapTop) / oldZoom;
+
+        zoomLevel = newZoom;
+        _dom.storyMap.style.transform = `scale(${zoomLevel})`;
+        _dom.storyMap.style.setProperty('--zoom', zoomLevel);
+        _dom.zoomReset.textContent = `${Math.round(zoomLevel * 100)}%`;
+
+        // Keep the midpoint stable
+        wrapper.scrollLeft = mapLeft + contentX * zoomLevel - (midX - wrapperRect.left);
+        wrapper.scrollTop = mapTop + contentY * zoomLevel - (midY - wrapperRect.top);
+    }, { passive: false });
+
+    const onTouchEnd = (e) => {
+        if (isPinching && e.touches.length < 2) {
+            isPinching = false;
+            requestAnimationFrame(() => updatePanMode());
+        }
+    };
+    wrapper.addEventListener('touchend', onTouchEnd, { passive: true });
+    wrapper.addEventListener('touchcancel', onTouchEnd, { passive: true });
+
+    // Suppress Safari's native gesture zoom (proprietary events fire alongside touch*)
+    wrapper.addEventListener('gesturestart', (e) => e.preventDefault(), { passive: false });
+};
+
 // Zoom keeping the viewport center stable
 const zoomAroundCenter = (newZoom) => {
     const wrapper = _dom.storyMapWrapper;
@@ -368,7 +494,7 @@ const rectsIntersect = (a, b) =>
     !(a.right < b.left || a.left > b.right || a.bottom < b.top || a.top > b.bottom);
 
 const highlightIntersecting = (marqueeRect) => {
-    const cards = _dom.storyMap.querySelectorAll('.step, .story-card');
+    const cards = _dom.storyMap.querySelectorAll('.step, .story-card, .step-placeholder:not(.phantom-step)');
     for (const card of cards) {
         const cardRect = card.getBoundingClientRect();
         card.classList.toggle('marquee-preview', rectsIntersect(marqueeRect, cardRect));
@@ -377,24 +503,24 @@ const highlightIntersecting = (marqueeRect) => {
 
 const finalizeMarqueeSelection = () => {
     const entries = [];
+    const spacerEntries = [];
     for (const elem of _dom.storyMap.querySelectorAll('.marquee-preview')) {
         elem.classList.remove('marquee-preview');
         const columnId = elem.dataset.columnId;
         if (elem.classList.contains('step')) {
             entries.push({ columnId, type: 'step' });
         } else if (elem.classList.contains('story-card')) {
-            entries.push({
-                columnId,
-                type: 'story',
-                storyId: elem.dataset.storyId,
-                sliceId: elem.dataset.sliceId
-            });
+            entries.push({ columnId, type: 'story', storyId: elem.dataset.storyId, sliceId: elem.dataset.sliceId });
+        } else if (elem.classList.contains('step-placeholder')) {
+            spacerEntries.push({ columnId, type: 'step' });
         }
     }
-    if (entries.length === 0) return;
+    // Use spacers only when no real cards are in the selection
+    const result = entries.length > 0 ? entries : spacerEntries;
+    if (result.length === 0) return;
 
-    _selection.clickedCards = entries;
-    _selection.columnIds = [...new Set(entries.map(e => e.columnId))];
+    _selection.clickedCards = result;
+    _selection.columnIds = [...new Set(result.map(e => e.columnId))];
     _selection.anchorId = _selection.columnIds[0];
     _updateSelectionUI();
 };

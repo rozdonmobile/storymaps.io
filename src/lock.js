@@ -274,7 +274,7 @@ export const updateLockUI = () => {
         _dom.readOnlyBanner.classList.add('visible');
         document.body.classList.add('read-only-mode');
         _dom.samplesSubmenuTrigger?.classList.add('disabled');
-        _dom.importBtn?.classList.add('disabled');
+        _dom.importSubmenuTrigger?.classList.add('disabled');
     } else if (lockState.isLocked && lockState.sessionUnlocked) {
         _dom.lockMapBtn.classList.remove('visible');
         _dom.relockBtn.classList.add('visible');
@@ -283,7 +283,7 @@ export const updateLockUI = () => {
         _dom.readOnlyBanner.classList.remove('visible');
         document.body.classList.remove('read-only-mode');
         _dom.samplesSubmenuTrigger?.classList.remove('disabled');
-        _dom.importBtn?.classList.remove('disabled');
+        _dom.importSubmenuTrigger?.classList.remove('disabled');
     } else {
         _dom.lockMapBtn.classList.add('visible');
         _dom.lockMapBtn.innerHTML = '<span class="lock-menu-icon">🔓</span> Lock Map (Read-only)';
@@ -293,7 +293,7 @@ export const updateLockUI = () => {
         _dom.readOnlyBanner.classList.remove('visible');
         document.body.classList.remove('read-only-mode');
         _dom.samplesSubmenuTrigger?.classList.remove('disabled');
-        _dom.importBtn?.classList.remove('disabled');
+        _dom.importSubmenuTrigger?.classList.remove('disabled');
     }
 };
 

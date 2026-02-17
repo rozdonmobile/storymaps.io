@@ -41,7 +41,7 @@ const populateJiraExportSlices = () => {
     container.innerHTML = '';
     jiraExportState.selectedSlices.clear();
 
-    const slices = state.slices.filter(s => s.rowType !== 'Users' && s.rowType !== 'Activities');
+    const slices = state.slices;
 
     slices.forEach(slice => {
         const sliceName = slice.name || 'Unnamed Release';
@@ -84,7 +84,6 @@ export const populateJiraExportEpics = () => {
     state.columns.forEach((column, colIndex) => {
         const tasks = [];
         state.slices.forEach(slice => {
-            if (slice.rowType === 'Users' || slice.rowType === 'Activities') return;
             if (!jiraExportState.selectedSlices.has(slice.id)) return;
 
             const sliceStories = slice.stories[column.id] || [];
@@ -311,7 +310,7 @@ const populatePhabExportSlices = () => {
     container.innerHTML = '';
     phabExportState.selectedSlices.clear();
 
-    const slices = state.slices.filter(s => s.rowType !== 'Users' && s.rowType !== 'Activities');
+    const slices = state.slices;
 
     slices.forEach(slice => {
         const sliceName = slice.name || 'Unnamed Release';
@@ -354,7 +353,6 @@ export const populatePhabExportEpics = () => {
     state.columns.forEach((column, colIndex) => {
         const tasks = [];
         state.slices.forEach(slice => {
-            if (slice.rowType === 'Users' || slice.rowType === 'Activities') return;
             if (!phabExportState.selectedSlices.has(slice.id)) return;
 
             const sliceStories = slice.stories[column.id] || [];
@@ -627,7 +625,7 @@ const populateJiraApiExportSlices = () => {
     container.innerHTML = '';
     jiraApiExportState.selectedSlices.clear();
 
-    const slices = state.slices.filter(s => s.rowType !== 'Users' && s.rowType !== 'Activities');
+    const slices = state.slices;
 
     slices.forEach(slice => {
         const sliceName = slice.name || 'Unnamed Release';
@@ -666,7 +664,6 @@ export const populateJiraApiExportEpics = () => {
     state.columns.forEach((column, colIndex) => {
         const tasks = [];
         state.slices.forEach(slice => {
-            if (slice.rowType === 'Users' || slice.rowType === 'Activities') return;
             if (!jiraApiExportState.selectedSlices.has(slice.id)) return;
 
             const sliceStories = slice.stories[column.id] || [];
@@ -912,7 +909,7 @@ const populateAsanaExportSlices = () => {
     container.innerHTML = '';
     asanaExportState.selectedSlices.clear();
 
-    const slices = state.slices.filter(s => s.rowType !== 'Users' && s.rowType !== 'Activities');
+    const slices = state.slices;
 
     slices.forEach(slice => {
         const sliceName = slice.name || 'Unnamed Release';
@@ -964,7 +961,6 @@ export const populateAsanaExportEpics = () => {
     state.columns.forEach((column, colIndex) => {
         const tasks = [];
         state.slices.forEach(slice => {
-            if (slice.rowType === 'Users' || slice.rowType === 'Activities') return;
             if (!asanaExportState.selectedSlices.has(slice.id)) return;
 
             const sliceStories = slice.stories[column.id] || [];
@@ -1241,7 +1237,7 @@ const populateAsanaCsvExportSlices = () => {
     container.innerHTML = '';
     asanaCsvExportState.selectedSlices.clear();
 
-    const slices = state.slices.filter(s => s.rowType !== 'Users' && s.rowType !== 'Activities');
+    const slices = state.slices;
 
     slices.forEach(slice => {
         const sliceName = slice.name || 'Unnamed Release';
@@ -1293,7 +1289,6 @@ export const populateAsanaCsvExportEpics = () => {
     state.columns.forEach((column, colIndex) => {
         const tasks = [];
         state.slices.forEach(slice => {
-            if (slice.rowType === 'Users' || slice.rowType === 'Activities') return;
             if (!asanaCsvExportState.selectedSlices.has(slice.id)) return;
 
             const sliceStories = slice.stories[column.id] || [];

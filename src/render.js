@@ -2,7 +2,8 @@
 // Rendering and state mutations
 
 import { el, DEFAULT_CARD_COLORS, CARD_COLORS, STATUS_OPTIONS, generateId } from '/src/constants.js';
-import { createColumnCard, createStoryCard, createStoryColumn, createSliceContainer, createEmptyBackboneRow, createPhantomStep, PHANTOM_BUFFER, renderLegend as uiRenderLegend, getAllTagsInMap } from '/src/ui.js';
+import { createColumnCard, createStoryCard, createStoryColumn, createSliceContainer, createBackboneRow, createEmptyBackboneRow, createPhantomStep, PHANTOM_BUFFER, renderLegend as uiRenderLegend, getAllTagsInMap, createPartialMapRef, createPartialMapRefCell, renderPartialsList as uiRenderPartialsList } from '/src/ui.js';
+import { partialMapEditState } from '/src/state.js';
 
 let _state = null;
 let _dom = null;
@@ -17,8 +18,12 @@ let _getIsSafari = null;
 let _zoomLevelGetter = null;
 let _broadcastDragStart = null;
 let _broadcastDragEnd = null;
+let _getIsPinching = null;
+let _createPartialMap = null;
+let _deletePartialMap = null;
+let _replaceWithPartial = null;
 
-export const init = ({ state, dom, isMapEditable, pushUndo, saveToStorage, renderAndSave, ensureSortable, scrollElementIntoView, notepadUpdate, getIsSafari, getZoomLevel, broadcastDragStart, broadcastDragEnd }) => {
+export const init = ({ state, dom, isMapEditable, pushUndo, saveToStorage, renderAndSave, ensureSortable, scrollElementIntoView, notepadUpdate, getIsSafari, getZoomLevel, broadcastDragStart, broadcastDragEnd, getIsPinching, createPartialMap, deletePartialMap, replaceWithPartial }) => {
     _state = state;
     _dom = dom;
     _isMapEditable = isMapEditable;
@@ -32,6 +37,15 @@ export const init = ({ state, dom, isMapEditable, pushUndo, saveToStorage, rende
     _zoomLevelGetter = getZoomLevel;
     _broadcastDragStart = broadcastDragStart;
     _broadcastDragEnd = broadcastDragEnd;
+    _getIsPinching = getIsPinching;
+    _createPartialMap = createPartialMap;
+    _deletePartialMap = deletePartialMap;
+    _replaceWithPartial = replaceWithPartial;
+};
+
+const _getEditingPartialColIds = () => {
+    if (!partialMapEditState.activeId) return null;
+    return partialMapEditState.editingColIds.size > 0 ? partialMapEditState.editingColIds : null;
 };
 
 // =============================================================================
@@ -74,41 +88,35 @@ export const render = () => {
 
     _dom.storyMap.innerHTML = '';
 
-    // Separate backbone rows (Users, Activities) from release slices
-    const rows = [];
-    const slices = [];
-    _state.slices.forEach((slice, index) => {
-        if (slice.separator === false) {
-            rows.push({ slice, index });
-        } else {
-            slices.push({ slice, index });
-        }
-    });
+    // Apply partial editing class for dimming
+    const editingPmId = partialMapEditState.activeId;
+    const editingColIds = _getEditingPartialColIds();
+    _dom.storyMap.classList.toggle('partial-editing', !!editingPmId);
 
-    // Find specific row types
-    const usersRow = rows.find(r => r.slice.rowType === 'Users');
-    const activitiesRow = rows.find(r => r.slice.rowType === 'Activities');
+    const expandedIds = partialMapEditState.expandedIds;
+    const hasAnyExpanded = expandedIds.size > 0 && !editingPmId;
 
-    // Render Users row (or empty placeholder)
-    if (usersRow) {
-        _dom.storyMap.appendChild(createSliceContainer(usersRow.slice, usersRow.index));
-    } else {
-        _dom.storyMap.appendChild(createEmptyBackboneRow('Users', 0));
+    // Check if users/activities have any cards (include partial map data when preview expanded)
+    let hasUsersContent = Object.values(_state.users).some(cards => cards.length > 0);
+    let hasActivitiesContent = Object.values(_state.activities).some(cards => cards.length > 0);
+    if (hasAnyExpanded) {
+        hasUsersContent = hasUsersContent || _state.partialMaps.some(pm => expandedIds.has(pm.id) && Object.values(pm.users || {}).some(cards => cards.length > 0));
+        hasActivitiesContent = hasActivitiesContent || _state.partialMaps.some(pm => expandedIds.has(pm.id) && Object.values(pm.activities || {}).some(cards => cards.length > 0));
     }
 
-    // Render Activities row (or empty placeholder)
-    if (activitiesRow) {
-        _dom.storyMap.appendChild(createSliceContainer(activitiesRow.slice, activitiesRow.index));
+    // Render Users row
+    if (hasUsersContent) {
+        _dom.storyMap.appendChild(createBackboneRow('Users', _state.users));
     } else {
-        const idx = usersRow ? usersRow.index + 1 : 0;
-        _dom.storyMap.appendChild(createEmptyBackboneRow('Activities', idx));
+        _dom.storyMap.appendChild(createEmptyBackboneRow('Users'));
     }
 
-    // Render any other backbone rows (non-Users, non-Activities)
-    rows.filter(r => r.slice.rowType !== 'Users' && r.slice.rowType !== 'Activities')
-        .forEach(({ slice, index }) => {
-            _dom.storyMap.appendChild(createSliceContainer(slice, index));
-        });
+    // Render Activities row
+    if (hasActivitiesContent) {
+        _dom.storyMap.appendChild(createBackboneRow('Activities', _state.activities));
+    } else {
+        _dom.storyMap.appendChild(createEmptyBackboneRow('Activities'));
+    }
 
     // Steps row (the backbone)
     const stepsRow = el('div', 'steps-row');
@@ -117,7 +125,33 @@ export const render = () => {
     stepsRow.appendChild(stepsLabel);
 
     _state.columns.forEach(col => {
-        stepsRow.appendChild(createColumnCard(col));
+        if (col.partialMapId) {
+            if (col._editingHidden) return;
+            const pm = _state.partialMaps.find(p => p.id === col.partialMapId);
+            if (pm) {
+                if (hasAnyExpanded && expandedIds.has(col.partialMapId)) {
+                    pm.columns.forEach(pmCol => {
+                        const card = createColumnCard(pmCol);
+                        card.classList.add('partial-map-preview-col');
+                        stepsRow.appendChild(card);
+                    });
+                } else {
+                    const refEl = createPartialMapRef(col, pm);
+                    if (editingPmId && col.partialMapId === editingPmId) {
+                        refEl.classList.add('partial-map-ref-editing');
+                    }
+                    stepsRow.appendChild(refEl);
+                }
+            } else {
+                stepsRow.appendChild(createColumnCard(col));
+            }
+        } else {
+            const card = createColumnCard(col);
+            if (editingColIds?.has(col.id)) {
+                card.classList.add('partial-map-editing');
+            }
+            stepsRow.appendChild(card);
+        }
     });
 
     for (let i = 0; i < PHANTOM_BUFFER; i++) {
@@ -127,7 +161,7 @@ export const render = () => {
     _dom.storyMap.appendChild(stepsRow);
 
     // Slices (releases) - render below steps
-    slices.forEach(({ slice, index }) => {
+    _state.slices.forEach((slice, index) => {
         _dom.storyMap.appendChild(createSliceContainer(slice, index));
     });
 
@@ -151,6 +185,7 @@ export const render = () => {
     }
 
     uiRenderLegend();
+    uiRenderPartialsList();
     _notepadUpdate();
     updateSelectionUI();
 };
@@ -173,11 +208,13 @@ export const initSortable = async () => {
     const isSafari = _getIsSafari();
 
     // Make story cards sortable within and between columns
-    document.querySelectorAll('.story-column:not(.phantom-column)').forEach(column => {
+    document.querySelectorAll('.story-column:not(.phantom-column):not(.partial-map-ref-cell):not(.partial-map-preview-col)').forEach(column => {
         const sortable = Sortable.create(column, {
             group: 'stories',
             animation: 150,
             forceFallback: true,
+            delay: 150,
+            delayOnTouchOnly: true,
             ghostClass: 'sortable-ghost',
             chosenClass: 'sortable-chosen',
             dragClass: 'sortable-drag',
@@ -187,22 +224,38 @@ export const initSortable = async () => {
                     const storyId = evt.item.dataset.storyId;
                     const sliceId = evt.from.dataset.sliceId;
                     const columnId = evt.from.dataset.columnId;
-                    const slice = _state.slices.find(s => s.id === sliceId);
-                    const story = slice?.stories[columnId]?.find(s => s.id === storyId);
+                    const rowType = evt.from.dataset.rowType;
+                    let story;
+                    if (rowType === 'users') {
+                        story = _state.users[columnId]?.find(s => s.id === storyId);
+                    } else if (rowType === 'activities') {
+                        story = _state.activities[columnId]?.find(s => s.id === storyId);
+                    } else {
+                        const slice = _state.slices.find(s => s.id === sliceId);
+                        story = slice?.stories[columnId]?.find(s => s.id === storyId);
+                    }
                     _broadcastDragStart({ type: 'story', storyId, color: story?.color || '#fef08a' });
                 }
             },
             onEnd: (evt) => {
                 if (_broadcastDragEnd) _broadcastDragEnd();
+                // If a pinch gesture is active, revert the card to its original position
+                if (_getIsPinching && _getIsPinching()) {
+                    const ref = evt.from.children[evt.oldIndex];
+                    evt.from.insertBefore(evt.item, ref || null);
+                    return;
+                }
                 const storyId = evt.item.dataset.storyId;
                 const fromColumnId = evt.from.dataset.columnId;
                 const fromSliceId = evt.from.dataset.sliceId;
+                const fromRowType = evt.from.dataset.rowType || null;
                 const toColumnId = evt.to.dataset.columnId;
                 const toSliceId = evt.to.dataset.sliceId;
+                const toRowType = evt.to.dataset.rowType || null;
                 const toIndex = evt.newIndex;
 
-                if (fromColumnId !== toColumnId || fromSliceId !== toSliceId || evt.oldIndex !== evt.newIndex) {
-                    moveStory(storyId, fromColumnId, fromSliceId, toColumnId, toSliceId, toIndex);
+                if (fromColumnId !== toColumnId || fromSliceId !== toSliceId || fromRowType !== toRowType || evt.oldIndex !== evt.newIndex) {
+                    moveStory(storyId, fromColumnId, fromSliceId, toColumnId, toSliceId, toIndex, fromRowType, toRowType);
                 }
             }
         });
@@ -221,26 +274,16 @@ export const initSortable = async () => {
             draggable: '.slice-container',
             onEnd: () => {
                 const sliceContainers = _dom.storyMap.querySelectorAll('.slice-container');
-                const releaseSlices = _state.slices.filter(s => s.separator !== false);
 
                 const newSliceOrder = [...sliceContainers].map(el =>
-                    releaseSlices.find(s => s.id === el.dataset.sliceId)
+                    _state.slices.find(s => s.id === el.dataset.sliceId)
                 ).filter(Boolean);
 
-                const orderChanged = newSliceOrder.some((slice, i) => slice.id !== releaseSlices[i]?.id);
+                const orderChanged = newSliceOrder.some((slice, i) => slice.id !== _state.slices[i]?.id);
                 if (!orderChanged) return;
 
-                let releaseIndex = 0;
-                const newSlices = _state.slices.map(s => {
-                    if (s.separator === false) {
-                        return s;
-                    } else {
-                        return newSliceOrder[releaseIndex++];
-                    }
-                });
-
                 _pushUndo();
-                _state.slices = newSlices;
+                _state.slices = newSliceOrder;
                 _renderAndSave();
             }
         });
@@ -292,7 +335,7 @@ export const initSortable = async () => {
             chosenClass: 'sortable-chosen',
             dragClass: 'sortable-drag',
             draggable: '.step',
-            filter: '.steps-row-spacer, .phantom-step',
+            filter: '.steps-row-spacer, .phantom-step, .partial-map-ref, .partial-map-preview-col',
             onStart: (evt) => {
                 isDragging = true;
                 dragColumnId = evt.item.dataset.columnId;
@@ -326,10 +369,22 @@ export const initSortable = async () => {
                     el.classList.remove('column-being-dragged');
                 });
 
-                const stepElements = stepsRow.querySelectorAll('.step, .step-placeholder');
-                const newOrder = [...stepElements].map(el =>
+                const stepElements = stepsRow.querySelectorAll('.step, .step-placeholder, .partial-map-ref');
+                const visibleOrder = [...stepElements].map(el =>
                     _state.columns.find(c => c.id === el.dataset.columnId)
                 ).filter(Boolean);
+
+                // Re-insert hidden columns (e.g. _editingHidden ref cols) at their original positions
+                const visibleIds = new Set(visibleOrder.map(c => c.id));
+                const newOrder = [...visibleOrder];
+                _state.columns.forEach((col, i) => {
+                    if (!visibleIds.has(col.id)) {
+                        // Find insertion point: right before the next visible column that was after it
+                        const nextVisible = _state.columns.slice(i + 1).find(c => visibleIds.has(c.id));
+                        const insertAt = nextVisible ? newOrder.indexOf(nextVisible) : newOrder.length;
+                        newOrder.splice(insertAt, 0, col);
+                    }
+                });
 
                 const orderChanged = newOrder.some((col, i) => col.id !== _state.columns[i]?.id);
                 if (!orderChanged) {
@@ -358,36 +413,52 @@ export const handleColumnSelection = (columnId, shiftKey, cardInfo = { type: 'st
     if (!window.matchMedia('(hover: hover)').matches) return;
 
     if (shiftKey && selection.anchorId) {
-        const anchorIdx = _state.columns.findIndex(c => c.id === selection.anchorId);
-        const targetIdx = _state.columns.findIndex(c => c.id === columnId);
-        if (anchorIdx === -1 || targetIdx === -1) return;
+        // Check if the target card is already selected (toggle off)
+        const isAlreadySelected = selection.clickedCards.some(c =>
+            c.columnId === columnId && c.type === cardInfo.type &&
+            (c.type === 'step' || c.storyId === cardInfo.storyId)
+        );
 
-        // Extend range to cover existing selection + new target
-        const currentIndices = selection.columnIds.map(id => _state.columns.findIndex(c => c.id === id)).filter(i => i !== -1);
-        currentIndices.push(anchorIdx, targetIdx);
-        const start = Math.min(...currentIndices);
-        const end = Math.max(...currentIndices);
-        selection.columnIds = _state.columns.slice(start, end + 1).map(c => c.id);
-
-        // Rebuild clickedCards based on anchor card type
-        const anchorCard = selection.clickedCards.find(c => c.columnId === selection.anchorId);
-        const anchorType = anchorCard?.type || 'step';
-
-        if (anchorType === 'step') {
-            // Step mode: every column in range gets a step entry
-            selection.clickedCards = selection.columnIds.map(colId => ({ columnId: colId, type: 'step' }));
-        } else {
-            // Story mode: keep previous clickedCards within range, add new target
-            const rangeColIds = new Set(selection.columnIds);
-            const kept = selection.clickedCards.filter(c => rangeColIds.has(c.columnId));
-            const alreadyPresent = kept.some(c =>
-                c.columnId === columnId && c.type === cardInfo.type &&
-                (c.type === 'step' || c.storyId === cardInfo.storyId)
+        if (isAlreadySelected && columnId !== selection.anchorId) {
+            // Remove the card from selection
+            selection.clickedCards = selection.clickedCards.filter(c =>
+                !(c.columnId === columnId && c.type === cardInfo.type &&
+                  (c.type === 'step' || c.storyId === cardInfo.storyId))
             );
-            if (!alreadyPresent) {
-                kept.push({ columnId, ...cardInfo });
+            selection.columnIds = selection.columnIds.filter(id => id !== columnId);
+            if (selection.clickedCards.length === 0) { clearSelection(); }
+        } else {
+            const anchorIdx = _state.columns.findIndex(c => c.id === selection.anchorId);
+            const targetIdx = _state.columns.findIndex(c => c.id === columnId);
+            if (anchorIdx === -1 || targetIdx === -1) return;
+
+            // Extend range to cover existing selection + new target
+            const currentIndices = selection.columnIds.map(id => _state.columns.findIndex(c => c.id === id)).filter(i => i !== -1);
+            currentIndices.push(anchorIdx, targetIdx);
+            const start = Math.min(...currentIndices);
+            const end = Math.max(...currentIndices);
+            selection.columnIds = _state.columns.slice(start, end + 1).map(c => c.id);
+
+            // Rebuild clickedCards based on anchor card type
+            const anchorCard = selection.clickedCards.find(c => c.columnId === selection.anchorId);
+            const anchorType = anchorCard?.type || 'step';
+
+            if (anchorType === 'step') {
+                // Step mode: every column in range gets a step entry
+                selection.clickedCards = selection.columnIds.map(colId => ({ columnId: colId, type: 'step' }));
+            } else {
+                // Story mode: keep previous clickedCards within range, add new target
+                const rangeColIds = new Set(selection.columnIds);
+                const kept = selection.clickedCards.filter(c => rangeColIds.has(c.columnId));
+                const alreadyPresent = kept.some(c =>
+                    c.columnId === columnId && c.type === cardInfo.type &&
+                    (c.type === 'step' || c.storyId === cardInfo.storyId)
+                );
+                if (!alreadyPresent) {
+                    kept.push({ columnId, ...cardInfo });
+                }
+                selection.clickedCards = kept;
             }
-            selection.clickedCards = kept;
         }
     } else {
         if (selection.columnIds.length === 1 && selection.columnIds[0] === columnId) {
@@ -405,7 +476,13 @@ export const handleColumnSelection = (columnId, shiftKey, cardInfo = { type: 'st
 const createSplitButton = (btnClass, modes, onModeChange) => {
     const splitBtn = el('div', 'selection-toolbar-split');
     let activeAction = modes[0].action;
-    const mainBtn = el('button', btnClass, { text: modes[0].label });
+    const setMainLabel = (mode) => {
+        if (mode.html) mainBtn.innerHTML = mode.html;
+        else mainBtn.textContent = mode.label;
+    };
+    const mainBtn = el('button', btnClass);
+    if (modes[0].html) mainBtn.innerHTML = modes[0].html;
+    else mainBtn.textContent = modes[0].label;
     mainBtn.addEventListener('click', () => activeAction());
     const arrowBtn = el('button', 'selection-toolbar-split-arrow ' + btnClass + '-arrow', { html: '&#9662;' });
     const dropdown = el('div', 'selection-toolbar-split-menu');
@@ -415,7 +492,7 @@ const createSplitButton = (btnClass, modes, onModeChange) => {
         if (mode.action === activeAction) option.classList.add('active');
         option.addEventListener('click', () => {
             activeAction = mode.action;
-            mainBtn.textContent = mode.label;
+            setMainLabel(mode);
             dropdown.querySelectorAll('.selection-toolbar-split-option').forEach(o => o.classList.remove('active'));
             option.classList.add('active');
             dropdown.classList.remove('visible');
@@ -454,7 +531,7 @@ const updateSelectionHighlights = () => {
 
     for (const card of selection.clickedCards) {
         if (card.type === 'step') {
-            const step = _dom.storyMap.querySelector(`.step[data-column-id="${card.columnId}"]`);
+            const step = _dom.storyMap.querySelector(`.step[data-column-id="${card.columnId}"], .step-placeholder[data-column-id="${card.columnId}"]`);
             if (step) step.classList.add('column-selected');
         } else if (card.type === 'story' && card.storyId) {
             const storyCard = _dom.storyMap.querySelector(`.story-card[data-story-id="${card.storyId}"]`);
@@ -465,7 +542,7 @@ const updateSelectionHighlights = () => {
     // Faint column background only when column-level action is active
     if (selection.columnHighlight) {
         for (const colId of selection.columnIds) {
-            const step = _dom.storyMap.querySelector(`.step[data-column-id="${colId}"]`);
+            const step = _dom.storyMap.querySelector(`.step[data-column-id="${colId}"], .step-placeholder[data-column-id="${colId}"]`);
             if (step) step.classList.add('column-selected');
             _dom.storyMap.querySelectorAll(`.story-column[data-column-id="${colId}"]`).forEach(elem => {
                 elem.classList.add('column-selected');
@@ -475,6 +552,11 @@ const updateSelectionHighlights = () => {
 };
 
 export const updateSelectionUI = () => {
+    const validColumnIds = new Set(_state.columns.map(c => c.id));
+    selection.columnIds = selection.columnIds.filter(id => validColumnIds.has(id));
+    selection.clickedCards = selection.clickedCards.filter(c => validColumnIds.has(c.columnId));
+    if (selection.columnIds.length === 0) { selection.anchorId = null; }
+
     updateSelectionHighlights();
 
     document.querySelector('.selection-toolbar')?.remove();
@@ -489,6 +571,29 @@ export const updateSelectionUI = () => {
         if (count === 1) {
             const hint = el('span', 'selection-toolbar-hint', { text: 'Shift+click for more' });
             items.push(hint);
+        }
+
+        // Create Map Partial / Replace with Partial split button (when 2+ non-ref columns selected, not editing a partial)
+        if (!partialMapEditState.activeId) {
+            const selectedCols = _state.columns.filter(c => selection.columnIds.includes(c.id));
+            const nonRefSelected = selectedCols.filter(c => !c.partialMapId);
+            if (nonRefSelected.length >= 2) {
+                const nonRefIds = nonRefSelected.map(c => c.id);
+                const partialIcon = '<svg viewBox="0 0 24 24" fill="none"><rect x="3" y="3" width="7" height="7" rx="1" fill="#fef08a" stroke="#d4aa00" stroke-width="1"/><rect x="14" y="3" width="7" height="7" rx="1" fill="#fecdd3" stroke="#e88a9a" stroke-width="1"/><rect x="3" y="14" width="7" height="7" rx="1" fill="#a5f3fc" stroke="#67c5d6" stroke-width="1"/><rect x="14" y="14" width="7" height="7" rx="1" fill="#14b8a6" stroke="#0d9488" stroke-width="1"/></svg>';
+                const modes = [
+                    { label: 'Create Map Partial', html: partialIcon + 'Create Map Partial', action: () => {
+                        const name = prompt('Name this Map Partial:');
+                        if (name === null) return;
+                        if (_createPartialMap) _createPartialMap(name || 'Untitled', nonRefIds);
+                    }},
+                ];
+                _state.partialMaps.forEach(pm => {
+                    modes.push({ label: `Replace with "${pm.name}"`, html: partialIcon + `Replace with "${pm.name}"`, action: () => {
+                        if (_replaceWithPartial) _replaceWithPartial(pm.id, nonRefIds);
+                    }});
+                });
+                items.push(createSplitButton('selection-toolbar-partial', modes));
+            }
         }
 
         const s = count > 1 ? 's' : '';
@@ -545,17 +650,22 @@ export const updateSelectionUI = () => {
         // Bulk Status button
         const statusGroup = el('div', 'selection-toolbar-dropdown-group');
         const statusBtn = el('button', 'selection-toolbar-action selection-toolbar-status', { text: 'Status' });
-        const statusDropdown = el('div', 'selection-toolbar-dropdown');
-        const noneStatusSwatch = el('button', 'selection-toolbar-status-swatch selection-toolbar-swatch-none', { text: '\u00d7', title: 'None' });
-        if (commonStatus === null) noneStatusSwatch.classList.add('swatch-active');
-        noneStatusSwatch.addEventListener('click', () => { bulkChangeStatus(null); statusDropdown.classList.remove('visible'); });
-        statusDropdown.appendChild(noneStatusSwatch);
+        const statusDropdown = el('div', 'selection-toolbar-dropdown selection-toolbar-status-dropdown');
+        const noneRow = el('button', 'selection-toolbar-status-row');
+        if (commonStatus === null) noneRow.classList.add('active');
+        const noneDot = el('span', 'selection-toolbar-status-dot');
+        noneDot.style.backgroundColor = '#555';
+        noneRow.append(noneDot, el('span', null, { text: 'No Status' }));
+        noneRow.addEventListener('click', () => { bulkChangeStatus(null); statusDropdown.classList.remove('visible'); });
+        statusDropdown.appendChild(noneRow);
         Object.entries(STATUS_OPTIONS).forEach(([key, { label, color }]) => {
-            const swatch = el('button', 'selection-toolbar-status-swatch', { title: label });
-            swatch.style.backgroundColor = color;
-            if (commonStatus === key) swatch.classList.add('swatch-active');
-            swatch.addEventListener('click', () => { bulkChangeStatus(key); statusDropdown.classList.remove('visible'); });
-            statusDropdown.appendChild(swatch);
+            const row = el('button', 'selection-toolbar-status-row');
+            if (commonStatus === key) row.classList.add('active');
+            const dot = el('span', 'selection-toolbar-status-dot');
+            dot.style.backgroundColor = color;
+            row.append(dot, el('span', null, { text: label }));
+            row.addEventListener('click', () => { bulkChangeStatus(key); statusDropdown.classList.remove('visible'); });
+            statusDropdown.appendChild(row);
         });
         statusBtn.addEventListener('click', (e) => {
             e.stopPropagation();
@@ -643,7 +753,15 @@ export const updateSelectionUI = () => {
             tagsDropdown.classList.toggle('visible');
             if (opening) {
                 buildTagsDropdown();
-                requestAnimationFrame(() => tagsDropdown.querySelector('.selection-toolbar-tag-input')?.focus());
+                requestAnimationFrame(() => {
+                    tagsDropdown.querySelector('.selection-toolbar-tag-input')?.focus();
+                    // Clamp dropdown so it doesn't clip above the viewport
+                    tagsDropdown.style.bottom = '';
+                    const rect = tagsDropdown.getBoundingClientRect();
+                    if (rect.top < 8) {
+                        tagsDropdown.style.bottom = `calc(100% + 8px + ${rect.top - 8}px)`;
+                    }
+                });
             }
         });
         tagsGroup.append(tagsBtn, tagsDropdown);
@@ -665,9 +783,9 @@ export const duplicateColumns = () => {
     if (selection.columnIds.length === 0) return;
     if (!_isMapEditable()) return;
 
-    // Snapshot selected column IDs in state.columns order
+    // Snapshot selected column IDs in state.columns order (exclude ref columns)
     const selectedIds = _state.columns
-        .filter(c => selection.columnIds.includes(c.id))
+        .filter(c => selection.columnIds.includes(c.id) && !c.partialMapId)
         .map(c => c.id);
 
     if (selectedIds.length === 0) return;
@@ -691,6 +809,15 @@ export const duplicateColumns = () => {
     });
 
     _state.columns.splice(lastSelectedIdx + 1, 0, ...newColumns);
+
+    // Copy users/activities for new columns
+    _state.users[spacerCol.id] = [];
+    _state.activities[spacerCol.id] = [];
+    selectedIds.forEach(oldId => {
+        const newId = idMap[oldId];
+        _state.users[newId] = (_state.users[oldId] || []).map(card => ({ ...card, id: generateId(), tags: [...(card.tags || [])] }));
+        _state.activities[newId] = (_state.activities[oldId] || []).map(card => ({ ...card, id: generateId(), tags: [...(card.tags || [])] }));
+    });
 
     // Copy stories for each slice
     _state.slices.forEach(slice => {
@@ -762,7 +889,27 @@ export const duplicateCards = () => {
 
     _state.columns.splice(lastSelectedIdx + 1, 0, ...newColumns);
 
-    // Build stories for each slice
+    // Build users/activities/stories for new columns
+    _state.users[spacerCol.id] = [];
+    _state.activities[spacerCol.id] = [];
+
+    for (const newCol of newColumns.slice(1)) {
+        const { oldId, cards } = columnCardMap.get(newCol.id);
+
+        // Copy backbone row cards if any story clicks target them
+        for (const [rowKey, cardMap] of [['users', _state.users], ['activities', _state.activities]]) {
+            const rowClicks = cards.filter(c => c.type === 'story' && c.rowType === rowKey);
+            if (rowClicks.length > 0) {
+                const originalCards = cardMap[oldId] || [];
+                cardMap[newCol.id] = originalCards
+                    .filter(s => rowClicks.some(c => c.storyId === s.id))
+                    .map(s => ({ ...s, id: generateId(), tags: [...(s.tags || [])] }));
+            } else {
+                cardMap[newCol.id] = [];
+            }
+        }
+    }
+
     _state.slices.forEach(slice => {
         slice.stories[spacerCol.id] = [];
 
@@ -800,24 +947,86 @@ export const deleteSelectedColumns = () => {
     if (selection.columnIds.length === 0) return;
     if (!_isMapEditable()) return;
 
-    const selectedIds = _state.columns
-        .filter(c => selection.columnIds.includes(c.id))
-        .map(c => c.id);
+    const selectedCols = _state.columns.filter(c => selection.columnIds.includes(c.id));
+    const regularIds = selectedCols.filter(c => !c.partialMapId).map(c => c.id);
+    const refCols = selectedCols.filter(c => c.partialMapId);
 
-    const remaining = _state.columns.length - selectedIds.length;
-    if (remaining < 1) {
+    if (regularIds.length === 0 && refCols.length === 0) return;
+
+    // Check which ref columns are the last reference to their partial
+    const partialsToRemove = [];
+    for (const ref of refCols) {
+        const otherRefs = _state.columns.filter(c =>
+            c.partialMapId === ref.partialMapId && !selection.columnIds.includes(c.id)
+        );
+        if (otherRefs.length === 0) {
+            const pm = _state.partialMaps.find(p => p.id === ref.partialMapId);
+            if (pm && !partialsToRemove.find(p => p.id === pm.id)) {
+                partialsToRemove.push(pm);
+            }
+        }
+    }
+
+    const remaining = _state.columns.filter(c => !c.partialMapId).length - regularIds.length;
+    if (remaining < 1 && refCols.length === 0) {
         alert('Cannot delete all columns.');
         return;
     }
 
-    const count = selectedIds.length;
-    if (!confirm(`Delete ${count} column${count > 1 ? 's' : ''} and all their stories?`)) return;
+    // Build confirmation message
+    const parts = [];
+    const totalCols = regularIds.length + refCols.length;
+    parts.push(`Delete ${totalCols} column${totalCols > 1 ? 's' : ''}${regularIds.length > 0 ? ' and all their stories' : ''}?`);
+    if (partialsToRemove.length > 0) {
+        const names = partialsToRemove.map(p => `"${p.name || 'Untitled'}"`).join(', ');
+        parts.push(`\nThis will remove partial${partialsToRemove.length > 1 ? 's' : ''} ${names} from the partials list. You can undo this.`);
+    }
+    if (!confirm(parts.join(''))) return;
 
     _pushUndo();
-    _state.columns = _state.columns.filter(c => !selectedIds.includes(c.id));
-    _state.slices.forEach(slice => {
-        selectedIds.forEach(id => delete slice.stories[id]);
+
+    // Delete regular columns
+    _state.columns = _state.columns.filter(c => !regularIds.includes(c.id));
+    regularIds.forEach(id => {
+        delete _state.users[id];
+        delete _state.activities[id];
     });
+    _state.slices.forEach(slice => {
+        regularIds.forEach(id => delete slice.stories[id]);
+    });
+
+    // Delete ref columns and their partials
+    const refIds = refCols.map(c => c.id);
+    // Transfer partialMapOrigin to surviving refs before deletion
+    for (const ref of refCols) {
+        if (ref.partialMapOrigin) {
+            const survivor = _state.columns.find(c =>
+                c.partialMapId === ref.partialMapId && !refIds.includes(c.id)
+            );
+            if (survivor) survivor.partialMapOrigin = true;
+        }
+    }
+    _state.columns = _state.columns.filter(c => !refIds.includes(c.id));
+    refIds.forEach(id => {
+        delete _state.users[id];
+        delete _state.activities[id];
+        _state.slices.forEach(slice => delete slice.stories[id]);
+    });
+    for (const pm of partialsToRemove) {
+        _state.partialMaps = _state.partialMaps.filter(p => p.id !== pm.id);
+        if (partialMapEditState.activeId === pm.id) {
+            partialMapEditState.activeId = null;
+        }
+    }
+
+    // Ensure at least one column remains
+    if (_state.columns.filter(c => !c.partialMapId).length === 0) {
+        const col = _createColumn('New Step', CARD_COLORS.green, null, false);
+        _state.columns.push(col);
+        _state.users[col.id] = [];
+        _state.activities[col.id] = [];
+        _state.slices.forEach(slice => slice.stories[col.id] = []);
+    }
 
     clearSelection();
     _renderAndSave();
@@ -849,13 +1058,42 @@ export const deleteSelectedCards = () => {
         }
     }
 
-    // Delete story cards
+    // Delete story cards (from users, activities, and slices)
     const storyIds = new Set(storyClicks.map(c => c.storyId));
+    for (const colId of Object.keys(_state.users)) {
+        _state.users[colId] = _state.users[colId].filter(s => !storyIds.has(s.id));
+    }
+    for (const colId of Object.keys(_state.activities)) {
+        _state.activities[colId] = _state.activities[colId].filter(s => !storyIds.has(s.id));
+    }
     _state.slices.forEach(slice => {
         for (const colId of Object.keys(slice.stories)) {
             slice.stories[colId] = slice.stories[colId].filter(s => !storyIds.has(s.id));
         }
     });
+
+    // Remove columns that are now completely empty (hidden step + no content)
+    const emptyColIds = stepClicks
+        .map(c => c.columnId)
+        .filter(colId => {
+            const col = _state.columns.find(c => c.id === colId);
+            if (!col || !col.hidden) return false;
+            if ((_state.users[colId] || []).length > 0) return false;
+            if ((_state.activities[colId] || []).length > 0) return false;
+            return !_state.slices.some(slice => (slice.stories[colId] || []).length > 0);
+        });
+
+    if (emptyColIds.length > 0) {
+        const nonRefCount = _state.columns.filter(c => !c.partialMapId).length;
+        if (nonRefCount - emptyColIds.length >= 1) {
+            _state.columns = _state.columns.filter(c => !emptyColIds.includes(c.id));
+            emptyColIds.forEach(id => {
+                delete _state.users[id];
+                delete _state.activities[id];
+                _state.slices.forEach(slice => delete slice.stories[id]);
+            });
+        }
+    }
 
     clearSelection();
     _renderAndSave();
@@ -869,6 +1107,17 @@ const getItemForCard = (card) => {
     if (card.type === 'step') {
         return _state.columns.find(c => c.id === card.columnId);
     } else if (card.type === 'story' && card.storyId) {
+        // Check users and activities first
+        const usersCards = _state.users[card.columnId];
+        if (usersCards) {
+            const found = usersCards.find(s => s.id === card.storyId);
+            if (found) return found;
+        }
+        const activitiesCards = _state.activities[card.columnId];
+        if (activitiesCards) {
+            const found = activitiesCards.find(s => s.id === card.storyId);
+            if (found) return found;
+        }
         for (const slice of _state.slices) {
             const stories = slice.stories[card.columnId];
             if (stories) {
@@ -941,6 +1190,8 @@ export const addColumn = (hidden = true) => {
     _pushUndo();
     const column = _createColumn('', null, null, hidden);
     _state.columns.push(column);
+    _state.users[column.id] = [];
+    _state.activities[column.id] = [];
     _state.slices.forEach(slice => slice.stories[column.id] = []);
     _renderAndSave();
 
@@ -959,28 +1210,45 @@ export const addColumnAt = (index, hidden = false) => {
     _pushUndo();
     const column = _createColumn('', null, null, hidden);
     _state.columns.splice(index, 0, column);
+    _state.users[column.id] = [];
+    _state.activities[column.id] = [];
     _state.slices.forEach(slice => slice.stories[column.id] = []);
     _renderAndSave();
 };
 
-export const addStory = (columnId, sliceId) => {
-    const slice = _state.slices.find(s => s.id === sliceId);
-    if (!slice) return;
-
+export const addStory = (columnId, sliceId, rowType = null) => {
     _pushUndo();
 
-    slice.stories[columnId] = slice.stories[columnId] || [];
+    let storiesArray;
+    let color;
 
-    const color = DEFAULT_CARD_COLORS[slice.rowType] || DEFAULT_CARD_COLORS.story;
+    if (rowType === 'users') {
+        _state.users[columnId] = _state.users[columnId] || [];
+        color = DEFAULT_CARD_COLORS.Users;
+        _state.users[columnId].push(_createStory('', color));
+        storiesArray = _state.users[columnId];
+    } else if (rowType === 'activities') {
+        _state.activities[columnId] = _state.activities[columnId] || [];
+        color = DEFAULT_CARD_COLORS.Activities;
+        _state.activities[columnId].push(_createStory('', color));
+        storiesArray = _state.activities[columnId];
+    } else {
+        const slice = _state.slices.find(s => s.id === sliceId);
+        if (!slice) return;
+        slice.stories[columnId] = slice.stories[columnId] || [];
+        color = DEFAULT_CARD_COLORS.story;
+        slice.stories[columnId].push(_createStory('', color));
+        storiesArray = slice.stories[columnId];
+    }
 
-    slice.stories[columnId].push(_createStory('', color));
     _renderAndSave();
 
-    const storyIndex = slice.stories[columnId].length - 1;
+    const storyIndex = storiesArray.length - 1;
+    const selector = rowType
+        ? `.story-column[data-column-id="${columnId}"][data-row-type="${rowType}"]`
+        : `.story-column[data-column-id="${columnId}"][data-slice-id="${sliceId}"]`;
     requestAnimationFrame(() => {
-        const column = _dom.storyMap.querySelector(
-            `.story-column[data-column-id="${columnId}"][data-slice-id="${sliceId}"]`
-        );
+        const column = _dom.storyMap.querySelector(selector);
         const newCard = column?.querySelectorAll('.story-card')[storyIndex];
         if (newCard) {
             _scrollElementIntoView(newCard);
@@ -989,19 +1257,18 @@ export const addStory = (columnId, sliceId) => {
     });
 };
 
-export const addSlice = (afterIndex, separator = true, rowType = null) => {
+export const addSlice = (afterIndex) => {
     _pushUndo();
-    const slice = _createSlice('', separator, rowType);
+    const slice = _createSlice('');
     _state.slices.splice(afterIndex, 0, slice);
     _renderAndSave();
 
     requestAnimationFrame(() => {
         const sliceElement = _dom.storyMap.querySelector(`[data-slice-id="${slice.id}"]`);
         if (sliceElement) {
-            // Scroll only the label into view to avoid horizontal jump
             const label = sliceElement.querySelector('.slice-label');
             _scrollElementIntoView(label || sliceElement);
-            if (separator && label) {
+            if (label) {
                 label.focus();
             }
         }
@@ -1010,22 +1277,54 @@ export const addSlice = (afterIndex, separator = true, rowType = null) => {
 };
 
 export const deleteColumn = (columnId) => {
-    if (_state.columns.length <= 1) {
+    const col = _state.columns.find(c => c.id === columnId);
+    if (!col) return;
+
+    if (col.partialMapId) {
+        // Check if this is the last reference to the partial
+        const otherRefs = _state.columns.filter(c => c.partialMapId === col.partialMapId && c.id !== columnId);
+        if (otherRefs.length === 0) {
+            const pm = _state.partialMaps.find(p => p.id === col.partialMapId);
+            const name = pm ? `"${pm.name || 'Untitled'}"` : 'this partial';
+            if (!confirm(`This will remove partial ${name} from the partials list. You can undo this.`)) return;
+            if (_deletePartialMap) _deletePartialMap(col.partialMapId);
+        } else {
+            _pushUndo();
+            // Transfer partialMapOrigin to a surviving ref if needed
+            if (col.partialMapOrigin) otherRefs[0].partialMapOrigin = true;
+            _state.columns = _state.columns.filter(c => c.id !== columnId);
+            delete _state.users[columnId];
+            delete _state.activities[columnId];
+            _state.slices.forEach(slice => delete slice.stories[columnId]);
+            _renderAndSave();
+        }
+        return;
+    }
+
+    if (_state.columns.filter(c => !c.partialMapId).length <= 1) {
         alert('Cannot delete the last column.');
         return;
     }
-    const index = _state.columns.findIndex(s => s.id === columnId);
-    if (index === -1) return;
+    const index = _state.columns.indexOf(col);
 
     _pushUndo();
     _state.columns.splice(index, 1);
+    delete _state.users[columnId];
+    delete _state.activities[columnId];
     _state.slices.forEach(slice => delete slice.stories[columnId]);
     _renderAndSave();
 };
 
-export const deleteStory = (columnId, sliceId, storyId) => {
-    const slice = _state.slices.find(s => s.id === sliceId);
-    const stories = slice?.stories[columnId];
+export const deleteStory = (columnId, sliceId, storyId, rowType = null) => {
+    let stories;
+    if (rowType === 'users') {
+        stories = _state.users[columnId];
+    } else if (rowType === 'activities') {
+        stories = _state.activities[columnId];
+    } else {
+        const slice = _state.slices.find(s => s.id === sliceId);
+        stories = slice?.stories[columnId];
+    }
     if (!stories) return;
 
     const index = stories.findIndex(s => s.id === storyId);
@@ -1036,13 +1335,31 @@ export const deleteStory = (columnId, sliceId, storyId) => {
     }
 };
 
-export const moveStory = (storyId, fromColumnId, fromSliceId, toColumnId, toSliceId, toIndex) => {
-    _pushUndo();
-    const fromSlice = _state.slices.find(s => s.id === fromSliceId);
-    const toSlice = _state.slices.find(s => s.id === toSliceId);
-    if (!fromSlice || !toSlice) return;
+const getStoriesArray = (columnId, sliceId, rowType) => {
+    if (rowType === 'users') return _state.users[columnId];
+    if (rowType === 'activities') return _state.activities[columnId];
+    const slice = _state.slices.find(s => s.id === sliceId);
+    return slice?.stories[columnId];
+};
 
-    const fromStories = fromSlice.stories[fromColumnId];
+const ensureStoriesArray = (columnId, sliceId, rowType) => {
+    if (rowType === 'users') {
+        if (!_state.users[columnId]) _state.users[columnId] = [];
+        return _state.users[columnId];
+    }
+    if (rowType === 'activities') {
+        if (!_state.activities[columnId]) _state.activities[columnId] = [];
+        return _state.activities[columnId];
+    }
+    const slice = _state.slices.find(s => s.id === sliceId);
+    if (!slice) return null;
+    if (!slice.stories[columnId]) slice.stories[columnId] = [];
+    return slice.stories[columnId];
+};
+
+export const moveStory = (storyId, fromColumnId, fromSliceId, toColumnId, toSliceId, toIndex, fromRowType = null, toRowType = null) => {
+    _pushUndo();
+    const fromStories = getStoriesArray(fromColumnId, fromSliceId, fromRowType);
     if (!fromStories) return;
 
     const storyIndex = fromStories.findIndex(s => s.id === storyId);
@@ -1050,9 +1367,10 @@ export const moveStory = (storyId, fromColumnId, fromSliceId, toColumnId, toSlic
 
     const [story] = fromStories.splice(storyIndex, 1);
 
-    if (!toSlice.stories[toColumnId]) toSlice.stories[toColumnId] = [];
+    const toStories = ensureStoriesArray(toColumnId, toSliceId, toRowType);
+    if (!toStories) return;
 
-    toSlice.stories[toColumnId].splice(toIndex, 0, story);
+    toStories.splice(toIndex, 0, story);
     _renderAndSave();
 };
 

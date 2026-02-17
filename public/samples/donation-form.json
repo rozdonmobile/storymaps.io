@@ -2,209 +2,176 @@
   "app": "storymap",
   "v": 1,
   "name": "Add Donation Form to Website",
-  "notes": "MP: Keep MVP lean, monthly giving is a stretch goal\n\nSR: Stripe test keys are in 1Password, don't commit them\n\nMP: Gift Aid blocked on legal review, chasing Sarah in legal\n\nTarget delivery date TBD, need to align with fundraising campaign",
-  "l": [
+  "users": [
+    [
+      {
+        "name": "Donor",
+        "color": "#fda4af"
+      }
+    ],
+    [],
+    [],
+    [],
+    [],
+    []
+  ],
+  "activities": [
+    [
+      {
+        "name": "Make a Donation",
+        "color": "#93c5fd"
+      }
+    ],
+    [],
+    [],
+    [],
+    [],
+    []
+  ],
+  "steps": [
     {
-      "c": "#fef08a",
-      "n": "Tasks"
+      "name": "Find Donate Button",
+      "color": "#86efac"
     },
     {
-      "c": "#a5f3fc",
-      "n": "Technical Notes"
+      "name": "Choose Amount",
+      "color": "#86efac"
     },
     {
-      "c": "#bef264",
-      "n": "Open Questions"
+      "name": "Enter Details",
+      "color": "#86efac"
     },
     {
-      "c": "#fecdd3",
-      "n": "Edge Cases"
+      "name": "Pay",
+      "color": "#86efac"
     },
     {
-      "c": "#fdba74",
-      "n": "Compliance"
+      "name": "Get Confirmation",
+      "color": "#86efac"
+    },
+    {
+      "name": "Receive Receipt",
+      "color": "#86efac"
     }
   ],
-  "a": [
+  "slices": [
     {
-      "n": "Find Donate Button",
-      "c": "#86efac"
-    },
-    {
-      "n": "Choose Amount",
-      "c": "#86efac"
-    },
-    {
-      "n": "Enter Details",
-      "c": "#86efac"
-    },
-    {
-      "n": "Pay",
-      "c": "#86efac"
-    },
-    {
-      "n": "Get Confirmation",
-      "c": "#86efac"
-    },
-    {
-      "n": "Receive Receipt",
-      "c": "#86efac"
-    }
-  ],
-  "s": [
-    {
-      "n": "",
-      "sep": false,
-      "rt": "Users",
-      "t": [
+      "name": "MVP",
+      "stories": [
         [
           {
-            "n": "Donor",
-            "c": "#fda4af"
-          }
-        ],
-        [],
-        [],
-        [],
-        [],
-        []
-      ]
-    },
-    {
-      "n": "",
-      "sep": false,
-      "rt": "Activities",
-      "t": [
-        [
-          {
-            "n": "Make a Donation",
-            "c": "#93c5fd"
-          }
-        ],
-        [],
-        [],
-        [],
-        [],
-        []
-      ]
-    },
-    {
-      "n": "MVP",
-      "t": [
-        [
-          {
-            "n": "Donate button in nav",
-            "st": "done",
-            "sp": 1,
-            "tg": [
+            "name": "Donate button in nav",
+            "status": "done",
+            "points": 1,
+            "tags": [
               "frontend"
             ]
           },
           {
-            "n": "Donate button on homepage",
-            "st": "done",
-            "sp": 1,
-            "tg": [
+            "name": "Donate button on homepage",
+            "status": "done",
+            "points": 1,
+            "tags": [
               "frontend"
             ]
           }
         ],
         [
           {
-            "n": "Preset amounts ($10, $25, $50)",
-            "st": "done",
-            "sp": 2,
-            "tg": [
+            "name": "Preset amounts ($10, $25, $50)",
+            "status": "done",
+            "points": 2,
+            "tags": [
               "frontend"
             ]
           },
           {
-            "n": "Custom amount input",
-            "st": "done",
-            "sp": 2,
-            "tg": [
+            "name": "Custom amount input",
+            "status": "done",
+            "points": 2,
+            "tags": [
               "frontend"
             ]
           },
           {
-            "n": "Min/max donation limits?",
-            "c": "#bef264"
+            "name": "Min/max donation limits?",
+            "color": "#bef264"
           }
         ],
         [
           {
-            "n": "Name field",
-            "st": "done",
-            "sp": 1,
-            "tg": [
+            "name": "Name field",
+            "status": "done",
+            "points": 1,
+            "tags": [
               "frontend"
             ]
           },
           {
-            "n": "Email field",
-            "st": "done",
-            "sp": 1,
-            "tg": [
+            "name": "Email field",
+            "status": "done",
+            "points": 1,
+            "tags": [
               "frontend"
             ]
           },
           {
-            "n": "Form validation",
-            "st": "done",
-            "sp": 2,
-            "tg": [
+            "name": "Form validation",
+            "status": "done",
+            "points": 2,
+            "tags": [
               "frontend"
             ]
           }
         ],
         [
           {
-            "n": "Stripe checkout",
-            "st": "done",
-            "sp": 3,
-            "tg": [
+            "name": "Stripe checkout",
+            "url": "https://docs.stripe.com/payments/checkout",
+            "status": "done",
+            "points": 3,
+            "tags": [
               "backend",
               "payments"
-            ],
-            "u": "https://docs.stripe.com/payments/checkout"
+            ]
           },
           {
-            "n": "Secure payment badge",
-            "st": "done",
-            "sp": 1,
-            "tg": [
+            "name": "Secure payment badge",
+            "status": "done",
+            "points": 1,
+            "tags": [
               "frontend"
             ]
           },
           {
-            "n": "Stripe handles PCI compliance",
-            "c": "#fdba74"
+            "name": "Stripe handles PCI compliance",
+            "color": "#fdba74"
           }
         ],
         [
           {
-            "n": "Thank you page",
-            "st": "done",
-            "sp": 2,
-            "tg": [
+            "name": "Thank you page",
+            "status": "done",
+            "points": 2,
+            "tags": [
               "frontend"
             ]
           },
           {
-            "n": "Donation summary",
-            "st": "done",
-            "sp": 1,
-            "tg": [
+            "name": "Donation summary",
+            "status": "done",
+            "points": 1,
+            "tags": [
               "frontend"
             ]
           }
         ],
         [
           {
-            "n": "Email receipt",
-            "st": "done",
-            "sp": 2,
-            "tg": [
+            "name": "Email receipt",
+            "status": "done",
+            "points": 2,
+            "tags": [
               "backend",
               "email"
             ]
@@ -213,29 +180,29 @@
       ]
     },
     {
-      "n": "V1",
-      "t": [
+      "name": "V1",
+      "stories": [
         [
           {
-            "n": "Sticky donate button",
-            "st": "in-progress",
-            "tg": [
+            "name": "Sticky donate button",
+            "status": "in-progress",
+            "tags": [
               "frontend"
             ]
           }
         ],
         [
           {
-            "n": "Impact labels ($25 feeds a family)",
-            "st": "in-progress",
-            "tg": [
+            "name": "Impact labels ($25 feeds a family)",
+            "status": "in-progress",
+            "tags": [
               "frontend"
             ]
           },
           {
-            "n": "Monthly giving option",
-            "st": "planned",
-            "tg": [
+            "name": "Monthly giving option",
+            "status": "planned",
+            "tags": [
               "backend",
               "payments"
             ]
@@ -243,110 +210,110 @@
         ],
         [
           {
-            "n": "Address for tax receipt",
-            "st": "done",
-            "sp": 2,
-            "tg": [
+            "name": "Address for tax receipt",
+            "status": "done",
+            "points": 2,
+            "tags": [
               "frontend"
             ]
           },
           {
-            "n": "Dedicate donation option",
-            "st": "planned",
-            "tg": [
+            "name": "Dedicate donation option",
+            "status": "planned",
+            "tags": [
               "frontend"
             ]
           },
           {
-            "n": "Gift Aid declaration",
-            "st": "blocked",
-            "tg": [
+            "name": "Gift Aid declaration",
+            "status": "blocked",
+            "tags": [
               "legal"
             ]
           },
           {
-            "n": "GDPR consent for marketing emails",
-            "c": "#fdba74"
+            "name": "GDPR consent for marketing emails",
+            "color": "#fdba74"
           }
         ],
         [
           {
-            "n": "Apple Pay",
-            "st": "planned",
-            "tg": [
+            "name": "Apple Pay",
+            "status": "planned",
+            "tags": [
               "payments"
             ]
           },
           {
-            "n": "Google Pay",
-            "st": "planned",
-            "tg": [
+            "name": "Google Pay",
+            "status": "planned",
+            "tags": [
               "payments"
             ]
           },
           {
-            "n": "PayPal",
-            "st": "planned",
-            "tg": [
+            "name": "PayPal",
+            "status": "planned",
+            "tags": [
               "payments"
             ]
           },
           {
-            "n": "What if payment fails mid-checkout?",
-            "c": "#fecdd3"
+            "name": "What if payment fails mid-checkout?",
+            "color": "#fecdd3"
           },
           {
-            "n": "Stripe webhooks handle async payment events",
-            "c": "#a5f3fc"
+            "name": "Stripe webhooks handle async payment events",
+            "color": "#a5f3fc"
           }
         ],
         [
           {
-            "n": "Social share buttons",
-            "st": "planned",
-            "tg": [
+            "name": "Social share buttons",
+            "status": "planned",
+            "tags": [
               "frontend"
             ]
           },
           {
-            "n": "Suggest another donation",
-            "st": "planned",
-            "tg": [
+            "name": "Suggest another donation",
+            "status": "planned",
+            "tags": [
               "frontend"
             ]
           }
         ],
         [
           {
-            "n": "PDF tax receipt",
-            "st": "in-progress",
-            "tg": [
+            "name": "PDF tax receipt",
+            "status": "in-progress",
+            "tags": [
               "backend"
             ]
           },
           {
-            "n": "Annual summary email",
-            "st": "planned",
-            "tg": [
+            "name": "Annual summary email",
+            "status": "planned",
+            "tags": [
               "backend",
               "email"
             ]
           },
           {
-            "n": "Tax receipt format varies by country",
-            "c": "#fdba74"
+            "name": "Tax receipt format varies by country",
+            "color": "#fdba74"
           }
         ]
       ]
     },
     {
-      "n": "V2",
-      "t": [
+      "name": "V2",
+      "stories": [
         [
           {
-            "n": "Campaign-specific pages",
-            "st": "planned",
-            "tg": [
+            "name": "Campaign-specific pages",
+            "status": "planned",
+            "tags": [
               "frontend",
               "backend"
             ]
@@ -354,17 +321,17 @@
         ],
         [
           {
-            "n": "Recurring subscription",
-            "st": "planned",
-            "tg": [
+            "name": "Recurring subscription",
+            "status": "planned",
+            "tags": [
               "backend",
               "payments"
             ]
           },
           {
-            "n": "Pause/cancel subscription",
-            "st": "planned",
-            "tg": [
+            "name": "Pause/cancel subscription",
+            "status": "planned",
+            "tags": [
               "backend",
               "payments"
             ]
@@ -372,66 +339,89 @@
         ],
         [
           {
-            "n": "Create donor account",
-            "st": "planned",
-            "tg": [
+            "name": "Create donor account",
+            "status": "planned",
+            "tags": [
               "backend"
             ]
           },
           {
-            "n": "Save payment method",
-            "st": "planned",
-            "tg": [
+            "name": "Save payment method",
+            "status": "planned",
+            "tags": [
               "backend",
               "payments"
             ]
           },
           {
-            "n": "Returning donor with expired saved card",
-            "c": "#fecdd3"
+            "name": "Returning donor with expired saved card",
+            "color": "#fecdd3"
           }
         ],
         [
           {
-            "n": "Multiple currencies",
-            "st": "planned",
-            "tg": [
+            "name": "Multiple currencies",
+            "status": "planned",
+            "tags": [
               "backend",
               "payments"
             ]
           },
           {
-            "n": "Currency conversion rates differ across providers",
-            "c": "#a5f3fc"
+            "name": "Currency conversion rates differ across providers",
+            "color": "#a5f3fc"
           }
         ],
         [
           {
-            "n": "Donor dashboard",
-            "st": "planned",
-            "tg": [
+            "name": "Donor dashboard",
+            "status": "planned",
+            "tags": [
               "frontend",
               "backend"
             ]
           },
           {
-            "n": "Giving history",
-            "st": "planned",
-            "tg": [
+            "name": "Giving history",
+            "status": "planned",
+            "tags": [
               "frontend"
             ]
           }
         ],
         [
           {
-            "n": "Download all receipts",
-            "st": "planned",
-            "tg": [
+            "name": "Download all receipts",
+            "status": "planned",
+            "tags": [
               "backend"
             ]
           }
         ]
       ]
     }
-  ]
+  ],
+  "legend": [
+    {
+      "color": "#fef08a",
+      "label": "Tasks"
+    },
+    {
+      "color": "#a5f3fc",
+      "label": "Technical Notes"
+    },
+    {
+      "color": "#bef264",
+      "label": "Open Questions"
+    },
+    {
+      "color": "#fecdd3",
+      "label": "Edge Cases"
+    },
+    {
+      "color": "#fdba74",
+      "label": "Compliance"
+    }
+  ],
+  "notes": "MP: Keep MVP lean, monthly giving is a stretch goal\n\nSR: Stripe test keys are in 1Password, don't commit them\n\nMP: Gift Aid blocked on legal review, chasing Sarah in legal\n\nTarget delivery date TBD, need to align with fundraising campaign"
 }

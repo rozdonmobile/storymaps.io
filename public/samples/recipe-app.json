@@ -2,345 +2,312 @@
   "app": "storymap",
   "v": 1,
   "name": "Recipe App",
-  "notes": "MP: Dietary filters are V1 priority, highest-voted feature request\n\nTN: Lock down recipe data schema before API work starts\n\nAL: Accessibility audit booked for post-V1, don't let it slip\n\nMP: Grocery API partner search ongoing, blocked for V2 until signed",
-  "l": [
+  "users": [
+    [
+      {
+        "name": "Home Cook",
+        "color": "#fda4af"
+      }
+    ],
+    [],
+    [],
+    [],
+    [],
+    [
+      {
+        "name": "Content Creator",
+        "color": "#fda4af"
+      }
+    ],
+    []
+  ],
+  "activities": [
+    [
+      {
+        "name": "Find & Cook Recipes",
+        "color": "#93c5fd"
+      }
+    ],
+    [],
+    [],
+    [],
+    [],
+    [
+      {
+        "name": "Share & Create Recipes",
+        "color": "#93c5fd"
+      }
+    ],
+    []
+  ],
+  "steps": [
     {
-      "c": "#fef08a",
-      "n": "Tasks"
+      "name": "Browse Recipes",
+      "color": "#86efac"
     },
     {
-      "c": "#a5f3fc",
-      "n": "Notes"
+      "name": "View Recipe",
+      "color": "#86efac"
     },
     {
-      "c": "#bef264",
-      "n": "Questions"
+      "name": "Cook Along",
+      "color": "#86efac"
     },
     {
-      "c": "#fecdd3",
-      "n": "Edge Cases"
+      "name": "Save Favourites",
+      "color": "#86efac"
     },
     {
-      "c": "#d8b4fe",
-      "n": "Design"
+      "name": "",
+      "color": "#e5e7eb",
+      "hidden": true
+    },
+    {
+      "name": "Create Recipe",
+      "color": "#86efac"
+    },
+    {
+      "name": "Share Recipe",
+      "color": "#86efac"
     }
   ],
-  "a": [
+  "slices": [
     {
-      "n": "Browse Recipes",
-      "c": "#86efac"
-    },
-    {
-      "n": "View Recipe",
-      "c": "#86efac"
-    },
-    {
-      "n": "Cook Along",
-      "c": "#86efac"
-    },
-    {
-      "n": "Save Favourites",
-      "c": "#86efac"
-    },
-    {
-      "n": "",
-      "c": "#e5e7eb",
-      "h": true
-    },
-    {
-      "n": "Create Recipe",
-      "c": "#86efac"
-    },
-    {
-      "n": "Share Recipe",
-      "c": "#86efac"
-    }
-  ],
-  "s": [
-    {
-      "n": "",
-      "sep": false,
-      "rt": "Users",
-      "t": [
+      "name": "MVP",
+      "stories": [
         [
           {
-            "n": "Home Cook",
-            "c": "#fda4af"
-          }
-        ],
-        [],
-        [],
-        [],
-        [],
-        [
-          {
-            "n": "Content Creator",
-            "c": "#fda4af"
-          }
-        ],
-        []
-      ]
-    },
-    {
-      "n": "",
-      "sep": false,
-      "rt": "Activities",
-      "t": [
-        [
-          {
-            "n": "Find & Cook Recipes",
-            "c": "#93c5fd"
-          }
-        ],
-        [],
-        [],
-        [],
-        [],
-        [
-          {
-            "n": "Share & Create Recipes",
-            "c": "#93c5fd"
-          }
-        ],
-        []
-      ]
-    },
-    {
-      "n": "MVP",
-      "t": [
-        [
-          {
-            "n": "Search by name",
-            "st": "done",
-            "sp": 2,
-            "tg": [
+            "name": "Search by name",
+            "status": "done",
+            "points": 2,
+            "tags": [
               "frontend"
             ]
           },
           {
-            "n": "Category filters",
-            "st": "done",
-            "sp": 3,
-            "tg": [
+            "name": "Category filters",
+            "status": "done",
+            "points": 3,
+            "tags": [
               "frontend",
               "backend"
             ]
           },
           {
-            "n": "Recipe cards with photo",
-            "st": "done",
-            "sp": 3,
-            "tg": [
+            "name": "Recipe cards with photo",
+            "status": "done",
+            "points": 3,
+            "tags": [
               "frontend",
               "design"
             ]
           },
           {
-            "n": "Recipe cards should show cook time and difficulty",
-            "c": "#d8b4fe"
+            "name": "Recipe cards should show cook time and difficulty",
+            "color": "#d8b4fe"
           }
         ],
         [
           {
-            "n": "Ingredients list",
-            "st": "done",
-            "sp": 2,
-            "tg": [
+            "name": "Ingredients list",
+            "status": "done",
+            "points": 2,
+            "tags": [
               "frontend"
             ]
           },
           {
-            "n": "Step-by-step instructions",
-            "st": "done",
-            "sp": 3,
-            "tg": [
+            "name": "Step-by-step instructions",
+            "status": "done",
+            "points": 3,
+            "tags": [
               "frontend"
             ]
           },
           {
-            "n": "Serving size",
-            "st": "done",
-            "sp": 1,
-            "tg": [
+            "name": "Serving size",
+            "status": "done",
+            "points": 1,
+            "tags": [
               "frontend"
             ]
           },
           {
-            "n": "Metric vs imperial units?",
-            "c": "#bef264"
+            "name": "Metric vs imperial units?",
+            "color": "#bef264"
           }
         ],
         [
           {
-            "n": "Timer button per step",
-            "st": "done",
-            "sp": 3,
-            "tg": [
+            "name": "Timer button per step",
+            "status": "done",
+            "points": 3,
+            "tags": [
               "frontend",
               "mobile"
             ]
           },
           {
-            "n": "Check off completed steps",
-            "st": "done",
-            "sp": 2,
-            "tg": [
+            "name": "Check off completed steps",
+            "status": "done",
+            "points": 2,
+            "tags": [
               "frontend"
             ]
           },
           {
-            "n": "Keep recipe view minimal while cooking",
-            "c": "#d8b4fe"
+            "name": "Keep recipe view minimal while cooking",
+            "color": "#d8b4fe"
           }
         ],
         [
           {
-            "n": "Heart button to save",
-            "st": "done",
-            "sp": 1,
-            "tg": [
+            "name": "Heart button to save",
+            "status": "done",
+            "points": 1,
+            "tags": [
               "frontend"
             ]
           },
           {
-            "n": "Saved recipes list",
-            "st": "done",
-            "sp": 2,
-            "tg": [
+            "name": "Saved recipes list",
+            "status": "done",
+            "points": 2,
+            "tags": [
               "frontend",
               "backend"
             ]
           },
           {
-            "n": "What if saved recipe is deleted by author?",
-            "c": "#fecdd3"
+            "name": "What if saved recipe is deleted by author?",
+            "color": "#fecdd3"
           }
         ],
         [],
         [
           {
-            "n": "Add title and photo",
-            "st": "done",
-            "sp": 2,
-            "tg": [
+            "name": "Add title and photo",
+            "status": "done",
+            "points": 2,
+            "tags": [
               "frontend"
             ]
           },
           {
-            "n": "Add ingredients",
-            "st": "done",
-            "sp": 3,
-            "tg": [
+            "name": "Add ingredients",
+            "status": "done",
+            "points": 3,
+            "tags": [
               "frontend"
             ]
           },
           {
-            "n": "Add steps",
-            "st": "done",
-            "sp": 2,
-            "tg": [
+            "name": "Add steps",
+            "status": "done",
+            "points": 2,
+            "tags": [
               "frontend"
             ]
           }
         ],
         [
           {
-            "n": "Copy link to recipe",
-            "st": "done",
-            "sp": 1,
-            "tg": [
+            "name": "Copy link to recipe",
+            "status": "done",
+            "points": 1,
+            "tags": [
               "frontend"
             ]
           },
           {
-            "n": "Recipe URLs need to work without login",
-            "c": "#a5f3fc"
+            "name": "Recipe URLs need to work without login",
+            "color": "#a5f3fc"
           }
         ]
       ]
     },
     {
-      "n": "V1",
-      "t": [
+      "name": "V1",
+      "stories": [
         [
           {
-            "n": "Filter by dietary needs",
-            "st": "in-progress",
-            "tg": [
+            "name": "Filter by dietary needs",
+            "status": "in-progress",
+            "tags": [
               "frontend",
               "backend"
             ]
           },
           {
-            "n": "Sort by rating",
-            "st": "done",
-            "sp": 3,
-            "tg": [
+            "name": "Sort by rating",
+            "status": "done",
+            "points": 3,
+            "tags": [
               "frontend"
             ]
           },
           {
-            "n": "How granular should dietary filters be?",
-            "c": "#bef264"
+            "name": "How granular should dietary filters be?",
+            "color": "#bef264"
           }
         ],
         [
           {
-            "n": "Nutrition info",
-            "st": "in-progress",
-            "tg": [
+            "name": "Nutrition info",
+            "status": "in-progress",
+            "tags": [
               "backend",
               "api"
             ]
           },
           {
-            "n": "User ratings & reviews",
-            "st": "planned",
-            "tg": [
+            "name": "User ratings & reviews",
+            "status": "planned",
+            "tags": [
               "frontend",
               "backend"
             ]
           },
           {
-            "n": "Scale ingredients to servings",
-            "st": "done",
-            "sp": 3,
-            "tg": [
+            "name": "Scale ingredients to servings",
+            "status": "done",
+            "points": 3,
+            "tags": [
               "frontend"
             ]
           }
         ],
         [
           {
-            "n": "Voice command: next step",
-            "st": "planned",
-            "tg": [
+            "name": "Voice command: next step",
+            "status": "planned",
+            "tags": [
               "mobile",
               "accessibility"
             ]
           },
           {
-            "n": "Keep screen awake while cooking",
-            "st": "done",
-            "sp": 2,
-            "tg": [
+            "name": "Keep screen awake while cooking",
+            "status": "done",
+            "points": 2,
+            "tags": [
               "mobile"
             ]
           }
         ],
         [
           {
-            "n": "Organise into collections",
-            "st": "in-progress",
-            "tg": [
+            "name": "Organise into collections",
+            "status": "in-progress",
+            "tags": [
               "frontend",
               "backend"
             ]
           },
           {
-            "n": "Meal planner calendar",
-            "st": "planned",
-            "tg": [
+            "name": "Meal planner calendar",
+            "status": "planned",
+            "tags": [
               "frontend",
               "backend"
             ]
@@ -349,17 +316,17 @@
         [],
         [
           {
-            "n": "Import from URL",
-            "st": "in-progress",
-            "tg": [
+            "name": "Import from URL",
+            "status": "in-progress",
+            "tags": [
               "backend",
               "api"
             ]
           },
           {
-            "n": "AI-generated description",
-            "st": "planned",
-            "tg": [
+            "name": "AI-generated description",
+            "status": "planned",
+            "tags": [
               "ai",
               "backend"
             ]
@@ -367,16 +334,16 @@
         ],
         [
           {
-            "n": "Share to social media",
-            "st": "planned",
-            "tg": [
+            "name": "Share to social media",
+            "status": "planned",
+            "tags": [
               "frontend"
             ]
           },
           {
-            "n": "Generate share image",
-            "st": "in-progress",
-            "tg": [
+            "name": "Generate share image",
+            "status": "in-progress",
+            "tags": [
               "frontend",
               "design"
             ]
@@ -385,38 +352,38 @@
       ]
     },
     {
-      "n": "V2",
-      "t": [
+      "name": "V2",
+      "stories": [
         [
           {
-            "n": "Personalised recommendations",
-            "st": "planned",
-            "tg": [
+            "name": "Personalised recommendations",
+            "status": "planned",
+            "tags": [
               "ai",
               "backend"
             ]
           },
           {
-            "n": "Seasonal recipe spotlight",
-            "st": "planned",
-            "tg": [
+            "name": "Seasonal recipe spotlight",
+            "status": "planned",
+            "tags": [
               "backend"
             ]
           }
         ],
         [
           {
-            "n": "Step-by-step video",
-            "st": "planned",
-            "tg": [
+            "name": "Step-by-step video",
+            "status": "planned",
+            "tags": [
               "frontend",
               "mobile"
             ]
           },
           {
-            "n": "Substitution suggestions",
-            "st": "planned",
-            "tg": [
+            "name": "Substitution suggestions",
+            "status": "planned",
+            "tags": [
               "backend",
               "ai"
             ]
@@ -424,17 +391,17 @@
         ],
         [
           {
-            "n": "Shopping list from recipe",
-            "st": "planned",
-            "tg": [
+            "name": "Shopping list from recipe",
+            "status": "planned",
+            "tags": [
               "frontend",
               "backend"
             ]
           },
           {
-            "n": "Nearby store availability",
-            "st": "blocked",
-            "tg": [
+            "name": "Nearby store availability",
+            "status": "blocked",
+            "tags": [
               "api",
               "backend"
             ]
@@ -442,9 +409,9 @@
         ],
         [
           {
-            "n": "Sync across devices",
-            "st": "planned",
-            "tg": [
+            "name": "Sync across devices",
+            "status": "planned",
+            "tags": [
               "backend"
             ]
           }
@@ -452,17 +419,17 @@
         [],
         [
           {
-            "n": "Video upload for steps",
-            "st": "planned",
-            "tg": [
+            "name": "Video upload for steps",
+            "status": "planned",
+            "tags": [
               "frontend",
               "backend"
             ]
           },
           {
-            "n": "Collaborative recipes",
-            "st": "planned",
-            "tg": [
+            "name": "Collaborative recipes",
+            "status": "planned",
+            "tags": [
               "frontend",
               "backend"
             ]
@@ -470,14 +437,37 @@
         ],
         [
           {
-            "n": "Embeddable recipe widget",
-            "st": "planned",
-            "tg": [
+            "name": "Embeddable recipe widget",
+            "status": "planned",
+            "tags": [
               "frontend"
             ]
           }
         ]
       ]
     }
-  ]
+  ],
+  "legend": [
+    {
+      "color": "#fef08a",
+      "label": "Tasks"
+    },
+    {
+      "color": "#a5f3fc",
+      "label": "Notes"
+    },
+    {
+      "color": "#bef264",
+      "label": "Questions"
+    },
+    {
+      "color": "#fecdd3",
+      "label": "Edge Cases"
+    },
+    {
+      "color": "#d8b4fe",
+      "label": "Design"
+    }
+  ],
+  "notes": "MP: Dietary filters are V1 priority, highest-voted feature request\n\nTN: Lock down recipe data schema before API work starts\n\nAL: Accessibility audit booked for post-V1, don't let it slip\n\nMP: Grocery API partner search ongoing, blocked for V2 until signed"
 }

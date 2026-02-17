@@ -36,7 +36,7 @@ const isOriginAllowed = (origin) => {
 
 // Set YPERSISTENCE *before* importing y-websocket utils, which reads it at load time
 process.env.YPERSISTENCE = DATA_DIR;
-const { setupWSConnection, docs } = await import('y-websocket/bin/utils');
+const { setupWSConnection, docs, getPersistence } = await import('y-websocket/bin/utils');
 
 // JSON file paths for lock and counter data
 const LOCK_FILE = join(DATA_DIR, 'locks.json');
@@ -470,12 +470,40 @@ setInterval(() => {
   }
 }, 30_000);
 
-// Flush pending SQLite writes on shutdown
-const gracefulShutdown = () => {
+// Graceful shutdown: stop connections, flush LevelDB + SQLite, then exit
+const gracefulShutdown = async () => {
+  console.log('Shutting down...');
+
+  // Stop accepting new connections
+  server.close();
+  wss.close();
+
+  // Close all WebSocket clients
+  for (const ws of wss.clients) {
+    ws.close();
+  }
+
+  // Persist and destroy all active Yjs docs (flushes LevelDB)
+  const persistence = getPersistence();
+  for (const [name, doc] of docs) {
+    if (persistence) {
+      await persistence.writeState(name, doc);
+    }
+    doc.destroy();
+  }
+
+  // Close LevelDB
+  if (persistence?.provider?.destroy) {
+    await persistence.provider.destroy();
+  }
+
+  // Flush pending SQLite writes
   for (const mapId of updateTimers.keys()) {
     flushMapUpdate(mapId);
   }
   sqlite.close();
+
+  console.log('Shutdown complete.');
   process.exit(0);
 };
 process.on('SIGTERM', gracefulShutdown);

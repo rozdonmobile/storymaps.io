@@ -2,266 +2,237 @@
   "app": "storymap",
   "v": 1,
   "name": "Mobile Banking",
-  "notes": "KR: MVP scope locked, sprint starts Monday\n\nTN: QR scanning blocked on camera API decision, parked for V2\n\nKR: Legal flagged PSD2 strong customer auth, need compliance sign-off before launch\n\nMP: Product applications flow scoped as lightweight V1, expand after Send Money ships",
-  "l": [
+  "users": [
+    [
+      {
+        "name": "Bank Customer",
+        "color": "#fda4af"
+      }
+    ],
+    [],
+    [],
+    [],
+    [],
+    [],
+    [],
+    [],
+    [],
+    [
+      {
+        "name": "Bank Customer",
+        "color": "#fda4af"
+      }
+    ],
+    [],
+    [],
+    [],
+    [
+      {
+        "name": "Prospective Customer",
+        "color": "#fda4af"
+      }
+    ],
+    [],
+    []
+  ],
+  "activities": [
+    [
+      {
+        "name": "Send Money",
+        "color": "#93c5fd"
+      }
+    ],
+    [],
+    [],
+    [],
+    [],
+    [],
+    [],
+    [],
+    [],
+    [
+      {
+        "name": "Move Money",
+        "color": "#93c5fd"
+      }
+    ],
+    [],
+    [],
+    [],
+    [
+      {
+        "name": "Explore Products",
+        "color": "#93c5fd"
+      }
+    ],
+    [],
+    []
+  ],
+  "steps": [
     {
-      "c": "#fef08a",
-      "n": "Tasks"
+      "name": "Find App",
+      "color": "#86efac"
     },
     {
-      "c": "#a5f3fc",
-      "n": "Notes"
+      "name": "Log In",
+      "color": "#86efac"
     },
     {
-      "c": "#bef264",
-      "n": "Questions"
+      "name": "Start Transfer",
+      "color": "#86efac"
     },
     {
-      "c": "#fecdd3",
-      "n": "Edge cases"
+      "name": "Select Recipient",
+      "color": "#86efac"
+    },
+    {
+      "name": "Enter Amount",
+      "color": "#86efac"
+    },
+    {
+      "name": "Review",
+      "color": "#86efac"
+    },
+    {
+      "name": "Confirm",
+      "color": "#86efac"
+    },
+    {
+      "name": "Done",
+      "color": "#86efac"
+    },
+    {
+      "name": "",
+      "color": "#e5e7eb",
+      "hidden": true
+    },
+    {
+      "name": "Pick Accounts",
+      "color": "#86efac"
+    },
+    {
+      "name": "Set Amount",
+      "color": "#86efac"
+    },
+    {
+      "name": "Confirm",
+      "color": "#86efac"
+    },
+    {
+      "name": "",
+      "color": "#e5e7eb",
+      "hidden": true
+    },
+    {
+      "name": "Browse Products",
+      "color": "#86efac"
+    },
+    {
+      "name": "Apply",
+      "color": "#86efac"
+    },
+    {
+      "name": "Track",
+      "color": "#86efac"
     }
   ],
-  "a": [
+  "slices": [
     {
-      "n": "Find App",
-      "c": "#86efac"
-    },
-    {
-      "n": "Log In",
-      "c": "#86efac"
-    },
-    {
-      "n": "Start Transfer",
-      "c": "#86efac"
-    },
-    {
-      "n": "Select Recipient",
-      "c": "#86efac"
-    },
-    {
-      "n": "Enter Amount",
-      "c": "#86efac"
-    },
-    {
-      "n": "Review",
-      "c": "#86efac"
-    },
-    {
-      "n": "Confirm",
-      "c": "#86efac"
-    },
-    {
-      "n": "Done",
-      "c": "#86efac"
-    },
-    {
-      "n": "",
-      "c": "#e5e7eb",
-      "h": true
-    },
-    {
-      "n": "Pick Accounts",
-      "c": "#86efac"
-    },
-    {
-      "n": "Set Amount",
-      "c": "#86efac"
-    },
-    {
-      "n": "Confirm",
-      "c": "#86efac"
-    },
-    {
-      "n": "",
-      "c": "#e5e7eb",
-      "h": true
-    },
-    {
-      "n": "Browse Products",
-      "c": "#86efac"
-    },
-    {
-      "n": "Apply",
-      "c": "#86efac"
-    },
-    {
-      "n": "Track",
-      "c": "#86efac"
-    }
-  ],
-  "s": [
-    {
-      "n": "",
-      "sep": false,
-      "rt": "Users",
-      "t": [
+      "name": "MVP",
+      "stories": [
         [
           {
-            "n": "Bank Customer",
-            "c": "#fda4af"
-          }
-        ],
-        [],
-        [],
-        [],
-        [],
-        [],
-        [],
-        [],
-        [],
-        [
-          {
-            "n": "Bank Customer",
-            "c": "#fda4af"
-          }
-        ],
-        [],
-        [],
-        [],
-        [
-          {
-            "n": "Prospective Customer",
-            "c": "#fda4af"
-          }
-        ],
-        [],
-        []
-      ]
-    },
-    {
-      "n": "",
-      "sep": false,
-      "rt": "Activities",
-      "t": [
-        [
-          {
-            "n": "Send Money",
-            "c": "#93c5fd"
-          }
-        ],
-        [],
-        [],
-        [],
-        [],
-        [],
-        [],
-        [],
-        [],
-        [
-          {
-            "n": "Move Money",
-            "c": "#93c5fd"
-          }
-        ],
-        [],
-        [],
-        [],
-        [
-          {
-            "n": "Explore Products",
-            "c": "#93c5fd"
-          }
-        ],
-        [],
-        []
-      ]
-    },
-    {
-      "n": "MVP",
-      "t": [
-        [
-          {
-            "n": "App store listing with screenshots",
-            "st": "done",
-            "sp": 2,
-            "tg": [
+            "name": "App store listing with screenshots",
+            "status": "done",
+            "points": 2,
+            "tags": [
               "ux"
             ]
           }
         ],
         [
           {
-            "n": "Email and password login",
-            "st": "done",
-            "sp": 3,
-            "tg": [
+            "name": "Email and password login",
+            "status": "done",
+            "points": 3,
+            "tags": [
               "security",
               "auth"
             ]
           },
           {
-            "n": "Account locked after failed attempts",
-            "c": "#fecdd3"
+            "name": "Account locked after failed attempts",
+            "color": "#fecdd3"
           }
         ],
         [
           {
-            "n": "Transfer button on dashboard",
-            "st": "done",
-            "sp": 1,
-            "tg": [
+            "name": "Transfer button on dashboard",
+            "status": "done",
+            "points": 1,
+            "tags": [
               "ux"
             ]
           }
         ],
         [
           {
-            "n": "Search contacts",
-            "st": "done",
-            "sp": 2,
-            "tg": [
+            "name": "Search contacts",
+            "status": "done",
+            "points": 2,
+            "tags": [
               "ux"
             ]
           },
           {
-            "n": "Recent recipients",
-            "st": "done",
-            "sp": 2,
-            "tg": [
+            "name": "Recent recipients",
+            "status": "done",
+            "points": 2,
+            "tags": [
               "ux"
             ]
           }
         ],
         [
           {
-            "n": "Amount input",
-            "st": "done",
-            "sp": 1,
-            "tg": [
+            "name": "Amount input",
+            "status": "done",
+            "points": 1,
+            "tags": [
               "ux"
             ]
           },
           {
-            "n": "Show available balance",
-            "st": "done",
-            "sp": 2,
-            "tg": [
+            "name": "Show available balance",
+            "status": "done",
+            "points": 2,
+            "tags": [
               "api"
             ]
           },
           {
-            "n": "Daily transfer limit policy",
-            "st": "done",
-            "sp": 2,
-            "tg": [
+            "name": "Daily transfer limit policy",
+            "status": "done",
+            "points": 2,
+            "tags": [
               "compliance"
             ]
           }
         ],
         [
           {
-            "n": "Summary screen",
-            "st": "done",
-            "sp": 2,
-            "tg": [
+            "name": "Summary screen",
+            "status": "done",
+            "points": 2,
+            "tags": [
               "ux"
             ]
           },
           {
-            "n": "Show fees",
-            "st": "done",
-            "sp": 2,
-            "tg": [
+            "name": "Show fees",
+            "status": "done",
+            "points": 2,
+            "tags": [
               "payments",
               "api"
             ]
@@ -269,42 +240,42 @@
         ],
         [
           {
-            "n": "Confirm button",
-            "st": "done",
-            "sp": 1,
-            "tg": [
+            "name": "Confirm button",
+            "status": "done",
+            "points": 1,
+            "tags": [
               "ux"
             ]
           },
           {
-            "n": "SMS one-time code",
-            "st": "done",
-            "sp": 3,
-            "tg": [
+            "name": "SMS one-time code",
+            "url": "https://en.wikipedia.org/wiki/Payment_Services_Directive",
+            "status": "done",
+            "points": 3,
+            "tags": [
               "security",
               "auth"
-            ],
-            "u": "https://en.wikipedia.org/wiki/Payment_Services_Directive"
+            ]
           },
           {
-            "n": "Insufficient funds after review",
-            "c": "#fecdd3"
+            "name": "Insufficient funds after review",
+            "color": "#fecdd3"
           }
         ],
         [
           {
-            "n": "Success message",
-            "st": "done",
-            "sp": 1,
-            "tg": [
+            "name": "Success message",
+            "status": "done",
+            "points": 1,
+            "tags": [
               "ux"
             ]
           },
           {
-            "n": "Reference number",
-            "st": "done",
-            "sp": 1,
-            "tg": [
+            "name": "Reference number",
+            "status": "done",
+            "points": 1,
+            "tags": [
               "payments"
             ]
           }
@@ -312,62 +283,62 @@
         [],
         [
           {
-            "n": "Select source account",
-            "st": "done",
-            "sp": 1,
-            "tg": [
+            "name": "Select source account",
+            "status": "done",
+            "points": 1,
+            "tags": [
               "ux"
             ]
           },
           {
-            "n": "Select destination account",
-            "st": "done",
-            "sp": 1,
-            "tg": [
+            "name": "Select destination account",
+            "status": "done",
+            "points": 1,
+            "tags": [
               "ux"
             ]
           },
           {
-            "n": "Same currency only for now",
-            "c": "#a5f3fc"
+            "name": "Same currency only for now",
+            "color": "#a5f3fc"
           }
         ],
         [
           {
-            "n": "Enter amount",
-            "st": "done",
-            "sp": 1,
-            "tg": [
+            "name": "Enter amount",
+            "status": "done",
+            "points": 1,
+            "tags": [
               "ux"
             ]
           },
           {
-            "n": "Show both balances",
-            "st": "done",
-            "sp": 2,
-            "tg": [
+            "name": "Show both balances",
+            "status": "done",
+            "points": 2,
+            "tags": [
               "api"
             ]
           },
           {
-            "n": "Transfer entire balance?",
-            "c": "#bef264"
+            "name": "Transfer entire balance?",
+            "color": "#bef264"
           }
         ],
         [
           {
-            "n": "Review and confirm",
-            "st": "done",
-            "sp": 1,
-            "tg": [
+            "name": "Review and confirm",
+            "status": "done",
+            "points": 1,
+            "tags": [
               "ux"
             ]
           },
           {
-            "n": "Instant transfer confirmed",
-            "st": "done",
-            "sp": 1,
-            "tg": [
+            "name": "Instant transfer confirmed",
+            "status": "done",
+            "points": 1,
+            "tags": [
               "api"
             ]
           }
@@ -375,162 +346,162 @@
         [],
         [
           {
-            "n": "List available products",
-            "st": "done",
-            "sp": 2,
-            "tg": [
+            "name": "List available products",
+            "status": "done",
+            "points": 2,
+            "tags": [
               "ux"
             ]
           },
           {
-            "n": "Product details page",
-            "st": "done",
-            "sp": 2,
-            "tg": [
-              "ux"
-            ]
-          }
-        ],
-        [
-          {
-            "n": "Pre-fill from profile",
-            "st": "done",
-            "sp": 2,
-            "tg": [
-              "api"
-            ]
-          },
-          {
-            "n": "Submit application",
-            "st": "done",
-            "sp": 1,
-            "tg": [
+            "name": "Product details page",
+            "status": "done",
+            "points": 2,
+            "tags": [
               "ux"
             ]
           }
         ],
         [
           {
-            "n": "Application status page",
-            "st": "done",
-            "sp": 2,
-            "tg": [
+            "name": "Pre-fill from profile",
+            "status": "done",
+            "points": 2,
+            "tags": [
               "api"
             ]
           },
           {
-            "n": "Approval notification",
-            "st": "done",
-            "sp": 1,
-            "tg": [
+            "name": "Submit application",
+            "status": "done",
+            "points": 1,
+            "tags": [
+              "ux"
+            ]
+          }
+        ],
+        [
+          {
+            "name": "Application status page",
+            "status": "done",
+            "points": 2,
+            "tags": [
+              "api"
+            ]
+          },
+          {
+            "name": "Approval notification",
+            "status": "done",
+            "points": 1,
+            "tags": [
               "notifications"
             ]
           },
           {
-            "n": "Credit check failed messaging",
-            "c": "#fecdd3"
+            "name": "Credit check failed messaging",
+            "color": "#fecdd3"
           }
         ]
       ]
     },
     {
-      "n": "V1",
-      "t": [
+      "name": "V1",
+      "stories": [
         [],
         [
           {
-            "n": "Biometric login",
-            "st": "done",
-            "sp": 3,
-            "tg": [
+            "name": "Biometric login",
+            "status": "done",
+            "points": 3,
+            "tags": [
               "security",
               "auth"
             ]
           },
           {
-            "n": "Remember device",
-            "st": "done",
-            "sp": 2,
-            "tg": [
+            "name": "Remember device",
+            "status": "done",
+            "points": 2,
+            "tags": [
               "security"
             ]
           },
           {
-            "n": "Biometrics not available on all devices",
-            "c": "#a5f3fc"
+            "name": "Biometrics not available on all devices",
+            "color": "#a5f3fc"
           }
         ],
         [
           {
-            "n": "Quick actions",
-            "st": "in-progress",
-            "tg": [
+            "name": "Quick actions",
+            "status": "in-progress",
+            "tags": [
               "ux"
             ]
           },
           {
-            "n": "Favorite recipients shortcut",
-            "st": "planned",
-            "tg": [
+            "name": "Favorite recipients shortcut",
+            "status": "planned",
+            "tags": [
               "ux"
             ]
           }
         ],
         [
           {
-            "n": "Add new recipient",
-            "st": "done",
-            "sp": 3,
-            "tg": [
+            "name": "Add new recipient",
+            "status": "done",
+            "points": 3,
+            "tags": [
               "payments"
             ]
           },
           {
-            "n": "Mark as favorite",
-            "st": "in-progress",
-            "tg": [
+            "name": "Mark as favorite",
+            "status": "in-progress",
+            "tags": [
               "ux"
             ]
           }
         ],
         [
           {
-            "n": "Preset amounts",
-            "st": "done",
-            "sp": 2,
-            "tg": [
+            "name": "Preset amounts",
+            "status": "done",
+            "points": 2,
+            "tags": [
               "ux"
             ]
           },
           {
-            "n": "Add memo",
-            "st": "in-progress",
-            "tg": [
+            "name": "Add memo",
+            "status": "in-progress",
+            "tags": [
               "ux"
             ]
           },
           {
-            "n": "Select source account",
-            "st": "done",
-            "sp": 3,
-            "tg": [
+            "name": "Select source account",
+            "status": "done",
+            "points": 3,
+            "tags": [
               "api"
             ]
           }
         ],
         [
           {
-            "n": "Edit details",
-            "st": "done",
-            "sp": 2,
-            "tg": [
+            "name": "Edit details",
+            "status": "done",
+            "points": 2,
+            "tags": [
               "ux"
             ]
           },
           {
-            "n": "Schedule for later",
-            "st": "planned",
-            "tg": [
+            "name": "Schedule for later",
+            "status": "planned",
+            "tags": [
               "payments",
               "api"
             ]
@@ -538,25 +509,25 @@
         ],
         [
           {
-            "n": "Biometric confirmation",
-            "st": "in-progress",
-            "tg": [
+            "name": "Biometric confirmation",
+            "status": "in-progress",
+            "tags": [
               "security"
             ]
           }
         ],
         [
           {
-            "n": "Share receipt",
-            "st": "planned",
-            "tg": [
+            "name": "Share receipt",
+            "status": "planned",
+            "tags": [
               "ux"
             ]
           },
           {
-            "n": "Send another",
-            "st": "planned",
-            "tg": [
+            "name": "Send another",
+            "status": "planned",
+            "tags": [
               "ux"
             ]
           }
@@ -564,26 +535,26 @@
         [],
         [
           {
-            "n": "Favourite account pairs",
-            "st": "done",
-            "sp": 2,
-            "tg": [
+            "name": "Favourite account pairs",
+            "status": "done",
+            "points": 2,
+            "tags": [
               "ux"
             ]
           }
         ],
         [
           {
-            "n": "Preset quick amounts",
-            "st": "in-progress",
-            "tg": [
+            "name": "Preset quick amounts",
+            "status": "in-progress",
+            "tags": [
               "ux"
             ]
           },
           {
-            "n": "Schedule recurring transfer",
-            "st": "planned",
-            "tg": [
+            "name": "Schedule recurring transfer",
+            "status": "planned",
+            "tags": [
               "payments",
               "api"
             ]
@@ -593,46 +564,46 @@
         [],
         [
           {
-            "n": "Compare products side by side",
-            "st": "in-progress",
-            "tg": [
+            "name": "Compare products side by side",
+            "status": "in-progress",
+            "tags": [
               "ux"
             ]
           },
           {
-            "n": "Personalised recommendations",
-            "st": "planned",
-            "tg": [
+            "name": "Personalised recommendations",
+            "status": "planned",
+            "tags": [
               "api"
             ]
           }
         ],
         [
           {
-            "n": "Upload documents",
-            "st": "in-progress",
-            "tg": [
+            "name": "Upload documents",
+            "status": "in-progress",
+            "tags": [
               "ux"
             ]
           },
           {
-            "n": "Save and resume later",
-            "st": "planned",
-            "tg": [
+            "name": "Save and resume later",
+            "status": "planned",
+            "tags": [
               "ux"
             ]
           },
           {
-            "n": "Document upload fails on large files",
-            "c": "#fecdd3"
+            "name": "Document upload fails on large files",
+            "color": "#fecdd3"
           }
         ],
         [
           {
-            "n": "Push notification on decision",
-            "st": "done",
-            "sp": 1,
-            "tg": [
+            "name": "Push notification on decision",
+            "status": "done",
+            "points": 1,
+            "tags": [
               "notifications"
             ]
           }
@@ -640,15 +611,15 @@
       ]
     },
     {
-      "n": "V2",
-      "t": [
+      "name": "V2",
+      "stories": [
         [],
         [],
         [
           {
-            "n": "Recurring transfer",
-            "st": "planned",
-            "tg": [
+            "name": "Recurring transfer",
+            "status": "planned",
+            "tags": [
               "payments",
               "api"
             ]
@@ -656,25 +627,25 @@
         ],
         [
           {
-            "n": "Scan QR code",
-            "st": "blocked",
-            "tg": [
+            "name": "Scan QR code",
+            "status": "blocked",
+            "tags": [
               "ux",
               "mobile"
             ]
           },
           {
-            "n": "Camera permissions denied on QR scan",
-            "c": "#fecdd3"
+            "name": "Camera permissions denied on QR scan",
+            "color": "#fecdd3"
           }
         ],
         [],
         [],
         [
           {
-            "n": "Spending limit alert",
-            "st": "planned",
-            "tg": [
+            "name": "Spending limit alert",
+            "status": "planned",
+            "tags": [
               "compliance",
               "notifications"
             ]
@@ -682,9 +653,9 @@
         ],
         [
           {
-            "n": "Download PDF receipt",
-            "st": "planned",
-            "tg": [
+            "name": "Download PDF receipt",
+            "status": "planned",
+            "tags": [
               "ux"
             ]
           }
@@ -692,9 +663,9 @@
         [],
         [
           {
-            "n": "Transfer between currencies",
-            "st": "planned",
-            "tg": [
+            "name": "Transfer between currencies",
+            "status": "planned",
+            "tags": [
               "api",
               "payments"
             ]
@@ -703,9 +674,9 @@
         [],
         [
           {
-            "n": "Round-up savings rule",
-            "st": "planned",
-            "tg": [
+            "name": "Round-up savings rule",
+            "status": "planned",
+            "tags": [
               "ux"
             ]
           }
@@ -713,18 +684,18 @@
         [],
         [
           {
-            "n": "Eligibility pre-check",
-            "st": "planned",
-            "tg": [
+            "name": "Eligibility pre-check",
+            "status": "planned",
+            "tags": [
               "api"
             ]
           }
         ],
         [
           {
-            "n": "In-app video verification",
-            "st": "planned",
-            "tg": [
+            "name": "In-app video verification",
+            "status": "planned",
+            "tags": [
               "mobile",
               "security"
             ]
@@ -732,14 +703,33 @@
         ],
         [
           {
-            "n": "Direct activation of approved product",
-            "st": "planned",
-            "tg": [
+            "name": "Direct activation of approved product",
+            "status": "planned",
+            "tags": [
               "api"
             ]
           }
         ]
       ]
     }
-  ]
+  ],
+  "legend": [
+    {
+      "color": "#fef08a",
+      "label": "Tasks"
+    },
+    {
+      "color": "#a5f3fc",
+      "label": "Notes"
+    },
+    {
+      "color": "#bef264",
+      "label": "Questions"
+    },
+    {
+      "color": "#fecdd3",
+      "label": "Edge cases"
+    }
+  ],
+  "notes": "KR: MVP scope locked, sprint starts Monday\n\nTN: QR scanning blocked on camera API decision, parked for V2\n\nKR: Legal flagged PSD2 strong customer auth, need compliance sign-off before launch\n\nMP: Product applications flow scoped as lightweight V1, expand after Send Money ships"
 }

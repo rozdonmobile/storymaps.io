@@ -2,82 +2,221 @@
 // Serialization / deserialization (pure functions)
 
 import { CARD_COLORS, isValidUrl } from '/src/constants.js';
-import { state, createColumn, createStory } from '/src/state.js';
+import { state, createColumn, createStory, createRefColumn } from '/src/state.js';
 import { generateId } from '/src/constants.js';
+
+// Sanitize URL - only allow valid http/https URLs
+const sanitizeUrl = (url) => isValidUrl(url) ? url : null;
+
+const serializeCard = (card) => {
+    const obj = { name: card.name };
+    if (card.color) obj.color = card.color;
+    if (card.url) obj.url = card.url;
+    if (card.hidden) obj.hidden = true;
+    if (card.status) obj.status = card.status;
+    if (card.points != null) obj.points = card.points;
+    if (card.tags?.length) obj.tags = card.tags;
+    return obj;
+};
+
+const deserializeCard = (obj) => {
+    return createStory(
+        obj.name || obj.n || '',
+        obj.color || obj.c || null,
+        sanitizeUrl(obj.url || obj.u),
+        !!(obj.hidden || obj.h),
+        obj.status || obj.st || null,
+        obj.points ?? obj.sp ?? null,
+        Array.isArray(obj.tags || obj.tg) ? (obj.tags || obj.tg) : []
+    );
+};
+
+const deserializeColumn = (obj) => {
+    return createColumn(
+        obj.name || obj.n || '',
+        obj.color || obj.c || null,
+        sanitizeUrl(obj.url || obj.u),
+        !!(obj.hidden || obj.h),
+        obj.status || obj.st || null,
+        obj.points ?? obj.sp ?? null,
+        Array.isArray(obj.tags || obj.tg) ? (obj.tags || obj.tg) : []
+    );
+};
 
 export const serialize = () => ({
     app: 'storymap',
     v: 1,
     exported: new Date().toISOString(),
     name: state.name,
-    a: state.columns.map(s => {
-        const obj = { n: s.name };
-        if (s.color) obj.c = s.color;
-        if (s.url) obj.u = s.url;
-        if (s.hidden) obj.h = true;
-        if (s.status) obj.st = s.status;
-        if (s.points != null) obj.sp = s.points;
-        if (s.tags?.length) obj.tg = s.tags;
-        return obj;
+    users: state.columns.map(col => (state.users[col.id] || []).map(serializeCard)),
+    activities: state.columns.map(col => (state.activities[col.id] || []).map(serializeCard)),
+    steps: state.columns.map(col => {
+        if (col.partialMapId) {
+            const obj = { partialMapId: col.partialMapId };
+            if (col.partialMapOrigin) obj.partialMapOrigin = true;
+            return obj;
+        }
+        return serializeCard(col);
     }),
-    s: state.slices.map(slice => {
+    slices: state.slices.map(slice => {
         const obj = {
-            n: slice.name,
-            t: state.columns.map(s => (slice.stories[s.id] || []).map(story => {
-                const sObj = { n: story.name };
-                if (story.color) sObj.c = story.color;
-                if (story.url) sObj.u = story.url;
-                if (story.hidden) sObj.h = true;
-                if (story.status) sObj.st = story.status;
-                if (story.points != null) sObj.sp = story.points;
-                if (story.tags?.length) sObj.tg = story.tags;
-                return sObj;
-            }))
+            name: slice.name,
+            stories: state.columns.map(col => (slice.stories[col.id] || []).map(serializeCard))
         };
-        if (slice.separator === false) obj.sep = false;
-        if (slice.rowType) obj.rt = slice.rowType;
-        if (slice.collapsed) obj.col = true;
+        if (slice.collapsed) obj.collapsed = true;
         return obj;
     }),
     ...(state.legend.length > 0 && {
-        l: state.legend.map(entry => ({ c: entry.color, n: entry.label }))
+        legend: state.legend.map(entry => ({ color: entry.color, label: entry.label }))
     }),
-    ...(state.notes && { notes: state.notes })
+    ...(state.notes && { notes: state.notes }),
+    ...(state.partialMaps.length > 0 && {
+        partialMaps: state.partialMaps.map(pm => ({
+            id: pm.id,
+            name: pm.name,
+            users: pm.columns.map(c => (pm.users?.[c.id] || []).map(serializeCard)),
+            activities: pm.columns.map(c => (pm.activities?.[c.id] || []).map(serializeCard)),
+            steps: pm.columns.map(serializeCard),
+            stories: state.slices.map(slice =>
+                pm.columns.map(c => (pm.stories[slice.id]?.[c.id] || []).map(serializeCard))
+            )
+        }))
+    })
 });
 
-export const deserialize = (data) => {
-    if (data?.app !== 'storymap' || data?.v !== 1 || !Array.isArray(data.a) || !Array.isArray(data.s)) {
-        throw new Error('Invalid format');
-    }
-
-    // Sanitize URL - only allow valid http/https URLs
-    const sanitizeUrl = (url) => isValidUrl(url) ? url : null;
-
+const deserializeV1 = (data) => {
     state.name = data.name || '';
-    state.columns = data.a.map(a => {
-        return createColumn(a.n || '', a.c || null, sanitizeUrl(a.u), !!a.h, a.st || null, a.sp ?? null, Array.isArray(a.tg) ? a.tg : []);
+    state.columns = (data.steps || []).map(step => {
+        if (step.partialMapId) return createRefColumn(step.partialMapId, !!step.partialMapOrigin);
+        return deserializeColumn(step);
     });
-    state.slices = data.s.map(slice => {
+
+    // Users: positional array → keyed by column ID
+    state.users = {};
+    const usersArr = Array.isArray(data.users) ? data.users : [];
+    state.columns.forEach((col, i) => {
+        state.users[col.id] = (usersArr[i] || []).map(deserializeCard);
+    });
+
+    // Activities: positional array → keyed by column ID
+    state.activities = {};
+    const activitiesArr = Array.isArray(data.activities) ? data.activities : [];
+    state.columns.forEach((col, i) => {
+        state.activities[col.id] = (activitiesArr[i] || []).map(deserializeCard);
+    });
+
+    // Slices (releases only)
+    state.slices = (data.slices || []).map(slice => {
         const newSlice = {
             id: generateId(),
-            name: slice.n || '',
-            separator: slice.sep !== false,
-            rowType: slice.rt || null,
-            collapsed: !!slice.col,
+            name: slice.name || '',
+            collapsed: !!slice.collapsed,
             stories: {}
         };
-        const stories = Array.isArray(slice.t) ? slice.t : [];
+        const stories = Array.isArray(slice.stories) ? slice.stories : [];
         state.columns.forEach((col, i) => {
-            newSlice.stories[col.id] = (stories[i] || []).map(t => {
-                return createStory(t.n || '', t.c || null, sanitizeUrl(t.u), !!t.h, t.st || null, t.sp ?? null, Array.isArray(t.tg) ? t.tg : []);
-            });
+            newSlice.stories[col.id] = (stories[i] || []).map(deserializeCard);
         });
         return newSlice;
     });
+
+    state.legend = Array.isArray(data.legend) ? data.legend.map(entry => ({
+        id: generateId(),
+        color: entry.color || CARD_COLORS.yellow,
+        label: entry.label || ''
+    })) : [];
+    state.notes = data.notes || '';
+
+    // Deserialize partial maps (positional arrays, like main map)
+    state.partialMaps = Array.isArray(data.partialMaps) ? data.partialMaps.map(pm => {
+        const columns = (pm.steps || []).map(deserializeColumn);
+        const users = {};
+        const activities = {};
+        const stories = {};
+        const usersArr = Array.isArray(pm.users) ? pm.users : [];
+        columns.forEach((col, i) => {
+            users[col.id] = (usersArr[i] || []).map(deserializeCard);
+        });
+        const activitiesArr = Array.isArray(pm.activities) ? pm.activities : [];
+        columns.forEach((col, i) => {
+            activities[col.id] = (activitiesArr[i] || []).map(deserializeCard);
+        });
+        const storiesArr = Array.isArray(pm.stories) ? pm.stories : [];
+        state.slices.forEach((slice, si) => {
+            const sliceStories = storiesArr[si] || [];
+            stories[slice.id] = {};
+            columns.forEach((col, ci) => {
+                stories[slice.id][col.id] = (sliceStories[ci] || []).map(deserializeCard);
+            });
+        });
+        return { id: pm.id || generateId(), name: pm.name || '', columns, users, activities, stories };
+    }) : [];
+};
+
+const deserializeLegacy = (data) => {
+    state.name = data.name || '';
+    state.columns = data.a.map(a => deserializeColumn(a));
+
+    // Extract Users/Activities from legacy slices, put remaining into release slices
+    state.users = {};
+    state.activities = {};
+    state.columns.forEach(col => {
+        state.users[col.id] = [];
+        state.activities[col.id] = [];
+    });
+
+    state.slices = [];
+    data.s.forEach(slice => {
+        const rowType = slice.rt || null;
+        const stories = Array.isArray(slice.t) ? slice.t : [];
+
+        if (rowType === 'Users') {
+            state.columns.forEach((col, i) => {
+                state.users[col.id] = (stories[i] || []).map(deserializeCard);
+            });
+        } else if (rowType === 'Activities') {
+            state.columns.forEach((col, i) => {
+                state.activities[col.id] = (stories[i] || []).map(deserializeCard);
+            });
+        } else {
+            const newSlice = {
+                id: generateId(),
+                name: slice.n || '',
+                collapsed: !!slice.col,
+                stories: {}
+            };
+            state.columns.forEach((col, i) => {
+                newSlice.stories[col.id] = (stories[i] || []).map(deserializeCard);
+            });
+            state.slices.push(newSlice);
+        }
+    });
+
     state.legend = Array.isArray(data.l) ? data.l.map(entry => ({
         id: generateId(),
         color: entry.c || CARD_COLORS.yellow,
         label: entry.n || ''
     })) : [];
     state.notes = data.notes || '';
+    state.partialMaps = [];
+};
+
+export const deserialize = (data) => {
+    if (data?.app !== 'storymap') {
+        throw new Error('Invalid format');
+    }
+
+    // Legacy format: compact keys (a = steps, s = slices)
+    if (Array.isArray(data.a) && Array.isArray(data.s)) {
+        deserializeLegacy(data);
+        return;
+    }
+
+    // v1: human-readable keys
+    if (Array.isArray(data.steps) && Array.isArray(data.slices)) {
+        deserializeV1(data);
+        return;
+    }
+
+    throw new Error('Unknown format');
 };
