@@ -4,7 +4,7 @@ services:
     build: .
     restart: unless-stopped
     volumes:
-      - ./yjs-data:/app/yjs-data
+      - ./data:/app/data
     expose:
       - "8080"
 

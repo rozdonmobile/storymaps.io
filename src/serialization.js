@@ -10,6 +10,7 @@ const sanitizeUrl = (url) => isValidUrl(url) ? url : null;
 
 const serializeCard = (card) => {
     const obj = { name: card.name };
+    if (card.body) obj.body = card.body;
     if (card.color) obj.color = card.color;
     if (card.url) obj.url = card.url;
     if (card.hidden) obj.hidden = true;
@@ -27,7 +28,8 @@ const deserializeCard = (obj) => {
         !!(obj.hidden || obj.h),
         obj.status || obj.st || null,
         obj.points ?? obj.sp ?? null,
-        Array.isArray(obj.tags || obj.tg) ? (obj.tags || obj.tg) : []
+        Array.isArray(obj.tags || obj.tg) ? (obj.tags || obj.tg) : [],
+        obj.body || obj.b || ''
     );
 };
 
@@ -39,7 +41,8 @@ const deserializeColumn = (obj) => {
         !!(obj.hidden || obj.h),
         obj.status || obj.st || null,
         obj.points ?? obj.sp ?? null,
-        Array.isArray(obj.tags || obj.tg) ? (obj.tags || obj.tg) : []
+        Array.isArray(obj.tags || obj.tg) ? (obj.tags || obj.tg) : [],
+        obj.body || obj.b || ''
     );
 };
 
@@ -47,6 +50,7 @@ export const serialize = () => ({
     app: 'storymap',
     v: 1,
     exported: new Date().toISOString(),
+    ...(state.mapId && { id: state.mapId }),
     name: state.name,
     users: state.columns.map(col => (state.users[col.id] || []).map(serializeCard)),
     activities: state.columns.map(col => (state.activities[col.id] || []).map(serializeCard)),

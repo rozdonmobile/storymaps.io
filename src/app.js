@@ -227,7 +227,8 @@ const dom = {
     partialsList: document.getElementById('partialsList'),
     // Card expand modal
     cardExpandModal: document.getElementById('cardExpandModal'),
-    cardExpandTextarea: document.getElementById('cardExpandTextarea'),
+    cardExpandName: document.getElementById('cardExpandName'),
+    cardExpandBody: document.getElementById('cardExpandBody'),
     // Search
     searchBtn: document.getElementById('searchBtn'),
     searchBar: document.getElementById('searchBar'),
@@ -351,27 +352,58 @@ const renderAndSave = () => {
 
 let _expandedItem = null;
 
-const openExpandModal = (item) => {
+const openExpandModal = (item, { readOnly = false } = {}) => {
+    // If a previous close is still waiting for its popstate, absorb it now
+    if (_poppingExpandState) {
+        _poppingExpandState = false;
+    }
     _expandedItem = item;
-    const editable = isMapEditable();
-    dom.cardExpandTextarea.value = item.name || '';
-    dom.cardExpandTextarea.readOnly = !editable;
+    const editable = !readOnly && isMapEditable();
+    dom.cardExpandName.value = item.name || '';
+    dom.cardExpandBody.value = item.body || '';
+    dom.cardExpandName.readOnly = !editable;
+    dom.cardExpandBody.readOnly = !editable;
     const modal = dom.cardExpandModal.querySelector('.card-expand-modal');
     if (modal) modal.style.backgroundColor = item.color || '';
     dom.cardExpandModal.classList.add('visible');
-    dom.cardExpandTextarea.focus();
-    if (editable) pushUndo();
+    requestAnimationFrame(autoResizeExpandName);
+    if (editable) {
+        dom.cardExpandName.focus();
+        pushUndo();
+    }
+    history.pushState({ cardExpand: true }, '');
 };
 
+let _closingExpandViaBack = false;
+let _poppingExpandState = false;
+
 const closeExpandModal = () => {
+    if (!dom.cardExpandModal.classList.contains('visible')) return;
     dom.cardExpandModal.classList.remove('visible');
     _expandedItem = null;
     renderAndSave();
+    // Pop the history entry we pushed on open, unless we got here via back button
+    if (!_closingExpandViaBack) {
+        _poppingExpandState = true;
+        history.back();
+    }
 };
 
-dom.cardExpandTextarea.addEventListener('input', () => {
+const autoResizeExpandName = () => {
+    dom.cardExpandName.style.height = 'auto';
+    dom.cardExpandName.style.height = dom.cardExpandName.scrollHeight + 'px';
+};
+
+dom.cardExpandName.addEventListener('input', () => {
     if (!_expandedItem) return;
-    _expandedItem.name = dom.cardExpandTextarea.value;
+    _expandedItem.name = dom.cardExpandName.value;
+    autoResizeExpandName();
+    saveToStorage();
+});
+
+dom.cardExpandBody.addEventListener('input', () => {
+    if (!_expandedItem) return;
+    _expandedItem.body = dom.cardExpandBody.value;
     saveToStorage();
 });
 
@@ -1029,6 +1061,18 @@ const initEventListeners = () => {
     });
 
     window.addEventListener('popstate', async (e) => {
+        // Ignore popstate from our own history.back() after closing expand modal
+        if (_poppingExpandState) {
+            _poppingExpandState = false;
+            return;
+        }
+        // Back button closes expand modal instead of navigating
+        if (_expandedItem) {
+            _closingExpandViaBack = true;
+            closeExpandModal();
+            _closingExpandViaBack = false;
+            return;
+        }
         const mapId = window.location.pathname.slice(1) || null;
         if (mapId) {
             await loadMapById(mapId);

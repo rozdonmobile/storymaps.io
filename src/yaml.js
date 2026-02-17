@@ -68,6 +68,7 @@ export function jsonToYamlObj(data) {
 
     // Build YAML object
     const result = {};
+    if (data.id) result.id = data.id;
     result.name = data.name || '';
 
     const yamlUsers = backboneToYaml(usersArr, resolvedNames);
@@ -376,6 +377,7 @@ function backboneToYaml(positionalArr, namesByIndex) {
         if (stepName == null) return;
         cards.forEach(card => {
             const obj = { name: card.name };
+            if (card.body) obj.body = card.body;
             if (card.color) obj.color = card.color;
             obj.step = stepName;
             result.push(obj);
@@ -386,6 +388,7 @@ function backboneToYaml(positionalArr, namesByIndex) {
 
 function cardToYaml(card) {
     const obj = { name: card.name };
+    if (card.body) obj.body = card.body;
     if (card.color && card.color !== DEFAULT_STORY_COLOR) obj.color = card.color;
     if (card.status) obj.status = card.status;
     if (card.points != null) obj.points = card.points;
@@ -396,6 +399,7 @@ function cardToYaml(card) {
 
 function cardToJson(card) {
     const obj = { name: card.name || '' };
+    if (card.body) obj.body = card.body;
     if (card.color) obj.color = card.color;
     if (card.url) obj.url = card.url;
     if (card.status) obj.status = card.status;

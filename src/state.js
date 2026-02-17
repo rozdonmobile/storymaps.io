@@ -293,9 +293,9 @@ export const confirmOverwrite = () => {
     return !hasContent() || confirm('This will replace your current story map. Continue?');
 };
 
-export const createColumn = (name = '', color = null, url = null, hidden = false, status = null, points = null, tags = []) => ({ id: generateId(), name, color, url, hidden, status, points, tags });
-export const createRefColumn = (partialMapId, origin = true) => ({ id: generateId(), name: '', color: null, url: null, hidden: false, status: null, points: null, tags: [], partialMapId, partialMapOrigin: origin });
-export const createStory = (name = '', color = null, url = null, hidden = false, status = null, points = null, tags = []) => ({ id: generateId(), name, color, url, hidden, status, points, tags });
+export const createColumn = (name = '', color = null, url = null, hidden = false, status = null, points = null, tags = [], body = '') => ({ id: generateId(), name, body, color, url, hidden, status, points, tags });
+export const createRefColumn = (partialMapId, origin = true) => ({ id: generateId(), name: '', body: '', color: null, url: null, hidden: false, status: null, points: null, tags: [], partialMapId, partialMapOrigin: origin });
+export const createStory = (name = '', color = null, url = null, hidden = false, status = null, points = null, tags = [], body = '') => ({ id: generateId(), name, body, color, url, hidden, status, points, tags });
 export const createSlice = (name = '') => {
     const slice = { id: generateId(), name, collapsed: false, stories: {} };
     state.columns.forEach(s => slice.stories[s.id] = []);

@@ -554,6 +554,7 @@ body.welcome-visible .community-link {
     box-shadow: 0 2px 12px rgba(0, 0, 0, 0.12);
     overflow: hidden;
     border: 1px solid #e2e2e2;
+    min-width: 218px;
 }
 
 /* When panel is open, merge tabs into the panel card */
@@ -899,12 +900,11 @@ body.welcome-visible .community-link {
     gap: 2px;
     background: white;
     padding: 4px;
-    border-radius: 0 0 8px 8px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    border-radius: 8px;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.12);
     border: 1px solid #e2e2e2;
-    border-top: 1px solid #eee;
-    align-self: center;
-    margin-top: -1px;
+    align-self: flex-end;
+    margin-top: 6px;
 }
 
 .zoom-controls.hidden {
@@ -1201,6 +1201,16 @@ body.welcome-visible .community-link {
 
 .partial-map-preview-col .story-card {
     box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.8);
+}
+
+.partial-map-preview-col .story-card.has-body .btn-expand {
+    opacity: 0.5;
+    pointer-events: auto;
+    cursor: pointer;
+}
+
+.partial-map-preview-col .story-card.has-body .btn-expand:hover {
+    opacity: 1;
 }
 
 .story-text-preview {
@@ -2067,8 +2077,7 @@ body.main-menu-open .step:hover {
     background-color: #f0f0f0;
 }
 
-.step.text-overflow .btn-expand,
-.story-card.text-overflow .btn-expand {
+.story-card.has-body .btn-expand {
     opacity: 0.5;
 }
 
@@ -4778,19 +4787,15 @@ body.read-only-mode {
     padding: 20px 20px 12px;
 }
 
-.card-expand-textarea {
+.card-expand-name,
+.card-expand-body {
     width: 100%;
-    min-height: 240px;
-    max-height: 60vh;
     padding: 0;
     border: none;
     background: transparent;
     font-family: inherit;
-    font-size: 15px;
-    font-weight: 500;
     color: #1a1a1a;
     text-align: left;
-    line-height: 1.5;
     resize: none;
     outline: none;
     box-sizing: border-box;
@@ -4800,24 +4805,41 @@ body.read-only-mode {
     scrollbar-color: rgba(0, 0, 0, 0.15) transparent;
 }
 
-.card-expand-textarea::-webkit-scrollbar {
+.card-expand-name {
+    font-size: 17px;
+    font-weight: 600;
+    line-height: 1.4;
+    max-height: 30vh;
+    margin-bottom: 8px;
+    overflow: hidden;
+}
+
+.card-expand-body {
+    font-size: 14px;
+    font-weight: 400;
+    line-height: 1.55;
+    min-height: 180px;
+    max-height: 50vh;
+}
+
+.card-expand-body::placeholder {
+    color: rgba(0, 0, 0, 0.3);
+}
+
+.card-expand-name::-webkit-scrollbar,
+.card-expand-body::-webkit-scrollbar {
     width: 4px;
 }
 
-.card-expand-textarea::-webkit-scrollbar-track {
+.card-expand-name::-webkit-scrollbar-track,
+.card-expand-body::-webkit-scrollbar-track {
     background: transparent;
 }
 
-.card-expand-textarea::-webkit-scrollbar-thumb {
+.card-expand-name::-webkit-scrollbar-thumb,
+.card-expand-body::-webkit-scrollbar-thumb {
     background: rgba(0, 0, 0, 0.15);
     border-radius: 2px;
-}
-
-.card-expand-hint {
-    font-size: 11px;
-    color: rgba(0, 0, 0, 0.35);
-    text-align: center;
-    padding-top: 8px;
 }
 
 /* Read-Only State - Disable editing UI */
@@ -4910,25 +4932,12 @@ body.read-only-mode .empty-backbone-column {
 }
 
 /* On touch devices, stretch tabs to full width so they stay aligned
-   when the Partials tab is hidden (touch users can't create partials).
-   Zoom controls get their own rounded pill shape underneath. */
+   when the Partials tab is hidden (touch users can't create partials). */
 @media (pointer: coarse) {
     .panel-tabs { align-self: stretch; }
 
-    .zoom-controls {
-        border-radius: 8px;
-        border-top: 1px solid #e2e2e2;
-        margin-top: 6px;
-        box-shadow: 0 2px 12px rgba(0, 0, 0, 0.12);
-    }
-
-    .controls-right.panel-open .zoom-controls {
-        align-self: flex-end;
-    }
-
     .btn-expand,
-    .step.text-overflow .btn-expand,
-    .story-card.text-overflow .btn-expand { opacity: 1; }
+    .story-card.has-body .btn-expand { opacity: 1; }
 }
 
 .selection-toolbar {
@@ -5908,4 +5917,13 @@ body.focus-mode .card-tags-row,
 body.focus-mode .slice-progress,
 body.focus-mode .slice-points-text {
     display: none !important;
+}
+
+body.focus-mode .btn-expand {
+    opacity: 0 !important;
+}
+
+body.focus-mode .story-card:hover .btn-expand,
+body.focus-mode .step:hover .btn-expand {
+    opacity: 1 !important;
 }

@@ -94,6 +94,7 @@ export const populateJiraExportEpics = () => {
 
                     tasks.push({
                         name: story.name,
+                        body: story.body || '',
                         status: story.status || null,
                         url: story.url || null,
                         included: true
@@ -156,6 +157,7 @@ export const populateJiraExportEpics = () => {
         const tasksList = el('div', 'jira-export-tasks');
         tasks.forEach((task, taskIndex) => {
             const taskEl = el('label', 'jira-export-task');
+            if (task.body) taskEl.dataset.body = task.body;
 
             const taskCheckbox = el('input', 'jira-export-task-checkbox', { type: 'checkbox', checked: true });
             taskCheckbox.addEventListener('change', (e) => {
@@ -255,7 +257,8 @@ const generateJiraCsv = () => {
             const statusBadge = taskEl.querySelector('.jira-export-task-status');
             const jiraStatus = statusBadge?.textContent || dom.jiraStatusNone.value;
 
-            const taskRow = [childType, taskName, defaultDesc, issueId++, epicId, jiraStatus, projectType];
+            const taskDesc = taskEl.dataset.body || defaultDesc;
+            const taskRow = [childType, taskName, taskDesc, issueId++, epicId, jiraStatus, projectType];
             if (hasProject) {
                 taskRow.unshift(projectKey);
                 taskRow.unshift(projectName);
@@ -363,6 +366,7 @@ export const populatePhabExportEpics = () => {
 
                     tasks.push({
                         name: story.name,
+                        body: story.body || '',
                         status: story.status || null,
                         included: true
                     });
@@ -424,6 +428,7 @@ export const populatePhabExportEpics = () => {
         tasks.forEach((task) => {
             const taskEl = el('label', 'export-task');
             taskEl.dataset.status = task.status || 'none';
+            if (task.body) taskEl.dataset.body = task.body;
 
             const taskCheckbox = el('input', 'export-task-checkbox', { type: 'checkbox', checked: true });
             taskCheckbox.addEventListener('change', (e) => {
@@ -539,7 +544,7 @@ export const generatePhabImportCall = () => {
 
             const taskName = taskEl.querySelector('.export-task-name')?.textContent || '';
             const taskStatus = phabStatusMap[taskEl.dataset.status] || 'open';
-            subtasks.push({ title: taskName, description: 'Imported from Storymaps.io', status: taskStatus });
+            subtasks.push({ title: taskName, description: taskEl.dataset.body || 'Imported from Storymaps.io', status: taskStatus });
         });
 
         if (subtasks.length > 0) {
@@ -674,6 +679,7 @@ export const populateJiraApiExportEpics = () => {
 
                     tasks.push({
                         name: story.name,
+                        body: story.body || '',
                         status: story.status || null,
                         included: true
                     });
@@ -726,6 +732,7 @@ export const populateJiraApiExportEpics = () => {
         tasks.forEach((task) => {
             const taskEl = el('label', 'export-task');
             taskEl.dataset.status = task.status || 'none';
+            if (task.body) taskEl.dataset.body = task.body;
 
             const taskCheckbox = el('input', 'export-task-checkbox', { type: 'checkbox', checked: true });
             taskCheckbox.addEventListener('change', (e) => {
@@ -804,7 +811,7 @@ export const generateJiraApiImportFunction = () => {
           fields: {
             project: { key: projectKey },
             summary: story.summary,
-            description: { type: 'doc', version: 1, content: [{ type: 'paragraph', content: [{ type: 'text', text: 'Imported from Storymaps.io' }] }] },
+            description: { type: 'doc', version: 1, content: [{ type: 'paragraph', content: [{ type: 'text', text: story.description || 'Imported from Storymaps.io' }] }] },
             issuetype: { name: 'Story' },
             parent: { key: epicData.key }
           }
@@ -843,7 +850,7 @@ export const generateJiraApiImportCall = () => {
             if (!taskCheckbox.checked) return;
 
             const taskName = taskEl.querySelector('.export-task-name')?.textContent || '';
-            stories.push({ summary: taskName });
+            stories.push({ summary: taskName, description: taskEl.dataset.body || 'Imported from Storymaps.io' });
         });
 
         if (stories.length > 0) {
@@ -971,6 +978,7 @@ export const populateAsanaExportEpics = () => {
 
                     tasks.push({
                         name: story.name,
+                        body: story.body || '',
                         status: story.status || null,
                         included: true
                     });
@@ -1024,6 +1032,7 @@ export const populateAsanaExportEpics = () => {
         tasks.forEach((task) => {
             const taskEl = el('label', 'export-task');
             taskEl.dataset.status = task.status || 'none';
+            if (task.body) taskEl.dataset.body = task.body;
 
             const taskCheckbox = el('input', 'export-task-checkbox', { type: 'checkbox', checked: true });
             taskCheckbox.addEventListener('change', (e) => {
@@ -1173,7 +1182,7 @@ export const generateAsanaImportCall = () => {
             const taskStatus = taskEl.dataset.status;
             subtasks.push({
                 name: taskName,
-                notes: 'Imported from Storymaps.io',
+                notes: taskEl.dataset.body || 'Imported from Storymaps.io',
                 completed: taskStatus === 'done'
             });
         });
@@ -1299,6 +1308,7 @@ export const populateAsanaCsvExportEpics = () => {
 
                     tasks.push({
                         name: story.name,
+                        body: story.body || '',
                         status: story.status || null,
                         included: true
                     });
@@ -1343,6 +1353,7 @@ export const populateAsanaCsvExportEpics = () => {
         tasks.forEach((task) => {
             const taskEl = el('label', 'export-task');
             taskEl.dataset.status = task.status || 'none';
+            if (task.body) taskEl.dataset.body = task.body;
 
             const taskCheckbox = el('input', 'export-task-checkbox', { type: 'checkbox', checked: true });
             taskCheckbox.addEventListener('change', (e) => {
@@ -1403,8 +1414,9 @@ export const downloadAsanaCsv = () => {
             const taskCheckbox = taskEl.querySelector('.export-task-checkbox');
             if (!taskCheckbox.checked) return;
             const taskName = taskEl.querySelector('.export-task-name')?.textContent || '';
+            const taskDesc = taskEl.dataset.body || 'Imported from Storymaps.io';
             // Subtask row — linked to parent via exact name match
-            rows.push([taskName, 'Imported from Storymaps.io', section, parentName].map(escapeCSV).join(','));
+            rows.push([taskName, taskDesc, section, parentName].map(escapeCSV).join(','));
         });
     });
 

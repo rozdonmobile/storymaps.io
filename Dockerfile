@@ -13,7 +13,7 @@ COPY package*.json ./
 COPY server.js ./
 COPY public/ ./public/
 COPY src/ ./src/
-RUN mkdir -p yjs-data && chown -R node:node /app
+RUN mkdir -p data && chown -R node:node /app
 USER node
 EXPOSE 8080
 ENV PORT=8080

@@ -1,3 +1,7 @@
-.idea
 node_modules/
-
+.claude/
+backup/
+builds/
+data/
+data-migration/
+config.js

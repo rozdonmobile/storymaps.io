@@ -71,6 +71,7 @@ export const getYmap = () => ymap;
 // Field definitions for cards (columns and stories share the same fields)
 const CARD_FIELDS = {
     name:   { default: '' },
+    body:   { default: '' },
     color:  { default: null },
     url:    { default: null },
     hidden: { default: false },
@@ -123,6 +124,7 @@ const cardFromYjs = (data) => {
     return {
         id: data.id,
         name: data.name || '',
+        body: data.body || '',
         color: data.color || null,
         url: data.url || null,
         hidden: data.hidden || false,

@@ -155,11 +155,11 @@ const toggleSliceCollapsed = (sliceId, collapsed) => {
     _renderAndSave();
 };
 
-export const createExpandButton = (item) => {
+export const createExpandButton = (item, { readOnly = false } = {}) => {
     const btn = el('button', 'btn-expand', { title: 'Expand card', ariaLabel: 'Expand card', html: '⤢' });
     btn.addEventListener('click', (e) => {
         e.stopPropagation();
-        if (_openExpandModal) _openExpandModal(item);
+        if (_openExpandModal) _openExpandModal(item, { readOnly });
     });
     return btn;
 };
@@ -430,8 +430,6 @@ export const createTextarea = (className, placeholder, value, onChange) => {
             const lineHeight = parseInt(getComputedStyle(textarea).lineHeight) || 18;
             const neededRows = Math.ceil(textarea.scrollHeight / lineHeight);
             textarea.rows = Math.min(Math.max(neededRows, 1), 2);
-            const card = textarea.closest('.step, .story-card');
-            if (card) card.classList.toggle('text-overflow', neededRows > 2);
         };
 
         textarea.addEventListener('input', (e) => {
@@ -579,9 +577,14 @@ export const createPreviewStoryColumn = (pmCol, stories, sliceId, rowTypeKey = n
         }
         const card = el('div', 'story-card', cardAttrs);
         if (story.color) card.style.backgroundColor = story.color;
+        if (story.body) card.classList.add('has-body');
 
         const nameSpan = el('span', 'story-text-preview', { text: story.name || '' });
         card.appendChild(nameSpan);
+
+        if (story.body) {
+            card.appendChild(createExpandButton(story, { readOnly: true }));
+        }
 
         const urlIndicator = createUrlIndicator(story.url);
         if (urlIndicator) card.appendChild(urlIndicator);
@@ -713,6 +716,7 @@ export const createStoryCard = (story, columnId, sliceId, isBackboneRow = false,
     }
     const card = el('div', 'story-card', attrs);
     if (story.color) card.style.backgroundColor = story.color;
+    if (story.body) card.classList.add('has-body');
 
     let placeholderText = 'Task or Detail...';
     if (rowType === 'Users') {

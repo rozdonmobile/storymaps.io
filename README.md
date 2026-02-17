@@ -49,7 +49,8 @@ You've probably seen these patterns in your own work. It happens to us all. It's
 - **Tags** - categorize cards with free-text tags, autocomplete from existing tags
 - **Legend** - define colour-coded card categories (e.g. Tasks, Notes, Questions, Edge Cases)
 - **Map Partials** - reusable story map fragments that eliminate duplication when multiple user journeys converge on shared steps; extract a sequence of columns once, reference it from anywhere, and expand inline to see the detail
-- **Expanded view** - click the expand button on any card to see and edit all details in a larger modal
+- **Card title & body** - each card has a short title visible on the map and an optional body for longer descriptions or details, editable in the expanded view
+- **Expanded view** - click the expand button on any card to edit the title and body in a larger modal; cards with body text show an expand indicator
 - **Card colours & links** - 14 colours, external URLs to issue trackers
 - **Drag & drop** - reorder cards, columns, and slices
 - **Hide columns** - insert spacer columns to visually group steps
@@ -73,10 +74,10 @@ You've probably seen these patterns in your own work. It happens to us all. It's
 ### Import & Export
 - **JSON** - import/export story maps as JSON files
 - **YAML** - import/export as human-readable YAML; author maps in a text editor, version-control them in git, or generate from scripts
-- **Jira** - export as CSV or via REST API
-- **Asana** - export as CSV or via REST API
-- **Phabricator** - export via Maniphest API
-- **URL endpoints** - append `.json` or `.yaml` to any map URL to fetch its data programmatically (e.g. `curl storymaps.io/abc123.json`)
+- **Jira** - export as CSV or via REST API; card body text is used as the issue description
+- **Asana** - export as CSV or via REST API; card body text is used as the task notes
+- **Phabricator** - export via Maniphest API; card body text is used as the task description
+- **URL endpoints** - append `.json` or `.yaml` to any map URL to fetch its data programmatically (e.g. `curl storymaps.io/abc123.json`); exports include the map ID for traceability
 - **Share as image** - copy map screenshot to clipboard or download as PNG
 - **Print / PDF**
 
@@ -88,7 +89,7 @@ You've probably seen these patterns in your own work. It happens to us all. It's
 
 ### Other
 - **Undo / Redo** (Ctrl+Z / Ctrl+Y)
-- **Focus Mode** - hide card metadata (status, points, tags, links) for a cleaner presentation view
+- **Focus Mode** - hide card metadata (status, points, tags, links) for a cleaner presentation view; expand icons still appear on hover
 - **Copy map** - duplicate an existing map to a new URL
 - **Sample maps** - load examples to learn the methodology
 - **Map counter** - community stat showing total maps created
@@ -102,9 +103,9 @@ The app is a single Node.js server (`server.js`) that handles:
 - **REST API** - Lock state (`/api/lock/:mapId`), stats (`/api/stats`), and format endpoints (`/:mapId.json`, `/:mapId.yaml`)
 
 ### Data Storage
-- **LevelDB** - Yjs document persistence in `yjs-data/`
-- **SQLite** - Map index with names and timestamps (`yjs-data/maps.db`)
-- **JSON files** - Lock state (`yjs-data/locks.json`) and counters (`yjs-data/stats.json`)
+- **LevelDB** - Yjs document persistence in `data/`
+- **SQLite** - Map index with names and timestamps (`data/maps.db`)
+- **JSON files** - Lock state (`data/locks.json`) and counters (`data/stats.json`)
 
 ### Client
 The client has no build step - ES modules are loaded directly from `src/`. Third-party libraries (Yjs, CodeMirror) are vendored as pre-built bundles in `public/vendor/`.
@@ -149,7 +150,7 @@ If you already run nginx, Traefik, HAProxy, or another proxy, you can skip Caddy
        build: .
        restart: unless-stopped
        volumes:
-         - ./yjs-data:/app/yjs-data
+         - ./data:/app/data
        ports:
          - "8080:8080"
    ```
@@ -177,13 +178,13 @@ If you already run nginx, Traefik, HAProxy, or another proxy, you can skip Caddy
 
 ### Data & Backups
 
-All data lives in `./yjs-data/` on the host:
+All data lives in `./data/` on the host:
 - LevelDB files - Yjs document state
 - `maps.db` - SQLite map index
 - `locks.json` - lock state
 - `stats.json` - counters
 
-Back up this directory regularly (e.g. a cron job with `tar` or `rsync`). To migrate to a new server, copy `yjs-data/` across and start the containers.
+Back up this directory regularly (e.g. a cron job with `tar` or `rsync`). To migrate to a new server, copy `data/` across and start the containers.
 
 ### Updating
 
@@ -191,7 +192,7 @@ Back up this directory regularly (e.g. a cron job with `tar` or `rsync`). To mig
 git pull && docker compose up -d --build
 ```
 
-Data is preserved across rebuilds since `yjs-data/` is a host-mounted volume.
+Data is preserved across rebuilds since `data/` is a host-mounted volume.
 
 ### Environment Variables
 
@@ -214,21 +215,22 @@ The server starts on `http://localhost:8080`.
 3. Click **+** to add steps (columns) to the backbone
 4. Click **+** in a column to add tasks
 5. Click **+ Add Slice** to create release groupings
-6. Click the **...** menu on cards to set colours, status, links, tags, or story points
-7. Drag tasks to reorder or move between columns
-8. Use the **Legend** to define card categories and colour-code your map
-9. Use **Ctrl+F** to search or open the **Filter** panel to filter by status, colour, or tag
-10. Click, Shift+click, or marquee-drag to select multiple cards, then use the toolbar to bulk edit
-11. Use the **Notepad** to capture team notes and decisions
-12. Click **Share** to copy the URL, copy the map as an image, or download as PNG
-13. Use **Menu → Lock Map** to password-protect the map from edits
-14. Use **Ctrl+Z** / **Ctrl+Y** to undo and redo, **Ctrl+D** to duplicate
-15. Use **Ctrl+scroll** to zoom, **right-click drag** to pan, **Alt+R** to zoom to fit
-16. Select consecutive columns and use **Menu → Create Partial** to extract shared sequences into reusable map partials; manage them from the **Partials** panel
-17. Use **Menu → Focus Mode** to hide card metadata for a cleaner presentation view
-18. Use **Menu → Import** to import from JSON or YAML
-19. Use **Menu → Export** to save as JSON or YAML, or export to Jira, Asana, or Phabricator
-20. Use **Print** to save as PDF
+6. Click the **expand** button on a card to add a description in the body field; the title stays visible on the map
+7. Click the **...** menu on cards to set colours, status, links, tags, or story points
+8. Drag tasks to reorder or move between columns
+9. Use the **Legend** to define card categories and colour-code your map
+10. Use **Ctrl+F** to search or open the **Filter** panel to filter by status, colour, or tag
+11. Click, Shift+click, or marquee-drag to select multiple cards, then use the toolbar to bulk edit
+12. Use the **Notepad** to capture team notes and decisions
+13. Click **Share** to copy the URL, copy the map as an image, or download as PNG
+14. Use **Menu → Lock Map** to password-protect the map from edits
+15. Use **Ctrl+Z** / **Ctrl+Y** to undo and redo, **Ctrl+D** to duplicate
+16. Use **Ctrl+scroll** to zoom, **right-click drag** to pan, **Alt+R** to zoom to fit
+17. Select consecutive columns and use **Menu → Create Partial** to extract shared sequences into reusable map partials; manage them from the **Partials** panel
+18. Use **Menu → Focus Mode** to hide card metadata for a cleaner presentation view
+19. Use **Menu → Import** to import from JSON or YAML
+20. Use **Menu → Export** to save as JSON or YAML, or export to Jira, Asana, or Phabricator
+21. Use **Print** to save as PDF
 
 ## Support
 If you find this tool useful, consider [buying me a coffee](https://buymeacoffee.com/jackgleeson). It goes towards server costs and helps me keep the app running.

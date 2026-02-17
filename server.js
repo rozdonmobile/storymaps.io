@@ -12,7 +12,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 const PORT = process.env.PORT || 8080;
-const DATA_DIR = join(__dirname, 'yjs-data');
+const DATA_DIR = join(__dirname, 'data');
 
 // Allowed origins for API writes and WebSocket connections
 // localhost is always allowed for development
@@ -268,6 +268,7 @@ const serializeDoc = (doc) => {
 
   const sCard = (c) => {
     const o = { name: c.name || '' };
+    if (c.body) o.body = c.body;
     if (c.color) o.color = c.color;
     if (c.url) o.url = c.url;
     if (c.hidden) o.hidden = true;
@@ -332,18 +333,26 @@ const serializeDoc = (doc) => {
 const loadAndSerialize = async (mapId) => {
   // Try in-memory first (active WebSocket connections)
   let doc = docs.get(mapId);
-  if (doc) return serializeDoc(doc);
-
-  // Load from LevelDB persistence
-  const persistence = getPersistence();
-  if (!persistence) return null;
-  const Y = await import('yjs');
-  doc = new Y.Doc();
-  await persistence.bindState(mapId, doc);
-  const ymap = doc.getMap('storymap');
-  if (!ymap.get('columns')) { doc.destroy(); return null; }
-  const data = serializeDoc(doc);
-  doc.destroy();
+  let data;
+  if (doc) {
+    data = serializeDoc(doc);
+  } else {
+    // Load from LevelDB persistence
+    const persistence = getPersistence();
+    if (!persistence) return null;
+    const Y = await import('yjs');
+    doc = new Y.Doc();
+    await persistence.bindState(mapId, doc);
+    const ymap = doc.getMap('storymap');
+    if (!ymap.get('columns')) { doc.destroy(); return null; }
+    data = serializeDoc(doc);
+    doc.destroy();
+  }
+  if (data) {
+    // Insert id after name for readable key ordering
+    const { app, v, exported, ...rest } = data;
+    data = { app, v, exported, id: mapId, ...rest };
+  }
   return data;
 };
 
