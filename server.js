@@ -14,6 +14,27 @@ const __dirname = dirname(__filename);
 const PORT = process.env.PORT || 8080;
 const DATA_DIR = join(__dirname, 'data');
 
+// Site-wide password gate (disabled when empty)
+const SITE_PASSWORD = process.env.SITE_PASSWORD || '';
+const SITE_AUTH_TOKEN = SITE_PASSWORD
+  ? createHash('sha256').update('storymaps-site-auth:' + SITE_PASSWORD).digest('hex')
+  : '';
+
+const parseCookies = (req) => {
+  const header = req.headers.cookie || '';
+  const cookies = {};
+  for (const pair of header.split(';')) {
+    const [k, ...v] = pair.trim().split('=');
+    if (k) cookies[k] = v.join('=');
+  }
+  return cookies;
+};
+
+const isSiteAuthed = (req) => {
+  if (!SITE_PASSWORD) return true;
+  return parseCookies(req).site_auth === SITE_AUTH_TOKEN;
+};
+
 // Allowed origins for API writes and WebSocket connections
 // localhost is always allowed for development
 const ALLOWED_ORIGINS = new Set([
@@ -469,12 +490,93 @@ const loadAndSerialize = async (mapId) => {
 };
 
 // =============================================================================
+// Site Password Login Page (inline — no external deps since static files are gated)
+// =============================================================================
+
+const LOGIN_PAGE = `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Login — Storymaps</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #f5f5f5; display: flex; align-items: center; justify-content: center; min-height: 100vh; }
+  .login { background: #fff; border-radius: 12px; box-shadow: 0 2px 16px rgba(0,0,0,.08); padding: 2.5rem; width: 100%; max-width: 360px; }
+  .login h1 { font-size: 1.25rem; font-weight: 600; margin-bottom: 1.5rem; text-align: center; color: #333; }
+  .login input { width: 100%; padding: .7rem .9rem; border: 1.5px solid #ddd; border-radius: 8px; font-size: .95rem; outline: none; transition: border-color .15s; }
+  .login input:focus { border-color: #1a9e8f; }
+  .login button { width: 100%; padding: .7rem; margin-top: .75rem; background: #1a9e8f; color: #fff; border: none; border-radius: 8px; font-size: .95rem; font-weight: 500; cursor: pointer; transition: background .15s; }
+  .login button:hover { background: #168a7d; }
+  .error { color: #d32f2f; font-size: .85rem; margin-top: .5rem; text-align: center; min-height: 1.25rem; }
+</style>
+</head>
+<body>
+<div class="login">
+  <h1>Storymaps</h1>
+  <form id="f">
+    <input type="password" id="p" placeholder="Password" autofocus autocomplete="current-password">
+    <button type="submit">Log in</button>
+    <div class="error" id="e"></div>
+  </form>
+</div>
+<script>
+document.getElementById('f').onsubmit = async (e) => {
+  e.preventDefault();
+  const pw = document.getElementById('p').value;
+  const err = document.getElementById('e');
+  err.textContent = '';
+  try {
+    const res = await fetch('/auth', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ password: pw })
+    });
+    if (res.ok) { location.reload(); }
+    else { const d = await res.json().catch(() => ({})); err.textContent = d.error || 'Incorrect password'; }
+  } catch { err.textContent = 'Connection error'; }
+};
+</script>
+</body>
+</html>`;
+
+// =============================================================================
 // HTTP Server
 // =============================================================================
 
 const server = createServer(async (req, res) => {
   try {
   const reqPath = req.url.split('?')[0];
+
+  // --- Site password gate ---
+  if (SITE_PASSWORD) {
+    // POST /auth — authenticate
+    if (reqPath === '/auth' && req.method === 'POST') {
+      const body = await new Promise((resolve) => {
+        let data = '';
+        req.on('data', (c) => { data += c; });
+        req.on('end', () => { try { resolve(JSON.parse(data)); } catch { resolve({}); } });
+      });
+      if (body.password === SITE_PASSWORD) {
+        res.writeHead(200, {
+          'Content-Type': 'application/json',
+          'Set-Cookie': `site_auth=${SITE_AUTH_TOKEN}; HttpOnly; SameSite=Strict; Path=/; Max-Age=604800`,
+        });
+        res.end(JSON.stringify({ ok: true }));
+      } else {
+        res.writeHead(403, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'Incorrect password' }));
+      }
+      return;
+    }
+
+    // All other requests: require valid cookie
+    if (!isSiteAuthed(req)) {
+      res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store' });
+      res.end(LOGIN_PAGE);
+      return;
+    }
+  }
 
   // API routes
   if (reqPath.startsWith('/api/')) {
@@ -664,6 +766,10 @@ const trackedDocs = new Set();
 const wss = new WebSocketServer({ server });
 
 wss.on('connection', (ws, req) => {
+  if (!isSiteAuthed(req)) {
+    ws.close(4401, 'Unauthorized');
+    return;
+  }
   if (!isOriginAllowed(req.headers.origin)) {
     ws.close(4403, 'Forbidden');
     return;
@@ -699,6 +805,7 @@ await ensureDataDir();
 
 server.listen(PORT, () => {
   console.log(`Server running at http://localhost:${PORT}/`);
+  if (SITE_PASSWORD) console.log('Site password gate is ACTIVE');
 });
 
 // Log active presence every 30 seconds
