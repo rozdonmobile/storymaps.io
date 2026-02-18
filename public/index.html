@@ -13,8 +13,8 @@
     <meta property="og:type" content="website">
     <meta property="og:url" content="https://storymaps.io/">
     <meta property="og:image" content="https://storymaps.io/resources/screenshot.png">
-    <meta property="og:image:width" content="1436">
-    <meta property="og:image:height" content="824">
+    <meta property="og:image:width" content="1383">
+    <meta property="og:image:height" content="937">
     <meta property="og:image:alt" content="Storymaps.io user story mapping interface showing a colourful board with user stories organised by activities and releases">
     <meta property="og:site_name" content="Storymaps.io">
 
@@ -177,6 +177,7 @@
                         </div>
                     </div>
                     <button class="dropdown-item" id="printMap"><span class="menu-icon">🖨️</span> Print</button>
+                    <button class="dropdown-item" id="backupsBtn"><span class="menu-icon">💾</span> Backups <span class="backup-count-badge hidden" id="backupCountBadge">0</span></button>
                     <div class="dropdown-divider"></div>
                     <button class="dropdown-item" id="toggleCursorsBtn">
                         <span class="cursor-toggle-icon">👁</span> <span id="toggleCursorsText">Hide External Cursors</span>
@@ -223,7 +224,7 @@
                 </div>
             </div>
             <div class="welcome-visual">
-                <img src="resources/welcome-img.png" alt="Storymaps.io user story mapping interface" class="welcome-hero-img" loading="lazy">
+                <img src="resources/screenshot.png" alt="Storymaps.io user story mapping interface" class="welcome-hero-img" loading="lazy">
             </div>
         </div>
         <div class="welcome-bottom">
@@ -346,6 +347,8 @@
         <div class="loading-spinner"></div>
         <span>Loading map...</span>
     </div>
+
+    <div class="app-toast" id="appToast" role="status" aria-live="polite"></div>
 
     <div class="tutorial-toast" id="tutorialToast">
         <span><strong>Ctrl + scroll</strong> to zoom · <strong>Right-click drag</strong> to pan · <strong class="reset-shortcut-key">Alt + R</strong> to reset view</span>
@@ -1005,6 +1008,34 @@
                 <div class="export-actions">
                     <button class="btn btn-secondary" id="asanaCsvExportCancel">Cancel</button>
                     <button class="btn" id="asanaCsvExportDownload">Download CSV</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="backupsModal">
+        <div class="modal backups-modal">
+            <div class="modal-header">
+                <h2>Backups</h2>
+                <button class="modal-close" id="backupsModalClose">&times;</button>
+            </div>
+            <div class="modal-body backups-modal-body">
+                <div class="backups-toolbar">
+                    <p class="backups-desc">Snapshots of your map. Up to 5 kept.</p>
+                    <button class="btn backups-create-btn" id="createBackupBtn">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                        Create Backup
+                    </button>
+                </div>
+                <div class="backups-list" id="backupsList">
+                    <div class="backups-empty">
+                        <svg class="backups-empty-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M12 2L2 7l10 5 10-5-10-5z"/>
+                            <path d="M2 17l10 5 10-5"/>
+                            <path d="M2 12l10 5 10-5"/>
+                        </svg>
+                        <span>No backups yet</span>
+                    </div>
                 </div>
             </div>
         </div>

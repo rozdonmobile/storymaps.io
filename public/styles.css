@@ -512,7 +512,7 @@ body.welcome-visible .community-link {
 .panel-body {
     display: none;
     background: white;
-    overflow: hidden;
+    overflow: clip;
     max-width: min(540px, calc(100vw - 48px));
 }
 
@@ -561,6 +561,7 @@ body.welcome-visible .community-link {
 .controls-right.panel-open {
     flex: 1 1 auto;
     min-height: 0;
+    align-items: stretch;
 }
 
 .controls-right.panel-open .panel-body {
@@ -4514,6 +4515,29 @@ body.main-menu-open .step:hover {
 }
 
 /* Tutorial Toast */
+.app-toast {
+    position: fixed;
+    bottom: 32px;
+    left: 50%;
+    transform: translateX(-50%) translateY(20px);
+    opacity: 0;
+    padding: 10px 20px;
+    background: rgba(30, 41, 59, 0.92);
+    color: #fff;
+    font-size: 13px;
+    font-weight: 500;
+    border-radius: 999px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
+    z-index: 2001;
+    pointer-events: none;
+    transition: opacity 0.25s ease, transform 0.25s ease;
+}
+
+.app-toast.visible {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+}
+
 .tutorial-toast {
     position: fixed;
     bottom: 32px;
@@ -4767,6 +4791,254 @@ body.read-only-mode {
     padding-top: 8px;
 }
 
+/* Backups Modal */
+.backups-modal {
+    max-width: 480px;
+}
+
+.backups-modal-body {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    padding: 20px 24px 24px;
+}
+
+.backups-toolbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+}
+
+.backups-desc {
+    font-size: 13px;
+    color: #888;
+    margin: 0;
+}
+
+.backups-create-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    white-space: nowrap;
+    padding: 8px 14px;
+    font-size: 13px;
+}
+
+.backups-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+}
+
+.backups-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    color: #b0b0b0;
+    font-size: 14px;
+    padding: 36px 20px;
+}
+
+.backups-empty-icon {
+    width: 36px;
+    height: 36px;
+    opacity: 0.4;
+}
+
+.backup-row {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 14px 16px;
+    border: 1px solid #eee;
+    border-bottom-color: #f0f0f0;
+    transition: background 0.12s;
+}
+
+.backup-row:first-child {
+    border-top-left-radius: 8px;
+    border-top-right-radius: 8px;
+}
+
+.backup-row:last-child {
+    border-bottom-left-radius: 8px;
+    border-bottom-right-radius: 8px;
+    border-bottom-color: #eee;
+}
+
+.backup-row + .backup-row {
+    border-top: none;
+}
+
+.backup-row:hover {
+    background: #fafafa;
+}
+
+.backup-icon {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    background: #f0fdfa;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    color: var(--color-teal);
+}
+
+.backup-icon.backup-icon-auto {
+    background: #f5f5f5;
+    color: #aaa;
+}
+
+.backup-icon.backup-icon-imported {
+    background: #eff6ff;
+    color: #6b8ec2;
+}
+
+.backup-icon svg {
+    width: 16px;
+    height: 16px;
+}
+
+.backup-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.backup-time {
+    font-size: 13px;
+    font-weight: 600;
+    color: #333;
+    line-height: 1.3;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.backup-meta {
+    font-size: 11px;
+    color: #aaa;
+    margin-top: 1px;
+}
+
+.backup-imported-tag {
+    display: inline-block;
+    font-size: 10px;
+    font-weight: 600;
+    color: #6b8ec2;
+    background: #eff6ff;
+    padding: 1px 6px;
+    border-radius: 4px;
+    vertical-align: middle;
+    margin-left: 4px;
+    letter-spacing: 0.02em;
+}
+
+.backup-actions {
+    display: flex;
+    gap: 6px;
+    flex-shrink: 0;
+}
+
+.backup-actions button {
+    padding: 5px 12px;
+    font-size: 12px;
+    font-weight: 500;
+    border-radius: 6px;
+    border: 1px solid #e0e0e0;
+    background: #fff;
+    cursor: pointer;
+    color: #555;
+    font-family: inherit;
+    transition: all 0.15s;
+}
+
+.backup-actions button:hover {
+    background: #f5f5f5;
+    border-color: #ccc;
+}
+
+.backup-actions .backup-restore-btn {
+    color: var(--color-teal);
+    border-color: #b2f0e6;
+    background: #f0fdfa;
+}
+
+.backup-actions .backup-restore-btn:hover {
+    background: #e0faf5;
+    border-color: var(--color-teal);
+}
+
+.backup-actions .backup-delete-btn {
+    color: #bbb;
+    border-color: transparent;
+    background: transparent;
+    padding: 5px 8px;
+}
+
+.backup-actions .backup-delete-btn:hover {
+    color: #dc2626;
+    background: #fef2f2;
+    border-color: #fecaca;
+}
+
+/* Backup count badge in menu */
+.backup-count-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 18px;
+    height: 18px;
+    padding: 0 5px;
+    font-size: 11px;
+    font-weight: 700;
+    border-radius: 9px;
+    background: #e0e0e0;
+    color: #666;
+    margin-left: 6px;
+    line-height: 1;
+    vertical-align: middle;
+}
+
+.backup-count-badge.hidden {
+    display: none;
+}
+
+@media (max-width: 480px) {
+    .backups-toolbar {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 10px;
+    }
+
+    .backups-create-btn {
+        justify-content: center;
+    }
+
+    .backup-row {
+        gap: 10px;
+        padding: 12px;
+    }
+
+    .backup-icon {
+        display: none;
+    }
+
+    .backup-meta {
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .backup-actions {
+        flex-direction: column;
+        gap: 4px;
+    }
+}
+
 /* Card Expand Modal */
 .card-expand-modal {
     max-width: 360px;
@@ -4929,6 +5201,10 @@ body.read-only-mode .empty-backbone-column {
     .selection-toolbar,
     .canvas-context-menu,
     .card-tag-overflow { display: none !important; }
+
+    /* btn-options is invisible (opacity:0) on touch devices — disable pointer
+       events so it can't be triggered accidentally via tag badge tap targets. */
+    .btn-options { pointer-events: none; }
 }
 
 /* On touch devices, stretch tabs to full width so they stay aligned
@@ -4936,7 +5212,6 @@ body.read-only-mode .empty-backbone-column {
 @media (pointer: coarse) {
     .panel-tabs { align-self: stretch; }
 
-    .btn-expand,
     .story-card.has-body .btn-expand { opacity: 1; }
 }
 

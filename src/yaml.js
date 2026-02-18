@@ -63,13 +63,36 @@ export function jsonToYamlObj(data) {
         for (let j = i; j >= 0; j--) {
             if (usersArr[j]?.length) return `${usersArr[j][0].name}: ${name}`;
         }
-        return `${name} (${i})`;
+        return name;
     });
+
+    // Second pass: add :[N] suffix to any still-duplicate resolved names
+    const resolvedCounts = {};
+    resolvedNames.forEach(n => {
+        if (n != null) resolvedCounts[n] = (resolvedCounts[n] || 0) + 1;
+    });
+    const stillDuplicate = new Set(Object.keys(resolvedCounts).filter(n => resolvedCounts[n] > 1));
+    if (stillDuplicate.size) {
+        const counters = {};
+        for (let i = 0; i < resolvedNames.length; i++) {
+            const n = resolvedNames[i];
+            if (n == null || !stillDuplicate.has(n)) continue;
+            const idx = counters[n] || 0;
+            counters[n] = idx + 1;
+            const colonPos = n.indexOf(': ');
+            if (colonPos >= 0) {
+                resolvedNames[i] = n.slice(0, colonPos + 1) + `[${idx}]` + n.slice(colonPos + 1);
+            } else {
+                resolvedNames[i] = `${n}[${idx}]`;
+            }
+        }
+    }
 
     // Build YAML object
     const result = {};
-    if (data.id) result.id = data.id;
     result.name = data.name || '';
+    if (data.id) result.id = data.id;
+    if (data.locked != null) result.locked = data.locked;
 
     const yamlUsers = backboneToYaml(usersArr, resolvedNames);
     if (yamlUsers.length) result.users = yamlUsers;
@@ -156,6 +179,9 @@ export function jsonToYamlObj(data) {
     }
 
     if (data.notes) result.notes = data.notes;
+    if (data.backups?.length) result.backups = data.backups.map(b => ({
+        id: b.id, timestamp: b.timestamp, note: b.note, data: b.data,
+    }));
     return result;
 }
 
@@ -270,10 +296,11 @@ export function yamlObjToJson(obj) {
             jsonSteps.push(s);
             return;
         }
-        const name = typeof step === 'string' ? step : String(step?.name ?? '');
+        const rawName = typeof step === 'string' ? step : String(step?.name ?? '');
+        const displayName = rawName.replace(/:\[\d+\]\s*/, ': ').replace(/\[\d+\]$/, '');
         const color = typeof step === 'string' ? DEFAULT_STEP_COLOR : (step.color || DEFAULT_STEP_COLOR);
-        stepNameToIndex[name] = jsonSteps.length;
-        jsonSteps.push({ name, color });
+        stepNameToIndex[rawName] = jsonSteps.length;
+        jsonSteps.push({ name: displayName, color });
     });
 
     const n = jsonSteps.length;
@@ -362,6 +389,7 @@ export function yamlObjToJson(obj) {
     if (obj.legend?.length) result.legend = obj.legend;
     if (obj.notes) result.notes = obj.notes;
     if (jsonPartialMaps.length) result.partialMaps = jsonPartialMaps;
+    if (obj.backups?.length) result.backups = obj.backups;
     return result;
 }
 

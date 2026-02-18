@@ -509,10 +509,10 @@ const buildCardTags = (tags, card) => {
         });
         overflow.appendChild(popover);
 
-        // Click opens the options menu
+        // Click toggles the tags popover
         overflow.addEventListener('click', (e) => {
             e.stopPropagation();
-            card.querySelector('.btn-options')?.click();
+            popover.style.display = popover.style.display === 'flex' ? 'none' : 'flex';
         });
         tagsRow.appendChild(overflow);
     }

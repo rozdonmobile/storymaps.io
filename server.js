@@ -44,6 +44,8 @@ import jsyaml from '#js-yaml';
 // JSON file paths for lock and counter data
 const LOCK_FILE = join(DATA_DIR, 'locks.json');
 const STATS_FILE = join(DATA_DIR, 'stats.json');
+const BACKUPS_DIR = join(DATA_DIR, 'backups');
+const getBackupFile = (mapId) => join(BACKUPS_DIR, mapId + '.json');
 
 // =============================================================================
 // Data Helpers
@@ -51,6 +53,7 @@ const STATS_FILE = join(DATA_DIR, 'stats.json');
 
 const ensureDataDir = async () => {
   await mkdir(DATA_DIR, { recursive: true });
+  await mkdir(BACKUPS_DIR, { recursive: true });
 };
 
 const readJson = async (filePath, fallback) => {
@@ -249,8 +252,113 @@ const handleApi = async (req, res) => {
     }
   }
 
+  // --- Backups API ---
+  // GET /api/backups/:mapId — list backup metadata
+  // POST /api/backups/:mapId — create a new backup
+  const backupsMatch = path.match(/^\/api\/backups\/([a-z0-9]+)$/);
+  if (backupsMatch) {
+    const mapId = backupsMatch[1];
+
+    if (req.method === 'GET') {
+      const backups = await readJson(getBackupFile(mapId), []);
+      const meta = backups.map(b => ({
+        id: b.id, timestamp: b.timestamp, note: b.note,
+        mapName: b.mapName || '',
+        size: b.data ? b.data.length : 0,
+        cardCount: b.cardCount || 0,
+        ...(b.imported && { imported: true }),
+      }));
+      res.writeHead(200, { 'Content-Type': 'application/json', 'Cache-Control': 'no-cache' });
+      res.end(JSON.stringify(meta));
+      return;
+    }
+
+    if (req.method === 'POST') {
+      const data = await loadAndSerialize(mapId);
+      if (!data) {
+        res.writeHead(404, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'Map not found' }));
+        return;
+      }
+      // Strip metadata fields from the snapshot
+      const { id, locked, exported, backups: _b, ...snapshot } = data;
+      const backups = await readJson(getBackupFile(mapId), []);
+      const entry = {
+        id: randomBytes(6).toString('hex'),
+        timestamp: new Date().toISOString(),
+        note: body?.note || '',
+        mapName: snapshot.name || '',
+        cardCount: countCards(snapshot),
+        data: JSON.stringify(snapshot),
+      };
+      backups.push(entry);
+      if (backups.length > 5) backups.splice(0, backups.length - 5);
+      await writeJson(getBackupFile(mapId), backups);
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ id: entry.id, timestamp: entry.timestamp, note: entry.note, mapName: entry.mapName, size: entry.data.length, cardCount: entry.cardCount }));
+      return;
+    }
+  }
+
+  // GET /api/backups/:mapId/:backupId — fetch single backup data
+  // DELETE /api/backups/:mapId/:backupId — delete a single backup
+  const backupItemMatch = path.match(/^\/api\/backups\/([a-z0-9]+)\/([a-f0-9]+)$/);
+  if (backupItemMatch) {
+    const mapId = backupItemMatch[1];
+    const backupId = backupItemMatch[2];
+    const backups = await readJson(getBackupFile(mapId), []);
+    const idx = backups.findIndex(b => b.id === backupId);
+
+    if (req.method === 'GET') {
+      if (idx === -1) {
+        res.writeHead(404, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'Backup not found' }));
+        return;
+      }
+      res.writeHead(200, { 'Content-Type': 'application/json', 'Cache-Control': 'no-cache' });
+      res.end(JSON.stringify(backups[idx]));
+      return;
+    }
+
+    if (req.method === 'DELETE') {
+      if (idx !== -1) {
+        backups.splice(idx, 1);
+        await writeJson(getBackupFile(mapId), backups);
+      }
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ ok: true }));
+      return;
+    }
+  }
+
+  // POST /api/backups/:mapId/import — import backups from exported data
+  const backupImportMatch = path.match(/^\/api\/backups\/([a-z0-9]+)\/import$/);
+  if (backupImportMatch && req.method === 'POST') {
+    const mapId = backupImportMatch[1];
+    const imported = Array.isArray(body?.backups) ? body.backups : [];
+    if (imported.length) {
+      const existing = await readJson(getBackupFile(mapId), []);
+      const existingIds = new Set(existing.map(b => b.id));
+      for (const b of imported) {
+        if (b.id && b.data && !existingIds.has(b.id)) existing.push({ ...b, imported: true });
+      }
+      if (existing.length > 5) existing.splice(0, existing.length - 5);
+      await writeJson(getBackupFile(mapId), existing);
+    }
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ ok: true }));
+    return;
+  }
+
   res.writeHead(404, { 'Content-Type': 'application/json' });
   res.end(JSON.stringify({ error: 'Not found' }));
+};
+
+const countCards = (snapshot) => {
+  const flat = (arr) => Array.isArray(arr) ? arr.reduce((n, a) => n + (Array.isArray(a) ? a.length : 0), 0) : 0;
+  const steps = Array.isArray(snapshot.steps) ? snapshot.steps.filter(s => s.name && !s.partialMapId).length : 0;
+  const stories = Array.isArray(snapshot.slices) ? snapshot.slices.reduce((n, s) => n + flat(s.stories), 0) : 0;
+  return steps + flat(snapshot.users) + flat(snapshot.activities) + stories;
 };
 
 // =============================================================================
@@ -349,9 +457,13 @@ const loadAndSerialize = async (mapId) => {
     doc.destroy();
   }
   if (data) {
-    // Insert id after name for readable key ordering
-    const { app, v, exported, ...rest } = data;
-    data = { app, v, exported, id: mapId, ...rest };
+    // Insert name, id, locked for readable key ordering
+    const { app, v, exported, name, ...rest } = data;
+    const locks = await readJson(LOCK_FILE, {});
+    data = { app, v, exported, name, id: mapId, locked: !!locks[mapId]?.isLocked, ...rest };
+    // Include backups for format URLs and exports
+    const backups = await readJson(getBackupFile(mapId), []);
+    if (backups.length) data.backups = backups;
   }
   return data;
 };
@@ -367,6 +479,13 @@ const server = createServer(async (req, res) => {
   // API routes
   if (reqPath.startsWith('/api/')) {
     return handleApi(req, res);
+  }
+
+  // Redirect /favicon.ico → /favicon.svg (browsers request .ico for non-HTML pages)
+  if (reqPath === '/favicon.ico') {
+    res.writeHead(302, { 'Location': '/favicon.svg' });
+    res.end();
+    return;
   }
 
   // Static files — try cache first, then disk

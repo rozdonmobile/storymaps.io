@@ -2,7 +2,7 @@
 
 A free, open-source user story mapping tool with real-time collaboration.
 
-![Screenshot](public/resources/welcome-img.png)
+![Screenshot](public/resources/screenshot.png)
 
 ## What is User Story Mapping?
 
@@ -87,8 +87,14 @@ You've probably seen these patterns in your own work. It happens to us all. It's
 - **Zoom to fit** (Alt+R / Shift+0) - auto-fit all content to viewport
 - **Keyboard shortcuts** - undo/redo (Ctrl+Z / Ctrl+Y), search (Ctrl+F), duplicate (Ctrl+D), delete (Delete/Backspace), zoom, pan
 
+### Backups
+- **Manual backups** - create named snapshots of your map (up to 5 kept)
+- **Auto backups** - safety snapshots created automatically before imports and restores
+- **Restore** - roll back to any backup with one click; a safety backup is created first
+- **Portable backups** - backups travel with JSON/YAML exports and imports; imported backups are tagged so you can tell them apart from local ones
+- **Backup metadata** - each backup shows the map name, card count, size, and relative age
+
 ### Other
-- **Undo / Redo** (Ctrl+Z / Ctrl+Y)
 - **Focus Mode** - hide card metadata (status, points, tags, links) for a cleaner presentation view; expand icons still appear on hover
 - **Copy map** - duplicate an existing map to a new URL
 - **Sample maps** - load examples to learn the methodology
@@ -100,12 +106,12 @@ You've probably seen these patterns in your own work. It happens to us all. It's
 The app is a single Node.js server (`server.js`) that handles:
 - **WebSocket** - Real-time collaboration via y-websocket
 - **Static files** - Serves the client app from `public/` and `src/`
-- **REST API** - Lock state (`/api/lock/:mapId`), stats (`/api/stats`), and format endpoints (`/:mapId.json`, `/:mapId.yaml`)
+- **REST API** - Lock state (`/api/lock/:mapId`), backups (`/api/backups/:mapId`), stats (`/api/stats`), and format endpoints (`/:mapId.json`, `/:mapId.yaml`)
 
 ### Data Storage
 - **LevelDB** - Yjs document persistence in `data/`
 - **SQLite** - Map index with names and timestamps (`data/maps.db`)
-- **JSON files** - Lock state (`data/locks.json`) and counters (`data/stats.json`)
+- **JSON files** - Lock state (`data/locks.json`), counters (`data/stats.json`), and backups (`data/backups/*.json`)
 
 ### Client
 The client has no build step - ES modules are loaded directly from `src/`. Third-party libraries (Yjs, CodeMirror) are vendored as pre-built bundles in `public/vendor/`.
@@ -183,6 +189,7 @@ All data lives in `./data/` on the host:
 - `maps.db` - SQLite map index
 - `locks.json` - lock state
 - `stats.json` - counters
+- `backups/` - per-map backup snapshots
 
 Back up this directory regularly (e.g. a cron job with `tar` or `rsync`). To migrate to a new server, copy `data/` across and start the containers.
 
@@ -228,9 +235,10 @@ The server starts on `http://localhost:8080`.
 16. Use **Ctrl+scroll** to zoom, **right-click drag** to pan, **Alt+R** to zoom to fit
 17. Select consecutive columns and use **Menu → Create Partial** to extract shared sequences into reusable map partials; manage them from the **Partials** panel
 18. Use **Menu → Focus Mode** to hide card metadata for a cleaner presentation view
-19. Use **Menu → Import** to import from JSON or YAML
-20. Use **Menu → Export** to save as JSON or YAML, or export to Jira, Asana, or Phabricator
-21. Use **Print** to save as PDF
+19. Use **Menu → Backups** to create, restore, or delete map snapshots
+20. Use **Menu → Import** to import from JSON or YAML
+21. Use **Menu → Export** to save as JSON or YAML, or export to Jira, Asana, or Phabricator
+22. Use **Print** to save as PDF
 
 ## Support
 If you find this tool useful, consider [buying me a coffee](https://buymeacoffee.com/jackgleeson). It goes towards server costs and helps me keep the app running.

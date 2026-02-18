@@ -225,6 +225,14 @@ const dom = {
     partialsToggle: document.getElementById('partialsToggle'),
     partialsBody: document.getElementById('partialsBody'),
     partialsList: document.getElementById('partialsList'),
+    // Backups
+    backupsBtn: document.getElementById('backupsBtn'),
+    backupsModal: document.getElementById('backupsModal'),
+    backupsModalClose: document.getElementById('backupsModalClose'),
+    backupsList: document.getElementById('backupsList'),
+    createBackupBtn: document.getElementById('createBackupBtn'),
+    backupCountBadge: document.getElementById('backupCountBadge'),
+    appToast: document.getElementById('appToast'),
     // Card expand modal
     cardExpandModal: document.getElementById('cardExpandModal'),
     cardExpandName: document.getElementById('cardExpandName'),
@@ -285,6 +293,8 @@ const subscribeToMap = async (mapId) => {
         subscribeLockState(mapId);
         updateLockUI();
         updateEditability();
+        // Fetch backup count for menu badge
+        fetch(`/api/backups/${mapId}`).then(r => r.json()).then(b => updateBackupBadge(b.length)).catch(() => {});
 
         const provider = getProvider();
         if (provider) {
@@ -435,6 +445,31 @@ const exportMap = () => {
     showExportModal();
 };
 
+const importBackupsIfPresent = async (data) => {
+    if (!state.mapId || !Array.isArray(data?.backups) || !data.backups.length) return;
+    // Send backups one at a time to stay under the 1MB body limit
+    for (const backup of data.backups) {
+        try {
+            await fetch(`/api/backups/${state.mapId}/import`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ backups: [backup] }),
+            });
+        } catch { /* best-effort */ }
+    }
+};
+
+const createAutoBackup = async (note) => {
+    if (!state.mapId) return;
+    try {
+        await fetch(`/api/backups/${state.mapId}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ note }),
+        });
+    } catch { /* best-effort */ }
+};
+
 const importMap = (file) => {
     const isFromWelcome = !state.mapId;
 
@@ -446,6 +481,7 @@ const importMap = (file) => {
     const reader = new FileReader();
     reader.onload = async (e) => {
         try {
+            const parsed = JSON.parse(e.target.result);
             if (isFromWelcome) {
                 hideWelcomeScreen();
                 initState();
@@ -454,15 +490,17 @@ const importMap = (file) => {
                 history.replaceState({ mapId }, '', `/${mapId}`);
                 await createYjsDoc(mapId);
             } else {
+                await createAutoBackup('Auto: before import');
                 pushUndo();
             }
-            deserialize(JSON.parse(e.target.result));
+            deserialize(parsed);
             dom.boardName.value = state.name;
             renderAndSave();
             requestAnimationFrame(zoomToFit);
             if (isFromWelcome) {
                 subscribeToMap(state.mapId);
             }
+            importBackupsIfPresent(parsed);
         } catch {
             alert('Failed to import: Invalid file format');
         }
@@ -499,6 +537,7 @@ const importFromJsonText = async (jsonText) => {
             history.replaceState({ mapId }, '', `/${mapId}`);
             await createYjsDoc(mapId);
         } else {
+            await createAutoBackup('Auto: before import');
             pushUndo();
         }
         deserialize(data);
@@ -509,6 +548,7 @@ const importFromJsonText = async (jsonText) => {
         if (isFromWelcome) {
             subscribeToMap(state.mapId);
         }
+        importBackupsIfPresent(data);
     } catch {
         alert('Failed to import: Invalid JSON format');
     }
@@ -559,6 +599,7 @@ const importFromYamlText = async (yamlText) => {
             history.replaceState({ mapId }, '', `/${mapId}`);
             await createYjsDoc(mapId);
         } else {
+            await createAutoBackup('Auto: before import');
             pushUndo();
         }
         deserialize(data);
@@ -569,6 +610,7 @@ const importFromYamlText = async (yamlText) => {
         if (isFromWelcome) {
             subscribeToMap(state.mapId);
         }
+        importBackupsIfPresent(data);
     } catch {
         alert('Failed to import: Invalid data structure');
     }
@@ -594,6 +636,7 @@ const importYamlFile = (file) => {
                 history.replaceState({ mapId }, '', `/${mapId}`);
                 await createYjsDoc(mapId);
             } else {
+                await createAutoBackup('Auto: before import');
                 pushUndo();
             }
             deserialize(data);
@@ -603,6 +646,7 @@ const importYamlFile = (file) => {
             if (isFromWelcome) {
                 subscribeToMap(state.mapId);
             }
+            importBackupsIfPresent(data);
         } catch (err) {
             const msg = err.validationErrors ? err.validationErrors.join('\n') : 'Invalid YAML format';
             alert('Failed to import: ' + msg);
@@ -611,9 +655,13 @@ const importYamlFile = (file) => {
     reader.readAsText(file);
 };
 
+let _exportBackups = null;
+
 const updateExportJson = () => {
     const minify = dom.exportMinify.checked;
-    const json = minify ? JSON.stringify(serialize()) : JSON.stringify(serialize(), null, 2);
+    const data = serialize();
+    if (_exportBackups?.length) data.backups = _exportBackups;
+    const json = minify ? JSON.stringify(data) : JSON.stringify(data, null, 2);
     dom.exportJsonText.value = json;
 };
 
@@ -641,11 +689,28 @@ const {
     populateAsanaCsvExportEpics, downloadAsanaCsv, asanaCsvExportState,
 } = exportsMod;
 
-const showExportModal = () => {
+const showExportModal = async () => {
+    _exportBackups = null;
     dom.exportModal.classList.add('visible');
     dom.exportFilename.value = sanitizeFilename(state.name || 'story-map');
     dom.exportMinify.checked = false;
     updateExportJson();
+    // Fetch full backups to include in export
+    if (state.mapId) {
+        try {
+            const res = await fetch(`/api/backups/${state.mapId}`);
+            const meta = await res.json();
+            if (meta.length) {
+                const fullBackups = [];
+                for (const b of meta) {
+                    const r = await fetch(`/api/backups/${state.mapId}/${b.id}`);
+                    if (r.ok) fullBackups.push(await r.json());
+                }
+                _exportBackups = fullBackups;
+                updateExportJson();
+            }
+        } catch { /* best-effort */ }
+    }
 };
 
 const hideExportModal = () => {
@@ -684,10 +749,27 @@ const exportYaml = () => {
     showExportYamlModal();
 };
 
-const showExportYamlModal = () => {
+const showExportYamlModal = async () => {
     dom.exportYamlModal.classList.add('visible');
     dom.exportYamlFilename.value = sanitizeFilename(state.name || 'story-map');
-    dom.exportYamlText.value = exportToYaml(serialize());
+    const data = serialize();
+    dom.exportYamlText.value = exportToYaml(data);
+    // Fetch full backups to include in YAML export
+    if (state.mapId) {
+        try {
+            const res = await fetch(`/api/backups/${state.mapId}`);
+            const meta = await res.json();
+            if (meta.length) {
+                const fullBackups = [];
+                for (const b of meta) {
+                    const r = await fetch(`/api/backups/${state.mapId}/${b.id}`);
+                    if (r.ok) fullBackups.push(await r.json());
+                }
+                data.backups = fullBackups;
+                dom.exportYamlText.value = exportToYaml(data);
+            }
+        } catch { /* best-effort */ }
+    }
 };
 
 const hideExportYamlModal = () => {
@@ -717,6 +799,178 @@ const downloadExportYamlFile = () => {
     link.click();
     URL.revokeObjectURL(url);
     hideExportYamlModal();
+};
+
+// =============================================================================
+// Backups
+// =============================================================================
+
+const escHtml = (s) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+
+let toastTimer;
+const showToast = (message, duration = 2500) => {
+    clearTimeout(toastTimer);
+    dom.appToast.textContent = message;
+    dom.appToast.classList.add('visible');
+    toastTimer = setTimeout(() => dom.appToast.classList.remove('visible'), duration);
+};
+
+const relativeTime = (isoStr) => {
+    const diff = Date.now() - new Date(isoStr).getTime();
+    const mins = Math.floor(diff / 60000);
+    if (mins < 1) return 'Just now';
+    if (mins < 60) return `${mins}m ago`;
+    const hours = Math.floor(mins / 60);
+    if (hours < 24) return `${hours}h ago`;
+    const days = Math.floor(hours / 24);
+    if (days === 1) return 'Yesterday';
+    if (days < 30) return `${days}d ago`;
+    return new Date(isoStr).toLocaleDateString();
+};
+
+const formatSize = (bytes) => {
+    if (bytes < 1024) return `${bytes} B`;
+    return `${(bytes / 1024).toFixed(1)} KB`;
+};
+
+const showBackupsModal = async () => {
+    if (!state.mapId) return;
+    dom.createBackupBtn.style.display = isMapEditable() ? '' : 'none';
+    dom.backupsModal.classList.add('visible');
+    await refreshBackupsList();
+};
+
+const hideBackupsModal = () => {
+    dom.backupsModal.classList.remove('visible');
+};
+
+const updateBackupBadge = (count) => {
+    if (count > 0) {
+        dom.backupCountBadge.textContent = count;
+        dom.backupCountBadge.classList.remove('hidden');
+    } else {
+        dom.backupCountBadge.classList.add('hidden');
+    }
+};
+
+const refreshBackupsList = async () => {
+    try {
+        const res = await fetch(`/api/backups/${state.mapId}`);
+        const backups = await res.json();
+        updateBackupBadge(backups.length);
+        if (!backups.length) {
+            dom.backupsList.innerHTML = `<div class="backups-empty">
+                <svg class="backups-empty-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/>
+                </svg>
+                <span>No backups yet</span>
+            </div>`;
+            return;
+        }
+        const isAuto = (note) => note && note.startsWith('Auto:');
+        const editable = isMapEditable();
+        const iconSvg = (b) => b.imported
+            ? '<polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/>'
+            : isAuto(b.note)
+            ? '<path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/>'
+            : '<path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/>';
+        const iconClass = (b) => b.imported ? ' backup-icon-imported' : isAuto(b.note) ? ' backup-icon-auto' : '';
+        const label = (b, safeNote) => {
+            if (b.imported && safeNote) return safeNote;
+            if (b.imported) return 'Imported backup';
+            if (safeNote) return safeNote;
+            return isAuto(b.note) ? 'Auto backup' : 'Manual backup';
+        };
+        dom.backupsList.innerHTML = backups.slice().sort((a, c) => new Date(c.timestamp) - new Date(a.timestamp)).map(b => {
+            const safeId = escHtml(b.id);
+            const safeNote = b.note ? escHtml(b.note) : '';
+            return `
+            <div class="backup-row" data-id="${safeId}">
+                <div class="backup-icon${iconClass(b)}">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        ${iconSvg(b)}
+                    </svg>
+                </div>
+                <div class="backup-info">
+                    <div class="backup-time">${label(b, safeNote)}</div>
+                    ${b.mapName ? `<div class="backup-meta">${b.imported ? '<span class="backup-imported-tag">Imported</span> &middot; ' : ''}${escHtml(b.mapName)}</div>` : (b.imported ? `<div class="backup-meta"><span class="backup-imported-tag">Imported</span></div>` : '')}
+                    <div class="backup-meta" title="${new Date(b.timestamp).toLocaleString()}">${relativeTime(b.timestamp)} &middot; ${formatSize(b.size)}${b.cardCount ? ` &middot; ${b.cardCount} cards` : ''}</div>
+                </div>
+                <div class="backup-actions">
+                    ${editable ? `<button class="backup-restore-btn" data-id="${safeId}">Restore</button>` : ''}
+                    ${editable ? `<button class="backup-delete-btn" data-id="${safeId}" title="Delete">&times;</button>` : ''}
+                </div>
+            </div>`;
+        }).join('');
+    } catch {
+        dom.backupsList.innerHTML = '<div class="backups-empty">Failed to load backups</div>';
+    }
+};
+
+const setCreateBtnLabel = (text) => {
+    const svg = dom.createBackupBtn.querySelector('svg');
+    dom.createBackupBtn.textContent = '';
+    if (svg) dom.createBackupBtn.prepend(svg);
+    dom.createBackupBtn.append(text);
+};
+
+const createBackup = async () => {
+    const note = prompt('Backup note (optional):');
+    if (note === null) return;
+    try {
+        dom.createBackupBtn.disabled = true;
+        setCreateBtnLabel('Creating...');
+        await fetch(`/api/backups/${state.mapId}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ note }),
+        });
+        await refreshBackupsList();
+    } catch {
+        alert('Failed to create backup');
+    } finally {
+        dom.createBackupBtn.disabled = false;
+        setCreateBtnLabel('Create Backup');
+    }
+};
+
+const restoreBackup = async (backupId) => {
+    if (!isMapEditable()) {
+        alert('Cannot restore while the map is locked.');
+        return;
+    }
+    if (!confirm('Restore this backup? A safety backup of the current state will be created first.')) return;
+    try {
+        // Create safety backup
+        await fetch(`/api/backups/${state.mapId}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ note: 'Auto: before restore' }),
+        });
+        // Fetch backup data
+        const res = await fetch(`/api/backups/${state.mapId}/${backupId}`);
+        if (!res.ok) throw new Error('Backup not found');
+        const backup = await res.json();
+        const data = JSON.parse(backup.data);
+        pushUndo();
+        deserialize(data);
+        dom.boardName.value = state.name;
+        renderAndSave();
+        hideBackupsModal();
+        showToast('Backup restored');
+    } catch {
+        alert('Failed to restore backup');
+    }
+};
+
+const deleteBackup = async (backupId) => {
+    if (!confirm('Delete this backup?')) return;
+    try {
+        await fetch(`/api/backups/${state.mapId}/${backupId}`, { method: 'DELETE' });
+        await refreshBackupsList();
+    } catch {
+        alert('Failed to delete backup');
+    }
 };
 
 const loadSample = async (name) => {
@@ -1114,6 +1368,24 @@ const initEventListeners = () => {
         window.print();
         document.title = originalTitle;
     });
+    // Backups
+    dom.backupsBtn.addEventListener('click', () => {
+        closeMainMenu();
+        showBackupsModal();
+    });
+    dom.backupsModalClose.addEventListener('click', hideBackupsModal);
+    dom.backupsModal.addEventListener('click', (e) => {
+        if (e.target === dom.backupsModal) hideBackupsModal();
+    });
+    dom.createBackupBtn.addEventListener('click', createBackup);
+    dom.backupsList.addEventListener('click', (e) => {
+        const btn = e.target.closest('button');
+        if (!btn) return;
+        const id = btn.dataset.id;
+        if (btn.classList.contains('backup-restore-btn')) restoreBackup(id);
+        else if (btn.classList.contains('backup-delete-btn')) deleteBackup(id);
+    });
+
     dom.toggleCursorsBtn?.addEventListener('click', () => {
         closeMainMenu();
         toggleCursorsVisibility();
@@ -1531,6 +1803,77 @@ const initEventListeners = () => {
         ctx.fillRect(0, 0, finalCanvas.width, finalCanvas.height);
         ctx.drawImage(logoCanvas, logoPad, logoPad);
         ctx.drawImage(mapCanvas, 0, logoCanvas.height + logoGap);
+
+        // Draw legend in bottom-right corner
+        if (state.legend?.length) {
+            const s = dpr; // scale factor
+            const font = `${13 * s}px system-ui, -apple-system, sans-serif`;
+            const titleFont = `600 ${12 * s}px system-ui, -apple-system, sans-serif`;
+            const swatchSize = 22 * s;
+            const rowH = 28 * s;
+            const pad = 14 * s;
+            const gap = 6 * s;
+
+            // Measure text widths
+            ctx.font = font;
+            const maxLabelW = Math.max(...state.legend.map(e => ctx.measureText(e.label).width));
+            const boxW = pad + swatchSize + gap + maxLabelW + pad;
+            const titleH = 18 * s;
+            const boxH = pad + titleH + state.legend.length * rowH + pad;
+
+            const bx = finalCanvas.width - boxW - logoPad;
+            const by = finalCanvas.height - boxH - logoPad;
+
+            // Background with rounded corners
+            const r = 8 * s;
+            ctx.beginPath();
+            ctx.moveTo(bx + r, by);
+            ctx.lineTo(bx + boxW - r, by);
+            ctx.quadraticCurveTo(bx + boxW, by, bx + boxW, by + r);
+            ctx.lineTo(bx + boxW, by + boxH - r);
+            ctx.quadraticCurveTo(bx + boxW, by + boxH, bx + boxW - r, by + boxH);
+            ctx.lineTo(bx + r, by + boxH);
+            ctx.quadraticCurveTo(bx, by + boxH, bx, by + boxH - r);
+            ctx.lineTo(bx, by + r);
+            ctx.quadraticCurveTo(bx, by, bx + r, by);
+            ctx.closePath();
+            ctx.fillStyle = 'white';
+            ctx.fill();
+            ctx.strokeStyle = '#e2e2e2';
+            ctx.lineWidth = 1 * s;
+            ctx.stroke();
+
+            // Title
+            ctx.font = titleFont;
+            ctx.fillStyle = '#666';
+            ctx.fillText('Legend', bx + pad, by + pad + 12 * s);
+
+            // Entries
+            state.legend.forEach((entry, i) => {
+                const ry = by + pad + titleH + i * rowH;
+                // Swatch
+                const sr = 4 * s;
+                const sx = bx + pad;
+                const sy = ry + (rowH - swatchSize) / 2;
+                ctx.beginPath();
+                ctx.moveTo(sx + sr, sy);
+                ctx.lineTo(sx + swatchSize - sr, sy);
+                ctx.quadraticCurveTo(sx + swatchSize, sy, sx + swatchSize, sy + sr);
+                ctx.lineTo(sx + swatchSize, sy + swatchSize - sr);
+                ctx.quadraticCurveTo(sx + swatchSize, sy + swatchSize, sx + swatchSize - sr, sy + swatchSize);
+                ctx.lineTo(sx + sr, sy + swatchSize);
+                ctx.quadraticCurveTo(sx, sy + swatchSize, sx, sy + swatchSize - sr);
+                ctx.lineTo(sx, sy + sr);
+                ctx.quadraticCurveTo(sx, sy, sx + sr, sy);
+                ctx.closePath();
+                ctx.fillStyle = entry.color;
+                ctx.fill();
+                // Label
+                ctx.font = font;
+                ctx.fillStyle = '#333';
+                ctx.fillText(entry.label, bx + pad + swatchSize + gap, ry + rowH / 2 + 5 * s);
+            });
+        }
 
         return finalCanvas;
     };

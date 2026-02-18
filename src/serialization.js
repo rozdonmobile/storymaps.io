@@ -50,8 +50,8 @@ export const serialize = () => ({
     app: 'storymap',
     v: 1,
     exported: new Date().toISOString(),
-    ...(state.mapId && { id: state.mapId }),
     name: state.name,
+    ...(state.mapId && { id: state.mapId }),
     users: state.columns.map(col => (state.users[col.id] || []).map(serializeCard)),
     activities: state.columns.map(col => (state.activities[col.id] || []).map(serializeCard)),
     steps: state.columns.map(col => {

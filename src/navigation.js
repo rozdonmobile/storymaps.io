@@ -67,10 +67,27 @@ const updatePanMode = () => {
     }
 };
 
+// transform: scale() with origin top-left extends content past the layout box,
+// but scrollWidth is based on layout — so native scroll/pan can't reach the overflow.
+// Expand right/bottom margins so the full scaled content is scrollable.
+const updateZoomScrollBounds = () => {
+    const map = _dom.storyMap;
+    if (zoomLevel <= 1) {
+        map.style.marginRight = '';
+        map.style.marginBottom = '';
+        return;
+    }
+    const extraW = Math.ceil(map.offsetWidth * (zoomLevel - 1));
+    const extraH = Math.ceil(map.offsetHeight * (zoomLevel - 1));
+    map.style.marginRight = `calc(150vw + ${extraW}px)`;
+    map.style.marginBottom = `calc(100vh + ${extraH}px)`;
+};
+
 export const updateZoom = () => {
     _dom.storyMap.style.transform = `scale(${zoomLevel})`;
     _dom.storyMap.style.setProperty('--zoom', zoomLevel);
     _dom.zoomReset.textContent = `${Math.round(zoomLevel * 100)}%`;
+    updateZoomScrollBounds();
     updatePanMode();
 };
 
@@ -376,6 +393,7 @@ export const initWheelZoom = () => {
         _dom.storyMap.style.transform = `scale(${zoomLevel})`;
         _dom.storyMap.style.setProperty('--zoom', zoomLevel);
         _dom.zoomReset.textContent = `${Math.round(zoomLevel * 100)}%`;
+        updateZoomScrollBounds();
 
         // Scroll so the same content point stays under the cursor
         wrapper.scrollLeft = mapLeft + cursorX * zoomLevel - (e.clientX - wrapperRect.left);
@@ -435,6 +453,7 @@ export const initPinchZoom = () => {
         _dom.storyMap.style.transform = `scale(${zoomLevel})`;
         _dom.storyMap.style.setProperty('--zoom', zoomLevel);
         _dom.zoomReset.textContent = `${Math.round(zoomLevel * 100)}%`;
+        updateZoomScrollBounds();
 
         // Keep the midpoint stable
         wrapper.scrollLeft = mapLeft + contentX * zoomLevel - (midX - wrapperRect.left);
